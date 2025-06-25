@@ -1,0 +1,156 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int            @id @default(autoincrement())
+  fullname             String
+  email                String         @unique
+  phone                String         @unique @db.VarChar(20)
+  image                String         @default("default-user.png")
+  username             String         @unique
+  user_type            User_Type_Enum @default(dashboard_user)
+  is_admin             Boolean        @default(true)
+  is_active            Boolean        @default(true)
+  is_deleted           Boolean        @default(false)
+  email_verified_at    DateTime?
+  failed_attempt       Int            @default(0)
+  lock_time            DateTime?
+  last_login_date      DateTime?
+  last_password_change DateTime?
+  is_locked            Boolean        @default(false)
+  otp_token            String?        @db.VarChar(10)
+  otp_time             DateTime?
+  password             String
+  remember_token       String?
+  created_by           Int
+  deleted_by           Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  user_menu_rights UserMenuRight[]
+  ApiUser          ApiUser[]
+
+  @@fulltext([username, fullname, email, phone])
+}
+
+model Menu {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String? @db.VarChar(100)
+  parent_id   Int?
+  url         String? @db.VarChar(255)
+  icon        String? @db.VarChar(100)
+  sorting     Int     @default(0)
+  created_by  Int
+  deleted_by  Int?
+  is_active   Boolean @default(true)
+  is_deleted  Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  parent           Menu?           @relation("menu_children", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  children         Menu[]          @relation("menu_children")
+  user_menu_rights UserMenuRight[]
+}
+
+model UserMenuRight {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  menu_id    Int
+  can_view   Boolean  @default(true)
+  can_create Boolean  @default(false)
+  can_edit   Boolean  @default(false)
+  can_delete Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  menu Menu @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, menu_id])
+}
+
+model ApiUser {
+  id           Int     @id @default(autoincrement())
+  name         String
+  api_password String
+  email        String  @unique
+  phone        String
+  api_key      String  @unique
+  is_active    Boolean @default(true)
+  is_deleted   Boolean @default(false)
+  created_by   Int
+  deleted_by   Int?
+  user_id      Int     @unique
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+// ENUMS
+enum User_Type_Enum {
+  dashboard_user
+  api_user
+}
+
+enum CommunicationLogChannel {
+  email
+  sms
+  whatsapp
+}
+
+enum CommunicationLogStatus {
+  pending
+  sent
+  failed
+}
+
+// PUT LOGS TABLES HERE UNDER THIS COMMENT
+model AllActivityLog {
+  id            Int      @id @default(autoincrement())
+  timestamp     DateTime @default(now())
+  method        String?
+  path          String?
+  contentLength Int?
+  responseTime  Float?
+  requestBody   String?
+  payload       String?  @db.LongText
+  databaseQuery String?  @db.LongText
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CommunicationLog {
+  id             Int                     @id @default(autoincrement())
+  recipient      String                  @db.VarChar(255)
+  recipientName  String?                 @db.VarChar(255)
+  channel        CommunicationLogChannel
+  messageSubject String?                 @db.VarChar(255)
+  messageBody    String                  @db.LongText
+  status         CommunicationLogStatus  @default(pending)
+  responseCode   String?                 @db.VarChar(255)
+  responseBody   String?                 @db.Text
+  sentBy         String?                 @db.VarChar(255)
+  sentAt         DateTime?
+  createdAt      DateTime                @default(now())
+  errorMessage   String?                 @db.Text
+
+  @@index([channel, status], name: "idx_channel_status")
+}
