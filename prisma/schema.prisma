@@ -42,6 +42,26 @@ model User {
   @@fulltext([username, fullname, email, phone])
 }
 
+model ApiUser {
+  id           Int     @id @default(autoincrement())
+  name         String
+  api_password String
+  email        String  @unique
+  phone        String
+  api_key      String  @unique
+  is_active    Boolean @default(true)
+  is_deleted   Boolean @default(false)
+  created_by   Int
+  deleted_by   Int?
+  user_id      Int     @unique
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
 model Menu {
   id          Int     @id @default(autoincrement())
   name        String
@@ -83,24 +103,28 @@ model UserMenuRight {
   @@unique([user_id, menu_id])
 }
 
-model ApiUser {
-  id           Int     @id @default(autoincrement())
-  name         String
-  api_password String
-  email        String  @unique
-  phone        String
-  api_key      String  @unique
-  is_active    Boolean @default(true)
-  is_deleted   Boolean @default(false)
-  created_by   Int
-  deleted_by   Int?
-  user_id      Int     @unique
+model Branch {
+  id                       Int     @id
+  name                     String  @db.VarChar(100)
+  igis_branch_code         String  @unique @db.VarChar(8)
+  igis_branch_takaful_code String  @unique @db.VarChar(8)
+  address                  String  @db.VarChar(200)
+  telephone                String  @db.VarChar(15)
+  email                    String  @db.VarChar(100)
+  his_code                 String  @unique @db.VarChar(10)
+  his_code_takaful         String  @unique @db.VarChar(10)
+  sales_tax_perc           Decimal @db.Decimal(5, 2)
+  fed_insurance_fee        Decimal @db.Decimal(5, 2)
+  stamp_duty               Int
+  admin_rate               Decimal @db.Decimal(5, 2)
+  is_active                Boolean @default(true)
+  is_deleted               Boolean @default(false)
+  created_by               Int?
+  deleted_by               Int?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
-
-  user User @relation(fields: [user_id], references: [id])
 }
 
 // ENUMS
