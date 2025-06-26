@@ -19,6 +19,7 @@ import {
   getUserByEmail,
   getUserById,
   getUserByUsername,
+  getUserMenus,
   incFailedAttempts,
   lockAccount,
   resetFailedAttempts,
@@ -390,7 +391,11 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     return res.status(200).json({
       status: 1,
       message: "User login successfully.",
-      payload: [user],
+      payload: [
+        {
+          username: user.username,
+        },
+      ],
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
@@ -414,8 +419,8 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 // Endpoint --> /api/v1/users/send-otp
 // Description --> Sends OTP
 export const sendOtp = async (req: Request, res: Response): Promise<any> => {
-  let userDetails = null;
-  let parsedDetails = null;
+  // let userDetails = null;
+  // let parsedDetails = null;
   try {
     const parsedData = validateSendOtp.parse(req.body);
     const user = await getUserByUsername(parsedData.username);
@@ -428,8 +433,8 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
       });
     }
 
-    userDetails = user;
-    parsedDetails = parsedData;
+    // userDetails = user;
+    // parsedDetails = parsedData;
 
     if (user.otp_token === null || user.otp_token === undefined) {
       return res.status(400).json({
@@ -444,7 +449,7 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
       result = await sendEmail({
         to: user.email,
         subject: "OTP Verification",
-        html: getOTPEmailTemplate(user.otp_token, user.fullname)
+        html: getOTPEmailTemplate(user.otp_token, user.fullname),
       });
     } else {
       result = await sendSms(
@@ -453,19 +458,19 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
       );
     }
 
-    await prisma.communicationLog.create({
-      data: {
-        channel: parsedData.type,
-        recipient: parsedData.type === "email" ? user.email : user.phone,
-        recipientName: user.username,
-        messageBody: getOTPEmailTemplate(user.otp_token, user.fullname),
-        messageSubject: "OTP Verification",
-        responseCode: "200",
-        status: "sent",
-        sentAt: new Date(),
-        responseBody: JSON.stringify(result),
-      },
-    });
+    // await prisma.communicationLog.create({
+    //   data: {
+    //     channel: parsedData.type,
+    //     recipient: parsedData.type === "email" ? user.email : user.phone,
+    //     recipientName: user.username,
+    //     messageBody: getOTPEmailTemplate(user.otp_token, user.fullname),
+    //     messageSubject: "OTP Verification",
+    //     responseCode: "200",
+    //     status: "sent",
+    //     sentAt: new Date(),
+    //     responseBody: JSON.stringify(result),
+    //   },
+    // });
 
     return res.status(200).json({
       status: 1,
@@ -478,23 +483,6 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
         status: 0,
         message: error.errors[0].message,
         payload: [],
-      });
-    }
-
-    if (userDetails !== null && parsedDetails !== null) {
-      await prisma.communicationLog.create({
-        data: {
-          channel: parsedDetails.type,
-          recipient:
-            parsedDetails.type === "email"
-              ? userDetails.email
-              : userDetails.phone,
-          recipientName: userDetails.username,
-          responseCode: "400",
-          status: "failed",
-          errorMessage: JSON.stringify(error),
-          messageBody: error.message,
-        },
       });
     }
 
@@ -539,19 +527,25 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
     // Update last login date
     await updateLastLoginDateTime(user.id);
 
+    // Get user menus
+    const menus = await getUserMenus(user.id);
+
     return res.status(200).json({
       status: 1,
       message: "OTP validated successfully",
       payload: [
         {
           token,
-          id: user.id,
-          username: user.username,
-          fullname: user.fullname,
-          email: user.email,
-          contact: user.phone,
-          isActive: user.is_active,
-          image: user.image,
+          user_info: {
+            id: user.id,
+            username: user.username,
+            fullname: user.fullname,
+            email: user.email,
+            contact: user.phone,
+            isActive: user.is_active,
+            image: user.image,
+          },
+          menus,
         },
       ],
     });
