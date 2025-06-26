@@ -308,7 +308,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
     // Step 1: Check if user exists
     const user = await getUserByUsername(parsedUser.username);
     if (!user) {
-      return res.status(401).json({
+      return res.status(400).json({
         status: 0,
         message: "Invalid username or password",
         payload: [],
