@@ -104,7 +104,7 @@ model UserMenuRight {
 }
 
 model Branch {
-  id                       Int     @id
+  id                       Int     @id @default(autoincrement())
   name                     String  @db.VarChar(100)
   igis_branch_code         String  @unique @db.VarChar(8)
   igis_branch_takaful_code String  @unique @db.VarChar(8)
@@ -125,6 +125,59 @@ model Branch {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  DevelopmentOfficer DevelopmentOfficer[]
+  Agent              Agent[]
+}
+
+model DevelopmentOfficer {
+  id           Int     @id @default(autoincrement())
+  branch_id    Int
+  name         String  @db.VarChar(100)
+  igis_do_code String  @unique @db.VarChar(8)
+  igis_code    String? @db.VarChar(10)
+  is_active    Boolean @default(true)
+  is_deleted   Boolean @default(false)
+  created_by   Int?
+  deleted_by   Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  branch Branch  @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  Agent  Agent[]
+
+  @@index([branch_id], name: "idx_branch_id")
+}
+
+model Agent {
+  id                     Int       @id @default(autoincrement())
+  name                   String    @db.VarChar(100)
+  igis_code              String?   @db.VarChar(10)
+  igis_agent_code        String    @unique @db.VarChar(10)
+  branch_id              Int
+  development_officer_id Int
+  idev_affiliate         Boolean   @default(false)
+  idev_id                Int?
+  is_active              Boolean   @default(true)
+  is_deleted             Boolean   @default(false)
+  
+  created_by             Int?
+  deleted_by             Int?
+
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  deleted_at             DateTime?
+
+  // Relations
+  branch              Branch             @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  development_officer DevelopmentOfficer @relation(fields: [development_officer_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([branch_id], name: "idx_branch_id")
+  @@index([development_officer_id], name: "idx_development_officer_id")
+  @@index([igis_agent_code], name: "idx_agent_code")
 }
 
 // ENUMS
