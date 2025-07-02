@@ -207,6 +207,30 @@ model Client {
   @@index([igis_client_code], name: "idx_code")
 }
 
+model Courier {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(50)
+  api_code       String   @db.VarChar(100)
+  account_number String   @unique @db.VarChar(100)
+  user           String   @db.VarChar(100)
+  password       String   @db.VarChar(100)
+  book_url       String?  @db.VarChar(255)
+  tracking_url   String?  @db.VarChar(255)
+  is_takaful     Boolean  @default(false)
+  is_active      Boolean  @default(true)
+  is_deleted     Boolean  @default(false)
+
+  created_by     Int?
+  deleted_by     Int?
+
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  deleted_at     DateTime?
+
+  @@index([name], name: "idx_name")
+  @@index([account_number], name: "idx_account_number")
+}
+
 // ENUMS
 enum User_Type_Enum {
   dashboard_user
