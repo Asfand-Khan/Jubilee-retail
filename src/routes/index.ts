@@ -7,6 +7,8 @@ import agentRoutes from './agentRoutes';
 import clientRoutes from './clientRoutes';
 import courierRoutes from './courierRoutes';
 import menuRoutes from './menuRoutes';
+import cityRoutes from './cityRoutes';
+import callUsDataRoutes from './callUsDataRoutes';
 
 const router = Router();
 
@@ -19,5 +21,7 @@ router.use('/development-officers', DORoutes);
 router.use('/agents', agentRoutes);
 router.use('/clients', clientRoutes);
 router.use('/couriers', courierRoutes);
+router.use('/cities', cityRoutes);
+router.use('/call-us-data', callUsDataRoutes);
 
 export default router;
