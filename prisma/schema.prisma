@@ -275,20 +275,36 @@ model City {
 }
 
 model CallUsData {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  contact     String?  @db.VarChar(20)
-  email       String   @db.VarChar(255)
-  is_active   Boolean  @default(true)
-  
-  created_by  Int?
-  deleted_by  Int?
-  
-  is_deleted  Boolean  @default(false)
-  
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  deleted_at  DateTime?
+  id        Int     @id @default(autoincrement())
+  name      String  @db.VarChar(100)
+  contact   String? @db.VarChar(20)
+  email     String  @db.VarChar(255)
+  is_active Boolean @default(true)
+
+  created_by Int?
+  deleted_by Int?
+
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+}
+
+model BusinessRegion {
+  id                        Int     @id @default(autoincrement())
+  business_region_name      String  @db.VarChar(100)
+  igis_business_region_code String  @db.VarChar(50)
+  is_active                 Boolean @default(true)
+
+  created_by Int?
+  deleted_by Int? @default(0)
+
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 }
 
 // ENUMS
