@@ -129,6 +129,7 @@ model Branch {
   DevelopmentOfficer DevelopmentOfficer[]
   Agent              Agent[]
   Client             Client[]
+  MotorQuote         MotorQuote[]
 }
 
 model DevelopmentOfficer {
@@ -175,6 +176,7 @@ model Agent {
   // Relations
   branch              Branch             @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   development_officer DevelopmentOfficer @relation(fields: [development_officer_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  MotorQuote          MotorQuote[]
 
   @@index([branch_id], name: "idx_branch_id")
   @@index([development_officer_id], name: "idx_development_officer_id")
@@ -271,7 +273,8 @@ model City {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  country Country @relation(fields: [country_id], references: [id])
+  country    Country      @relation(fields: [country_id], references: [id])
+  MotorQuote MotorQuote[]
 }
 
 model CallUsData {
@@ -347,6 +350,48 @@ model IgisSubMake {
   make IgisMake @relation(fields: [make_id], references: [id])
 }
 
+model MotorQuote {
+  id              Int     @id @default(autoincrement())
+  quote_id        String  @unique @db.VarChar(50)
+  policy_type     String? @db.VarChar(50)
+  name            String  @db.VarChar(50)
+  mobile          String? @db.VarChar(50)
+  email           String? @db.VarChar(50)
+  premium_value   Int?
+  rate            Int?
+  vehicle_make    String? @db.VarChar(50)
+  vehicle_submake String? @db.VarChar(50)
+  vehicle_model   String? @db.VarChar(50)
+  vehicle_value   String? @db.VarChar(50)
+  vehicle_track   String? @db.VarChar(50)
+  vehicle_body    String? @db.VarChar(50)
+  vehicle_color   String? @db.VarChar(50)
+
+  reg_no     String? @db.VarChar(50)
+  engine_no  String? @db.VarChar(50)
+  chassis_no String? @db.VarChar(50)
+
+  status MotorQuoteStatus @default(pending)
+
+  city_id   Int?
+  agent_id  Int?
+  branch_id Int?
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  city   City?   @relation(fields: [city_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  agent  Agent?  @relation(fields: [agent_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  branch Branch? @relation(fields: [branch_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+}
+
 // ENUMS
 enum User_Type_Enum {
   dashboard_user
@@ -363,6 +408,12 @@ enum CommunicationLogStatus {
   pending
   sent
   failed
+}
+
+enum MotorQuoteStatus {
+  approved
+  cancelled
+  pending
 }
 
 // PUT LOGS TABLES HERE UNDER THIS COMMENT
