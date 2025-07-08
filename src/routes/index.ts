@@ -9,6 +9,9 @@ import courierRoutes from './courierRoutes';
 import menuRoutes from './menuRoutes';
 import cityRoutes from './cityRoutes';
 import callUsDataRoutes from './callUsDataRoutes';
+import businessRegionRoutes from './businessRegionRoutes';
+import igisMakeRoutes from './igisMakeRoutes';
+import igisSubMakeRoutes from './igisSubMakeRoutes';
 
 const router = Router();
 
@@ -23,5 +26,8 @@ router.use('/clients', clientRoutes);
 router.use('/couriers', courierRoutes);
 router.use('/cities', cityRoutes);
 router.use('/call-us-data', callUsDataRoutes);
+router.use('/business-regions', businessRegionRoutes);
+router.use('/igis-makes', igisMakeRoutes);
+router.use('/igis-sub-makes', igisSubMakeRoutes);
 
 export default router;
