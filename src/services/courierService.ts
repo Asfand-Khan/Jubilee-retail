@@ -29,11 +29,8 @@ export const createCourier = async (
       user: courier.user,
       password: courier.password,
       created_by: createdBy,
+      is_takaful: courier.is_takaful
     } as any;
-
-    if (courier.is_takaful) {
-      data["is_takaful"] = courier.is_takaful;
-    }
 
     if (courier.book_url) {
       data["book_url"] = courier.book_url;
@@ -60,11 +57,8 @@ export const updateCourier = async (courier: CourierUpdateType) => {
       account_number: courier.account_number,
       user: courier.user,
       password: courier.password,
+      is_takaful: courier.is_takaful,
     } as any;
-
-    if (courier.is_takaful) {
-      data["is_takaful"] = courier.is_takaful;
-    }
 
     if (courier.book_url) {
       data["book_url"] = courier.book_url;
