@@ -16,10 +16,6 @@ export const validateCallUsData = z.object({
     .string({ required_error: "Email is required." })
     .email("Please enter a valid email address.")
     .max(255, "Email must be at most 255 characters."),
-
-  is_active: z
-    .boolean({ invalid_type_error: "is_active must be true or false." })
-    .default(true),
 });
 
 export const validateCallUsDataUpdate = validateCallUsData.extend({
