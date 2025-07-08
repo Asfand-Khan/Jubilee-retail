@@ -35,6 +35,7 @@ export const validateIgisSubMake = z.object({
     .string({
       invalid_type_error: "Cubic capacity must be a string.",
     })
+    .refine((val) => !isNaN(parseFloat(val)), "Cubic capacity must be a number.")
     .optional(),
 
   coi_type_code: z
