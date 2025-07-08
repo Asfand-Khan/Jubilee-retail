@@ -22,7 +22,7 @@ router.post("/verify-otp", verifyOtp); // Verify OTP
 router.post("/register", authenticate, registerUser); // Register User --> Protected
 
 router.get("/", authenticate, getUserProfiles); // Get All Users --> Protected
-router.post("/", authenticate, updateUser); // Update User --> Protected
+router.put("/", authenticate, updateUser); // Update User --> Protected
 router.get("/my-profile", authenticate, getMyProfile); // Get Logged In User Profile --> Protected
 router.get("/:id", authenticate, getUserProfile); // Get Single User --> Protected
 router.delete("/:id", authenticate, deleteUserProfile); // Delete User --> Protected
