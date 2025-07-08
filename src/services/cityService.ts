@@ -22,6 +22,9 @@ export const createCity = async (city: CityType, createdBy: number) => {
       country_id: city.country_id,
       priority: city.priority,
       created_by: createdBy,
+      is_tcs: city.is_tcs,
+      is_blueEx: city.is_blueEx,
+      is_leopard: city.is_leopard,
     } as any;
 
     if (city.igis_city_code) {
@@ -44,6 +47,9 @@ export const updateCity = async (city: CityUpdateType) => {
       city_code: city.city_code,
       country_id: city.country_id,
       priority: city.priority,
+      is_tcs: city.is_tcs,
+      is_blueEx: city.is_blueEx,
+      is_leopard: city.is_leopard,
     } as any;
 
     if (city.igis_city_code) {
