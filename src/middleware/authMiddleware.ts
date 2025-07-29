@@ -42,6 +42,43 @@ export const authenticate = async (
   }
 };
 
+export const authenticateApiUser = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<any> => {
+  const apiKey = req.headers.x_api_key as string;
+  const apiPassword = req.headers.x_api_password;
+
+  if (!apiKey || !apiPassword) {
+    return res.status(401).json({
+      status: 0,
+      message: "Unauthorized users can not access this resource",
+      payload: [],
+    });
+  }
+
+  try {
+    const user = await prisma.apiUser.findUnique({
+      where: { api_key: apiKey },
+      include: { user: true },
+    });
+
+    if (!user || user.api_password !== apiPassword) {
+      throw new Error("Invalid API user credentials");
+    }
+
+    req.userRecord = user.user;
+    next();
+  } catch (error) {
+    res.status(401).json({
+      status: 0,
+      message: "Invalid or expired token",
+      payload: [],
+    });
+  }
+};
+
 export const checkUserRights =
   (
     menuId: number,

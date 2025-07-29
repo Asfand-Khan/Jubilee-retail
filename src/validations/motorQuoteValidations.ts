@@ -41,11 +41,29 @@ export const validateMotorQuote = z.object({
 
 export const validateMotorQuoteUpdate = z.object({
   motor_quote_id: z
-    .string({ required_error: "Motor Quote ID is required" })
-    .max(50, "Motor Quote ID must not exceed 50 characters"),
+    .number({
+      required_error: "Motor Quote ID is required",
+      invalid_type_error: "Motor Quote ID must be a number",
+    })
+    .int({
+      message: "Motor Quote ID must be an integer",
+    }),
   agent_id: z.number().int().nullable().optional(),
   branch_id: z.number().int().nullable().optional(),
 });
 
+export const validateMotorQuoteStatusUpdate = z.object({
+  motor_quote_id: z
+    .number({
+      required_error: "Motor Quote ID is required",
+      invalid_type_error: "Motor Quote ID must be a number",
+    })
+    .int({
+      message: "Motor Quote ID must be an integer",
+    }),
+  status: z.enum(["approved", "cancelled"]),
+});
+
 export type MotorQuote = z.infer<typeof validateMotorQuote>;
 export type MotorQuoteUpdateType = z.infer<typeof validateMotorQuoteUpdate>;
+export type MotorQuoteStatusUpdateType = z.infer<typeof validateMotorQuoteStatusUpdate>;

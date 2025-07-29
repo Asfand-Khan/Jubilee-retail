@@ -77,7 +77,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
   }
 };
 
-export const updateUserEntry = async (input: UserUpdate): Promise<User> => {
+export const updateUserEntry = async (input: UserUpdate, createdBy: number): Promise<User> => {
   const {
     username,
     fullname,
@@ -100,6 +100,7 @@ export const updateUserEntry = async (input: UserUpdate): Promise<User> => {
       is_active,
       is_locked,
       user_type,
+      created_by: createdBy,
     };
 
     if (password) {

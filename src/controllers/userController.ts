@@ -101,11 +101,12 @@ export const registerUser = async (
 // Method --> POST (Protected)
 // Endpoint --> /api/v1/users
 // Description --> Update existing user
-export const updateUser = async (req: Request, res: Response): Promise<any> => {
+export const updateUser = async (req: AuthRequest, res: Response): Promise<any> => {
   try {
+    const user = req.userRecord as User;
     const parsedUser = validateUserUpdate.parse(req.body);
 
-    const newUser = await updateUserEntry(parsedUser);
+    const newUser = await updateUserEntry(parsedUser, user.id);
 
     if (parsedUser.user_type === "api_user") {
       await updateApiUser(newUser);
