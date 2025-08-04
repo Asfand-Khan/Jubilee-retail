@@ -17,6 +17,9 @@ import planRoutes from "./planRoutes";
 import productCategoryRoutes from "./productCategoryRoutes";
 import productRoutes from "./productRoutes";
 import productOptionRoutes from "./productOptionRoutes";
+import productTypeRoutes from "./productTypeRoutes";
+import relationMappingRoutes from "./relationMappingRoutes";
+import webAppMapperRoutes from "./webAppMapperRoutes";
 
 const router = Router();
 
@@ -39,5 +42,8 @@ router.use("/plans", planRoutes);
 router.use("/product-categories", productCategoryRoutes);
 router.use("/products", productRoutes);
 router.use("/product-options", productOptionRoutes);
+router.use("/product-types", productTypeRoutes);
+router.use("/relation-mappings", relationMappingRoutes);
+router.use("/web-app-mappers", webAppMapperRoutes);
 
 export default router;

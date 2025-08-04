@@ -32,7 +32,7 @@ enum MotorQuoteStatus {
   pending
 }
 
-enum ProductType {
+enum ProductTypeEnum {
   nonhealth
   health
   travel
@@ -76,6 +76,12 @@ model User {
   productsDeleted          Product[]         @relation("ProductDeletedBy")
   productOptionsCreated    ProductOption[]   @relation("ProductOptionCreatedBy")
   productOptionsDeleted    ProductOption[]   @relation("ProductOptionDeletedBy")
+  productTypesCreated      ProductType[]     @relation("ProductTypeCreatedBy")
+  productTypesDeleted      ProductType[]     @relation("ProductTypeDeletedBy")
+  relationMappingsCreated  RelationMapping[] @relation("RelationMappingCreatedBy")
+  relationMappingsDeleted  RelationMapping[] @relation("RelationMappingDeletedBy")
+  webappMappersCreated     WebappMapper[]    @relation("WebappMapperCreatedBy")
+  webappMappersDeleted     WebappMapper[]    @relation("WebappMapperDeletedBy")
 
   @@fulltext([username, fullname, email, phone])
 }
@@ -443,8 +449,9 @@ model Plan {
   deleted_at DateTime?
 
   // Relations
-  createdBy User  @relation("PlanCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  deletedBy User? @relation("PlanDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  createdBy     User           @relation("PlanCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy     User?          @relation("PlanDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  webappMappers WebappMapper[]
 
   @@index([created_by])
   @@index([deleted_by])
@@ -473,9 +480,9 @@ model ProductCategory {
 }
 
 model Product {
-  id                  Int         @id @default(autoincrement())
-  product_name        String      @unique @db.VarChar(100)
-  product_type        ProductType
+  id                  Int             @id @default(autoincrement())
+  product_name        String          @unique @db.VarChar(100)
+  product_type        ProductTypeEnum
   product_category_id Int
 
   is_active  Boolean @default(true)
@@ -493,6 +500,7 @@ model Product {
   deletedBy       User?           @relation("ProductDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   productOptions ProductOption[]
+  webappMappers  WebappMapper[]
 
   @@index([product_category_id])
   @@index([created_by])
@@ -531,7 +539,79 @@ model ProductOption {
   createdBy User    @relation("ProductOptionCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy User?   @relation("ProductOptionDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
+  webappMappers WebappMapper[]
+
   @@index([product_id])
+  @@index([created_by])
+  @@index([deleted_by])
+}
+
+model ProductType {
+  id         Int     @id @default(autoincrement())
+  name       String  @db.VarChar(200)
+  days       Int
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  createdBy User? @relation("ProductTypeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict)
+  deletedBy User? @relation("ProductTypeDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull)
+
+  @@index([created_by])
+  @@index([deleted_by])
+}
+
+model RelationMapping {
+  id         Int     @id @default(autoincrement())
+  name       String? @db.VarChar(45)
+  short_key  String? @db.VarChar(10)
+  gender     String? @db.VarChar(15)
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  createdBy User  @relation("RelationMappingCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy User? @relation("RelationMappingDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([created_by])
+  @@index([deleted_by])
+}
+
+model WebappMapper {
+  id         Int     @id @default(autoincrement())
+  parent_sku String  @db.VarChar(200)
+  child_sku  String  @db.VarChar(200)
+  plan_id    Int
+  product_id Int
+  option_id  Int
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  plan           Plan          @relation(fields: [plan_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product        Product       @relation(fields: [product_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product_option ProductOption @relation(fields: [option_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy      User          @relation("WebappMapperCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy      User?         @relation("WebappMapperDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([plan_id], name: "idx_plan_id")
+  @@index([product_id], name: "idx_product_id")
+  @@index([option_id], name: "idx_option_id")
   @@index([created_by])
   @@index([deleted_by])
 }
