@@ -38,6 +38,20 @@ enum ProductTypeEnum {
   travel
 }
 
+enum LeadStatus {
+  pending
+  waiting
+  interested
+  not_interested
+  callback_scheduled
+  cancelled
+}
+
+enum YesNoEnum {
+  yes
+  no
+}
+
 model User {
   id                   Int            @id @default(autoincrement())
   fullname             String
@@ -82,6 +96,11 @@ model User {
   relationMappingsDeleted  RelationMapping[] @relation("RelationMappingDeletedBy")
   webappMappersCreated     WebappMapper[]    @relation("WebappMapperCreatedBy")
   webappMappersDeleted     WebappMapper[]    @relation("WebappMapperDeletedBy")
+  leadInfoCreated          LeadInfo[]        @relation("LeadInfoCreatedBy")
+  leadMotorInfoCreated     LeadMotorInfo[]   @relation("LeadMotorInfoCreatedBy")
+  apiUserCreated           ApiUserProduct[]  @relation("ApiUserProductCreatedBy")
+  paymentModeCreated       PaymentMode[]     @relation("PaymentModeCreatedBy")
+  paymentModeDeleted       PaymentMode[]     @relation("PaymentModeDeletedBy")
 
   @@fulltext([username, fullname, email, phone])
 }
@@ -103,7 +122,8 @@ model ApiUser {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  user User @relation(fields: [user_id], references: [id])
+  user            User             @relation(fields: [user_id], references: [id])
+  apiUserProducts ApiUserProduct[] @relation("ApiUserProduct")
 }
 
 model Menu {
@@ -501,6 +521,7 @@ model Product {
 
   productOptions ProductOption[]
   webappMappers  WebappMapper[]
+  apiUserProduct ApiUserProduct[] @relation("Product")
 
   @@index([product_category_id])
   @@index([created_by])
@@ -614,6 +635,125 @@ model WebappMapper {
   @@index([option_id], name: "idx_option_id")
   @@index([created_by])
   @@index([deleted_by])
+}
+
+model LeadInfo {
+  id                 Int        @id @default(autoincrement())
+  name               String     @db.VarChar(255)
+  dob                String?
+  age                Int?
+  mobile_num         String?    @db.VarChar(20)
+  email_address      String?    @db.VarChar(255)
+  spouse_dob         String?
+  spouse_age         Int?
+  kids               Int?
+  family_kid1_dob    String?
+  family_kid2_dob    String?
+  family_kid3_dob    String?
+  family_kid4_dob    String?
+  product_type       String?    @db.VarChar(255)
+  product_data       String?    @db.VarChar(255)
+  product_sku        String?    @db.VarChar(255)
+  travel_from        String?    @db.VarChar(255)
+  travel_to          String?    @db.VarChar(255)
+  travel_go          String?    @db.VarChar(100)
+  travel_with        String?    @db.VarChar(100)
+  travel_country     String?    @db.VarChar(255)
+  from_date          String?
+  end_date           String?
+  duration           Int?
+  insure_against     String?    @db.VarChar(255)
+  insure_house       String?    @db.VarChar(255)
+  insure_for         String?    @db.VarChar(255)
+  insure_live        String?    @db.VarChar(255)
+  insure_my          String?    @db.VarChar(255)
+  insure_area        String?    @db.VarChar(255)
+  insure_live_in     String?    @db.VarChar(255)
+  parent_insurance   String?    @db.VarChar(255)
+  parents_or_inlaw   String?    @db.VarChar(100)
+  parents_mother_dob String?
+  parents_father_dob String?
+  status             LeadStatus @default(pending)
+  created_by         Int
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  createdBy User @relation("LeadInfoCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([id], name: "idx_lead_info_id")
+}
+
+model LeadMotorInfo {
+  id                  Int        @id @default(autoincrement())
+  full_name           String     @db.VarChar(255)
+  policy_type         String?    @db.VarChar(255)
+  mobile              String?    @db.VarChar(20)
+  email               String?    @db.VarChar(255)
+  vehicle_make        String?    @db.VarChar(100)
+  vehicle_submake     String?    @db.VarChar(100)
+  vehicle_model       String?    @db.VarChar(50)
+  vehicle_value       Decimal?   @db.Decimal(15, 2)
+  vehicle_track_yesno Boolean?
+  vehicle_track       String?    @db.VarChar(50)
+  premium             Decimal?   @db.Decimal(15, 2)
+  status              LeadStatus @default(pending)
+  created_by          Int
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  createdBy User @relation("LeadMotorInfoCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([id], name: "idx_lead_motor_info_id")
+}
+
+model ApiUserProduct {
+  id          Int @id @default(autoincrement())
+  api_user_id Int
+  product_id  Int
+  created_by  Int
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  apiUser   ApiUser @relation("ApiUserProduct", fields: [api_user_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product   Product @relation("Product", fields: [product_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User    @relation("ApiUserProductCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([id], name: "idx_api_user_product_id")
+  @@index([product_id], name: "idx_api_user_product_product_id")
+  @@index([api_user_id], name: "idx_api_user_product_user_id")
+}
+
+model PaymentMode {
+  id           Int    @id @default(autoincrement())
+  name         String @db.VarChar(255)
+  payment_code String @db.VarChar(50) @unique
+  created_by   Int
+  deleted_by   Int?
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  createdBy User  @relation("PaymentModeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy User? @relation("PaymentModeDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
 }
 
 // PUT LOGS TABLES HERE UNDER THIS COMMENT

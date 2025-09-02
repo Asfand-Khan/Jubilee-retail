@@ -20,6 +20,10 @@ import productOptionRoutes from "./productOptionRoutes";
 import productTypeRoutes from "./productTypeRoutes";
 import relationMappingRoutes from "./relationMappingRoutes";
 import webAppMapperRoutes from "./webAppMapperRoutes";
+import leadInfoRoutes from "./leadInfoRoutes";
+import leadMotorInfoRoutes from "./leadMotorInfoRoutes";
+import apiUserProductRoutes from "./apiUserProductRoutes";
+import paymentModeRoutes from "./paymentModeRoutes";
 
 const router = Router();
 
@@ -45,5 +49,9 @@ router.use("/product-options", productOptionRoutes);
 router.use("/product-types", productTypeRoutes);
 router.use("/relation-mappings", relationMappingRoutes);
 router.use("/web-app-mappers", webAppMapperRoutes);
+router.use("/lead-infos", leadInfoRoutes);
+router.use("/lead-motor-infos", leadMotorInfoRoutes);
+router.use("/api-user-products", apiUserProductRoutes);
+router.use("/payment-modes", paymentModeRoutes);
 
 export default router;
