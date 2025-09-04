@@ -52,6 +52,12 @@ enum YesNoEnum {
   no
 }
 
+enum DurationTypeEnum {
+  days
+  months
+  years
+}
+
 model User {
   id                   Int            @id @default(autoincrement())
   fullname             String
@@ -80,27 +86,29 @@ model User {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  user_menu_rights         UserMenuRight[]
-  ApiUser                  ApiUser[]
-  plansCreated             Plan[]            @relation("PlanCreatedBy")
-  plansDeleted             Plan[]            @relation("PlanDeletedBy")
-  productCategoriesCreated ProductCategory[] @relation("ProductCategoryCreatedBy")
-  productCategoriesDeleted ProductCategory[] @relation("ProductCategoryDeletedBy")
-  productsCreated          Product[]         @relation("ProductCreatedBy")
-  productsDeleted          Product[]         @relation("ProductDeletedBy")
-  productOptionsCreated    ProductOption[]   @relation("ProductOptionCreatedBy")
-  productOptionsDeleted    ProductOption[]   @relation("ProductOptionDeletedBy")
-  productTypesCreated      ProductType[]     @relation("ProductTypeCreatedBy")
-  productTypesDeleted      ProductType[]     @relation("ProductTypeDeletedBy")
-  relationMappingsCreated  RelationMapping[] @relation("RelationMappingCreatedBy")
-  relationMappingsDeleted  RelationMapping[] @relation("RelationMappingDeletedBy")
-  webappMappersCreated     WebappMapper[]    @relation("WebappMapperCreatedBy")
-  webappMappersDeleted     WebappMapper[]    @relation("WebappMapperDeletedBy")
-  leadInfoCreated          LeadInfo[]        @relation("LeadInfoCreatedBy")
-  leadMotorInfoCreated     LeadMotorInfo[]   @relation("LeadMotorInfoCreatedBy")
-  apiUserCreated           ApiUserProduct[]  @relation("ApiUserProductCreatedBy")
-  paymentModeCreated       PaymentMode[]     @relation("PaymentModeCreatedBy")
-  paymentModeDeleted       PaymentMode[]     @relation("PaymentModeDeletedBy")
+  user_menu_rights              UserMenuRight[]
+  ApiUser                       ApiUser[]
+  plansCreated                  Plan[]                   @relation("PlanCreatedBy")
+  plansDeleted                  Plan[]                   @relation("PlanDeletedBy")
+  productCategoriesCreated      ProductCategory[]        @relation("ProductCategoryCreatedBy")
+  productCategoriesDeleted      ProductCategory[]        @relation("ProductCategoryDeletedBy")
+  productsCreated               Product[]                @relation("ProductCreatedBy")
+  productsDeleted               Product[]                @relation("ProductDeletedBy")
+  productOptionsCreated         ProductOption[]          @relation("ProductOptionCreatedBy")
+  productOptionsDeleted         ProductOption[]          @relation("ProductOptionDeletedBy")
+  productTypesCreated           ProductType[]            @relation("ProductTypeCreatedBy")
+  productTypesDeleted           ProductType[]            @relation("ProductTypeDeletedBy")
+  relationMappingsCreated       RelationMapping[]        @relation("RelationMappingCreatedBy")
+  relationMappingsDeleted       RelationMapping[]        @relation("RelationMappingDeletedBy")
+  webappMappersCreated          WebappMapper[]           @relation("WebappMapperCreatedBy")
+  webappMappersDeleted          WebappMapper[]           @relation("WebappMapperDeletedBy")
+  leadInfoCreated               LeadInfo[]               @relation("LeadInfoCreatedBy")
+  leadMotorInfoCreated          LeadMotorInfo[]          @relation("LeadMotorInfoCreatedBy")
+  apiUserCreated                ApiUserProduct[]         @relation("ApiUserProductCreatedBy")
+  paymentModeCreated            PaymentMode[]            @relation("PaymentModeCreatedBy")
+  paymentModeDeleted            PaymentMode[]            @relation("PaymentModeDeletedBy")
+  PremiumRangeProtectionCreated PremiumRangeProtection[] @relation("PremiumRangeProtectionCreatedBy")
+  PremiumRangeProtectionDeleted PremiumRangeProtection[] @relation("PremiumRangeProtectionDeletedBy")
 
   @@fulltext([username, fullname, email, phone])
 }
@@ -122,8 +130,9 @@ model ApiUser {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  user            User             @relation(fields: [user_id], references: [id])
-  apiUserProducts ApiUserProduct[] @relation("ApiUserProduct")
+  user                   User                     @relation(fields: [user_id], references: [id])
+  apiUserProducts        ApiUserProduct[]         @relation("ApiUserProduct")
+  PremiumRangeProtection PremiumRangeProtection[]
 }
 
 model Menu {
@@ -741,7 +750,7 @@ model ApiUserProduct {
 model PaymentMode {
   id           Int    @id @default(autoincrement())
   name         String @db.VarChar(255)
-  payment_code String @db.VarChar(50) @unique
+  payment_code String @unique @db.VarChar(50)
   created_by   Int
   deleted_by   Int?
 
@@ -754,6 +763,34 @@ model PaymentMode {
 
   createdBy User  @relation("PaymentModeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy User? @relation("PaymentModeDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+}
+
+model PremiumRangeProtection {
+  id            Int              @id @default(autoincrement())
+  premium_start String
+  premium_end   String
+  net_premium   String
+  api_user_id   Int
+  duration      Int
+  duration_type DurationTypeEnum
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  // Relations
+  apiUser   ApiUser @relation(fields: [api_user_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User    @relation("PremiumRangeProtectionCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy User?   @relation("PremiumRangeProtectionDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([api_user_id], name: "idx_api_user_id")
+  @@index([created_by])
+  @@index([deleted_by])
 }
 
 // PUT LOGS TABLES HERE UNDER THIS COMMENT

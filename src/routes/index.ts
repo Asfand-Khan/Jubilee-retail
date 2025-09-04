@@ -24,6 +24,7 @@ import leadInfoRoutes from "./leadInfoRoutes";
 import leadMotorInfoRoutes from "./leadMotorInfoRoutes";
 import apiUserProductRoutes from "./apiUserProductRoutes";
 import paymentModeRoutes from "./paymentModeRoutes";
+import premiumRangeProtectionRoutes from "./premiumRangeProtectionRoutes";
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use("/lead-infos", leadInfoRoutes);
 router.use("/lead-motor-infos", leadMotorInfoRoutes);
 router.use("/api-user-products", apiUserProductRoutes);
 router.use("/payment-modes", paymentModeRoutes);
+router.use("/premium-range-protections", premiumRangeProtectionRoutes);
 
 export default router;

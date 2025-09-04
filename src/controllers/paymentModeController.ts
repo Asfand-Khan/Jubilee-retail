@@ -86,17 +86,6 @@ export const updatePaymentModeHandler = async (
   try {
     const parsedData = validateUpdatePaymentModeSchema.parse(req.body);
 
-    const paymentMode = await service.paymentModeByPaymentCode(
-      parsedData.payment_code
-    );
-    if (paymentMode) {
-      return res.status(400).json({
-        status: 0,
-        message: "Payment Mode already exists",
-        payload: [],
-      });
-    }
-
     const updatedPaymentMode = await service.updatePaymentMode(parsedData);
 
     return res.status(200).json({
