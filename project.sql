@@ -141,14 +141,11 @@ CREATE TABLE `coupons` (
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
 ) ;
 
-CREATE TABLE `coupon_plan_product` (
+CREATE TABLE `coupon_product` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `coupon_id` BIGINT UNSIGNED NOT NULL,
-  `plan_id` INT DEFAULT NULL,
   `product_id` INT DEFAULT NULL,
-  `option_id` INT DEFAULT NULL,
-  `all_products` TINYINT(1) NOT NULL DEFAULT 0,
-  `all_plans` TINYINT(1) NOT NULL DEFAULT 0,
+  `all_products` TINYINT(1) NOT NULL DEFAULT 0
 );
 
 CREATE TABLE `premium_range_protection` (
@@ -259,7 +256,7 @@ CREATE TABLE `policies` (
   `start_date` DATE DEFAULT NULL,
   `expiry_date` DATE DEFAULT NULL,
   `item_price` DECIMAL(15,2) DEFAULT 0.00,
-  `total_price` DECIMAL(15,2) DEFAULT 0.00,
+  `received_premium` DECIMAL(15,2) DEFAULT 0.00,
   `discount` DECIMAL(15,2) DEFAULT 0.00,
   `sum_insured` DECIMAL(15,2) DEFAULT 0.00,
   `filer_tax_per_item` DECIMAL(15,2) DEFAULT 0.00,
@@ -403,6 +400,8 @@ CREATE TABLE `policy_homecare_data` (
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `deleted_at` TIMESTAMP NULL DEFAULT NULL,
 );
+
+
 CREATE TABLE `coupon_customer_usage` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `coupon_id` BIGINT UNSIGNED NOT NULL,      

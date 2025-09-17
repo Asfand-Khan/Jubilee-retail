@@ -7,7 +7,7 @@ export const validateClient = z.object({
     .max(100, { message: "Client name must not exceed 100 characters" }),
   igis_client_code: z
     .string()
-    .length(10, { message: "IGIS Client Code must be exactly 10 characters" }),
+    .length(18, { message: "IGIS Client Code must be exactly 18 characters" }),
   address: z
     .string()
     .min(1, { message: "Address is required" })

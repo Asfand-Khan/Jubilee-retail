@@ -36,6 +36,9 @@ enum ProductTypeEnum {
   nonhealth
   health
   travel
+  motor
+  home
+  purchase_protection
 }
 
 enum LeadStatus {
@@ -53,6 +56,44 @@ enum YesNoEnum {
 }
 
 enum DurationTypeEnum {
+  days
+  months
+  years
+}
+
+enum CouponTypeEnum {
+  percentage
+  flat
+  other
+}
+
+enum OrderStatus {
+  accepted
+  cancelled
+  pendingCOD
+  rejected
+  unverified
+  verified
+  pending
+}
+
+enum PolicyStatus {
+  cancelled
+  HISposted
+  IGISposted
+  pendingIGIS
+  unverified
+  pending
+  pendingCOD
+  pendingCBO
+}
+
+enum Gender {
+  male
+  female
+}
+
+enum DurationType {
   days
   months
   years
@@ -88,27 +129,35 @@ model User {
 
   user_menu_rights              UserMenuRight[]
   ApiUser                       ApiUser[]
-  plansCreated                  Plan[]                   @relation("PlanCreatedBy")
-  plansDeleted                  Plan[]                   @relation("PlanDeletedBy")
-  productCategoriesCreated      ProductCategory[]        @relation("ProductCategoryCreatedBy")
-  productCategoriesDeleted      ProductCategory[]        @relation("ProductCategoryDeletedBy")
-  productsCreated               Product[]                @relation("ProductCreatedBy")
-  productsDeleted               Product[]                @relation("ProductDeletedBy")
-  productOptionsCreated         ProductOption[]          @relation("ProductOptionCreatedBy")
-  productOptionsDeleted         ProductOption[]          @relation("ProductOptionDeletedBy")
-  productTypesCreated           ProductType[]            @relation("ProductTypeCreatedBy")
-  productTypesDeleted           ProductType[]            @relation("ProductTypeDeletedBy")
-  relationMappingsCreated       RelationMapping[]        @relation("RelationMappingCreatedBy")
-  relationMappingsDeleted       RelationMapping[]        @relation("RelationMappingDeletedBy")
-  webappMappersCreated          WebappMapper[]           @relation("WebappMapperCreatedBy")
-  webappMappersDeleted          WebappMapper[]           @relation("WebappMapperDeletedBy")
-  leadInfoCreated               LeadInfo[]               @relation("LeadInfoCreatedBy")
-  leadMotorInfoCreated          LeadMotorInfo[]          @relation("LeadMotorInfoCreatedBy")
-  apiUserCreated                ApiUserProduct[]         @relation("ApiUserProductCreatedBy")
-  paymentModeCreated            PaymentMode[]            @relation("PaymentModeCreatedBy")
-  paymentModeDeleted            PaymentMode[]            @relation("PaymentModeDeletedBy")
-  PremiumRangeProtectionCreated PremiumRangeProtection[] @relation("PremiumRangeProtectionCreatedBy")
-  PremiumRangeProtectionDeleted PremiumRangeProtection[] @relation("PremiumRangeProtectionDeletedBy")
+  plansCreated                  Plan[]                     @relation("PlanCreatedBy")
+  plansDeleted                  Plan[]                     @relation("PlanDeletedBy")
+  productCategoriesCreated      ProductCategory[]          @relation("ProductCategoryCreatedBy")
+  productCategoriesDeleted      ProductCategory[]          @relation("ProductCategoryDeletedBy")
+  productsCreated               Product[]                  @relation("ProductCreatedBy")
+  productsDeleted               Product[]                  @relation("ProductDeletedBy")
+  productOptionsCreated         ProductOption[]            @relation("ProductOptionCreatedBy")
+  productOptionsDeleted         ProductOption[]            @relation("ProductOptionDeletedBy")
+  productTypesCreated           ProductType[]              @relation("ProductTypeCreatedBy")
+  productTypesDeleted           ProductType[]              @relation("ProductTypeDeletedBy")
+  relationMappingsCreated       RelationMapping[]          @relation("RelationMappingCreatedBy")
+  relationMappingsDeleted       RelationMapping[]          @relation("RelationMappingDeletedBy")
+  webappMappersCreated          WebappMapper[]             @relation("WebappMapperCreatedBy")
+  webappMappersDeleted          WebappMapper[]             @relation("WebappMapperDeletedBy")
+  leadInfoCreated               LeadInfo[]                 @relation("LeadInfoCreatedBy")
+  leadMotorInfoCreated          LeadMotorInfo[]            @relation("LeadMotorInfoCreatedBy")
+  apiUserCreated                ApiUserProduct[]           @relation("ApiUserProductCreatedBy")
+  paymentModeCreated            PaymentMode[]              @relation("PaymentModeCreatedBy")
+  paymentModeDeleted            PaymentMode[]              @relation("PaymentModeDeletedBy")
+  PremiumRangeProtectionCreated PremiumRangeProtection[]   @relation("PremiumRangeProtectionCreatedBy")
+  PremiumRangeProtectionDeleted PremiumRangeProtection[]   @relation("PremiumRangeProtectionDeletedBy")
+  couponsCreated                Coupon[]                   @relation("CouponCreatedBy")
+  couponsDeleted                Coupon[]                   @relation("CouponDeletedBy")
+  ordersCreated                 Order[]
+  Policy                        Policy[]
+  PolicyDetail                  PolicyDetail[]
+  PolicyTravel                  PolicyTravel[]
+  PolicyHomecare                PolicyHomecare[]
+  PolicyPurchaseProtection      PolicyPurchaseProtection[]
 
   @@fulltext([username, fullname, email, phone])
 }
@@ -133,6 +182,8 @@ model ApiUser {
   user                   User                     @relation(fields: [user_id], references: [id])
   apiUserProducts        ApiUserProduct[]         @relation("ApiUserProduct")
   PremiumRangeProtection PremiumRangeProtection[]
+  Order                  Order[]
+  Policy                 Policy[]
 }
 
 model Menu {
@@ -179,13 +230,13 @@ model UserMenuRight {
 model Branch {
   id                       Int     @id @default(autoincrement())
   name                     String  @db.VarChar(100)
-  igis_branch_code         String  @unique @db.VarChar(8)
-  igis_branch_takaful_code String  @unique @db.VarChar(8)
+  igis_branch_code         String  @db.VarChar(8)
+  igis_branch_takaful_code String  @db.VarChar(8)
   address                  String  @db.VarChar(200)
   telephone                String  @db.VarChar(15)
   email                    String  @db.VarChar(100)
-  his_code                 String  @unique @db.VarChar(10)
-  his_code_takaful         String  @unique @db.VarChar(10)
+  his_code                 String  @db.VarChar(10)
+  his_code_takaful         String  @db.VarChar(10)
   sales_tax_perc           Decimal @db.Decimal(5, 2)
   fed_insurance_fee        Decimal @db.Decimal(5, 2)
   stamp_duty               Int
@@ -203,6 +254,7 @@ model Branch {
   Agent              Agent[]
   Client             Client[]
   MotorQuote         MotorQuote[]
+  Order              Order[]
 }
 
 model DevelopmentOfficer {
@@ -223,6 +275,7 @@ model DevelopmentOfficer {
   // Relations
   branch Branch  @relation(fields: [branch_id], references: [id], onDelete: Cascade)
   Agent  Agent[]
+  Order  Order[]
 
   @@index([branch_id], name: "idx_branch_id")
 }
@@ -231,7 +284,7 @@ model Agent {
   id                     Int     @id @default(autoincrement())
   name                   String  @db.VarChar(100)
   igis_code              String? @db.VarChar(10)
-  igis_agent_code        String  @unique @db.VarChar(10)
+  igis_agent_code        String  @unique @db.VarChar(11)
   branch_id              Int
   development_officer_id Int
   idev_affiliate         Boolean @default(false)
@@ -250,6 +303,7 @@ model Agent {
   branch              Branch             @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   development_officer DevelopmentOfficer @relation(fields: [development_officer_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   MotorQuote          MotorQuote[]
+  Order               Order[]
 
   @@index([branch_id], name: "idx_branch_id")
   @@index([development_officer_id], name: "idx_development_officer_id")
@@ -259,7 +313,7 @@ model Agent {
 model Client {
   id               Int    @id @default(autoincrement())
   name             String @db.VarChar(100)
-  igis_client_code String @unique @db.VarChar(10)
+  igis_client_code String @unique @db.VarChar(18)
   address          String @db.VarChar(200)
   telephone        String @db.VarChar(15)
   contact_person   String @db.VarChar(100)
@@ -276,7 +330,8 @@ model Client {
   deleted_at DateTime?
 
   // Relations
-  branch Branch @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  branch Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  Order  Order[]
 
   @@index([branch_id], name: "idx_branch_id")
   @@index([igis_client_code], name: "idx_code")
@@ -289,8 +344,8 @@ model Courier {
   account_number String  @unique @db.VarChar(100)
   user           String  @db.VarChar(100)
   password       String  @db.VarChar(100)
-  book_url       String? @db.VarChar(255)
-  tracking_url   String? @db.VarChar(255)
+  book_url       String  @db.VarChar(255)
+  tracking_url   String  @db.VarChar(255)
   is_takaful     Boolean @default(false)
   is_active      Boolean @default(true)
   is_deleted     Boolean @default(false)
@@ -386,7 +441,7 @@ model BusinessRegion {
 model IgisMake {
   id             Int     @id @default(autoincrement())
   make_name      String  @db.VarChar(100)
-  igis_make_code String  @unique @db.VarChar(4)
+  igis_make_code String  @db.VarChar(4)
   is_active      Boolean @default(true)
 
   created_by Int?
@@ -405,7 +460,7 @@ model IgisSubMake {
   id                 Int      @id @default(autoincrement())
   make_id            Int
   sub_make_name      String   @db.VarChar(100)
-  igis_sub_make_code String   @unique @db.VarChar(4)
+  igis_sub_make_code String   @db.VarChar(4)
   seating_capacity   Int?
   cubic_capacity     Decimal? @db.Decimal(10, 2)
   coi_type_code      String?  @db.VarChar(50)
@@ -481,6 +536,7 @@ model Plan {
   createdBy     User           @relation("PlanCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy     User?          @relation("PlanDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
   webappMappers WebappMapper[]
+  Policy        Policy[]
 
   @@index([created_by])
   @@index([deleted_by])
@@ -489,8 +545,9 @@ model Plan {
 model ProductCategory {
   id                Int     @id @default(autoincrement())
   name              String  @db.VarChar(50)
-  igis_product_code String  @unique @db.VarChar(8)
+  igis_product_code String  @db.VarChar(8)
   department_id     Int?
+  product_code      String
   is_active         Boolean @default(true)
   is_deleted        Boolean @default(false)
   created_by        Int
@@ -531,6 +588,8 @@ model Product {
   productOptions ProductOption[]
   webappMappers  WebappMapper[]
   apiUserProduct ApiUserProduct[] @relation("Product")
+  CouponProduct  CouponProduct[]
+  Policy         Policy[]
 
   @@index([product_category_id])
   @@index([created_by])
@@ -570,6 +629,7 @@ model ProductOption {
   deletedBy User?   @relation("ProductOptionDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   webappMappers WebappMapper[]
+  Policy        Policy[]
 
   @@index([product_id])
   @@index([created_by])
@@ -644,6 +704,7 @@ model WebappMapper {
   @@index([option_id], name: "idx_option_id")
   @@index([created_by])
   @@index([deleted_by])
+  @@index([parent_sku, child_sku], name: "idx_webappmapper_parentskuchildsku")
 }
 
 model LeadInfo {
@@ -761,8 +822,11 @@ model PaymentMode {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
-  createdBy User  @relation("PaymentModeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  deletedBy User? @relation("PaymentModeDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  createdBy User    @relation("PaymentModeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy User?   @relation("PaymentModeDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  Order     Order[]
+
+  @@index([id], name: "idx_paymentmodeid")
 }
 
 model PremiumRangeProtection {
@@ -791,6 +855,314 @@ model PremiumRangeProtection {
   @@index([api_user_id], name: "idx_api_user_id")
   @@index([created_by])
   @@index([deleted_by])
+}
+
+model Coupon {
+  id               Int            @id @default(autoincrement())
+  code             String         @unique @db.VarChar(50)
+  campaign_name    String?        @db.VarChar(150)
+  expiry_date      String
+  application_date String?
+  quantity         Int            @default(0)
+  coupon_type      CouponTypeEnum @default(percentage)
+  discount_value   String         @default("0.00")
+  use_per_customer Int            @default(1)
+  remaining        Int            @default(0)
+  is_active        Boolean        @default(true)
+  is_deleted       Boolean        @default(false)
+  created_by       Int
+  deleted_by       Int?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+  deleted_at       DateTime?
+
+  createdBy           User                  @relation("CouponCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  deletedBy           User?                 @relation("CouponDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  couponProducts      CouponProduct[]
+  CouponCustomerUsage CouponCustomerUsage[]
+  Order               Order[]
+}
+
+model CouponProduct {
+  id         Int @id @default(autoincrement())
+  coupon_id  Int
+  product_id Int
+
+  coupon  Coupon  @relation(fields: [coupon_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model CouponCustomerUsage {
+  id            Int    @id @default(autoincrement())
+  coupon_id     Int
+  customer_cnic String @unique @db.VarChar(25)
+  coupon_use    Int    @default(1)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  coupon Coupon @relation(fields: [coupon_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model Order {
+  id                    Int         @id @default(autoincrement())
+  order_code            String      @unique @db.VarChar(100)
+  create_date           String
+  parent_id             Int?
+  customer_name         String      @db.VarChar(100)
+  customer_cnic         String?     @db.VarChar(20)
+  customer_dob          String?
+  customer_email        String?     @db.VarChar(150)
+  customer_contact      String?     @db.VarChar(50)
+  customer_address      String?     @db.VarChar(255)
+  customer_city         String?     @db.VarChar(100)
+  customer_occupation   String?     @db.VarChar(100)
+  status                OrderStatus @default(pending)
+  payment_method_id     Int
+  payment               String      @default("0.00")
+  coupon_id             Int?
+  discount_amount       String      @default("0.00")
+  received_premium      String      @default("0.00")
+  branch_id             Int?
+  branch_name           String?     @db.VarChar(150)
+  agent_id              Int?
+  agent_name            String?     @db.VarChar(150)
+  client_id             Int?
+  development_office_id Int?
+  shipping_method       String?     @db.VarChar(100)
+  shipping_charges      String      @default("0.00")
+  shipping_name         String?     @db.VarChar(150)
+  shipping_address      String?     @db.VarChar(255)
+  shipping_email        String?     @db.VarChar(150)
+  shipping_phone        String?     @db.VarChar(50)
+  tracking_number       String?     @db.VarChar(100)
+  courier_status        String?     @db.VarChar(50)
+  delivery_date         String?
+  refunded              Boolean     @default(false)
+  staff_comments        String?     @db.Text
+  cc_transaction_id     String?     @db.VarChar(100)
+  cc_approval_code      String?     @db.VarChar(100)
+  jazzcash_date_time    String?
+  channel               String?     @db.VarChar(100)
+  idev                  String?     @db.VarChar(100)
+  referred_by           String?     @db.VarChar(100)
+  kiosk_pin             String?     @db.VarChar(20)
+  kiosk_last_digit      String?     @db.VarChar(5)
+  test_book             Boolean     @default(false)
+  api_user_id           Int?
+  created_by            Int
+  deleted_by            Int?
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  payemntMethod      PaymentMode         @relation(fields: [payment_method_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  coupon             Coupon?             @relation(fields: [coupon_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  branch             Branch?             @relation(fields: [branch_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  agent              Agent?              @relation(fields: [agent_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  client             Client?             @relation(fields: [client_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  developmentOfficer DevelopmentOfficer? @relation(fields: [development_office_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  apiUser            ApiUser?            @relation(fields: [api_user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdByUser      User                @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  Policy Policy[]
+
+  @@index([order_code], name: "idx_order_ordercode")
+}
+
+model Policy {
+  id                   Int     @id @default(autoincrement())
+  policy_code          String? @unique @db.VarChar(100)
+  igis_policy_code     String? @db.VarChar(100)
+  pmdc_no              String? @db.VarChar(50)
+  order_id             Int
+  parent_id            Int?
+  plan_id              Int
+  product_id           Int
+  product_option_id    Int
+  extended_warranty_id Int?
+  api_user_id          Int?
+
+  issue_date  String
+  start_date  String
+  expiry_date String
+
+  item_price         String
+  received_premium   String @default("0.00")
+  discount_amount    String @default("0.00")
+  sum_insured        String
+  filer_tax_per_item String @default("0.00")
+  filer_tax_total    String @default("0.00")
+
+  filer_tax_status Boolean @default(false)
+
+  status PolicyStatus @default(pending)
+
+  type         String? @db.VarChar(50)
+  product_type String? @db.VarChar(50)
+
+  takaful_policy Boolean @default(false)
+  is_renewed     Boolean @default(false)
+  refunded       Boolean @default(false)
+
+  quantity Int @default(1)
+
+  qr_doc_url String? @db.VarChar(255)
+  schengen   Boolean @default(false)
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  order         Order         @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  plan          Plan          @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product       Product       @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  productOption ProductOption @relation(fields: [product_option_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  apiUser       ApiUser?      @relation(fields: [api_user_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdByUser User          @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  policyDetails            PolicyDetail[]
+  PolicyTravel             PolicyTravel[]
+  PolicyHomecare           PolicyHomecare[]
+  PolicyPurchaseProtection PolicyPurchaseProtection[]
+}
+
+model PolicyDetail {
+  id        Int @id @default(autoincrement())
+  policy_id Int
+
+  name            String  @db.VarChar(100)
+  dob             String?
+  cnic            String? @db.VarChar(20)
+  occupation      String? @db.VarChar(100)
+  address         String? @db.VarChar(255)
+  contact_number  String? @db.VarChar(20)
+  email           String? @db.VarChar(150)
+  city            String? @db.VarChar(100)
+  gender          Gender?
+  age             Int?
+  type            String  @db.VarChar(50)
+  relation        String  @db.VarChar(50)
+  passport_no     String? @db.VarChar(50)
+  poc             String? @db.VarChar(50)
+  nicop           String? @db.VarChar(50)
+  cnic_issue_date String?
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  policy        Policy @relation(fields: [policy_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model PolicyTravel {
+  id                  Int       @id @default(autoincrement())
+  policy_id           Int
+  sponsor             String?   @db.VarChar(150)
+  sponsor_address     String?   @db.VarChar(255)
+  sponsor_contact     String?   @db.VarChar(50)
+  institute           String?   @db.VarChar(150)
+  travel_from         String    @db.VarChar(150)
+  travelling_dates    String?   @db.VarChar(255)
+  program             String?   @db.VarChar(150)
+  offer_letter_ref_no String?   @db.VarChar(100)
+  no_of_days          String    @db.VarChar(50)
+  travel_purpose      String?   @db.VarChar(255)
+  destination         String    @db.VarChar(150)
+  tution_fee          Boolean   @default(false)
+  type                String?   @db.VarChar(100)
+  travel_end_date     String
+  travel_start_date   String
+  program_duration    String?   @db.VarChar(100)
+  travel_type         String?   @db.VarChar(100)
+  is_active           Boolean   @default(true)
+  is_deleted          Boolean   @default(false)
+  created_by          Int
+  deleted_by          Int?
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @default(now()) @updatedAt
+  deleted_at          DateTime?
+
+  // relations
+  policy        Policy @relation(fields: [policy_id], references: [id])
+  createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+model PolicyHomecare {
+  id               Int       @id @default(autoincrement())
+  policy_id        Int
+  ownership_status String    @db.VarChar(100)
+  structure_type   String    @db.VarChar(100)
+  plot_area        String    @db.VarChar(100)
+  address          String    @db.VarChar(255)
+  city             String    @db.VarChar(100)
+  building         String?   @default("00.00") @db.VarChar(100)
+  rent             String?   @default("00.00")
+  content          String?   @default("00.00")
+  jewelry          String?   @default("00.00")
+  is_active        Boolean   @default(true)
+  is_deleted       Boolean   @default(false)
+  created_by       Int
+  deleted_by       Int?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  deleted_at       DateTime?
+
+  // Relations
+  policy        Policy @relation(fields: [policy_id], references: [id], onDelete: Cascade)
+  createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+}
+
+// duration --required
+// duration_type -- required
+// name -- required
+// total_price -- required
+// imei
+// serial_number
+// retailer_sku
+
+model PolicyPurchaseProtection {
+  id               Int          @id @default(autoincrement())
+  policy_id        Int
+  name             String       @db.VarChar(255)
+  imei             String?      @db.VarChar(50)
+  serial_number    String?      @db.VarChar(100)
+  retailer_sku     String?      @db.VarChar(100)
+  quantity         Int          @default(1)
+  sum_insured      String
+  total_price      String
+  item_price       String
+  received_premium String
+  duration         Int
+  duration_type    DurationType
+  is_active        Boolean      @default(true)
+  is_deleted       Boolean      @default(false)
+  created_by       Int
+  deleted_by       Int?
+  created_at       DateTime     @default(now())
+  updated_at       DateTime     @updatedAt
+  deleted_at       DateTime?
+
+  // Relation
+  policy        Policy @relation(fields: [policy_id], references: [id])
+  createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 // PUT LOGS TABLES HERE UNDER THIS COMMENT

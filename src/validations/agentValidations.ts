@@ -20,7 +20,7 @@ export const validateAgent = z.object({
       required_error: "IGIS Agent Code is required",
       invalid_type_error: "IGIS Agent Code must be a string",
     })
-    .length(10, { message: "IGIS Agent Code must be exactly 10 characters" }),
+    .length(11, { message: "IGIS Agent Code must be exactly 11 characters" }),
   branch_id: z
     .number({
       required_error: "Branch ID is required",
