@@ -741,5 +741,69 @@ export const validateCCTransactionSchema = z.object({
   }).optional().nullable(),
 })
 
+export const validateListSchema = z.object({
+  mode: z.enum(["orders", "policies", "cbo", "renewal"], {
+    invalid_type_error: "Mode must be either 'orders', 'policies', 'cbo', or 'renewal'.",
+  }).default("orders"),
+
+  month: z.enum([
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december"
+  ], {
+    invalid_type_error: "Month must be one of 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', or 'december'.",
+  }).optional().nullable(),
+
+  api_user_id: z.number({
+    invalid_type_error: "API user ID must be a number.",
+  }).int({ message: "API user ID must be an integer." }).optional().nullable(),
+
+  order_status: z.enum(["accepted", "cancelled", "pendingCOD", "rejected", "unverified", "verified", "pending"], {
+    invalid_type_error: "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+  }).optional().nullable(),
+
+  policy_status: z.enum(["cancelled", "HISposted", "IGISposted", "pendingIGIS", "unverified", "verified", "pending", "pendingCOD", "pendingCBO"], {
+    invalid_type_error: "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+  }).optional().nullable(),
+
+  date: z
+    .string({
+      required_error: "Date range is required.",
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    ).optional().nullable(),
+
+  product_id: z.number({
+    invalid_type_error: "Product ID must be a number.",
+  }).int({ message: "Product ID must be an integer." }).optional().nullable(),
+
+  branch_id: z.number({
+    invalid_type_error: "Branch ID must be a number.",
+  }).int({ message: "Branch ID must be an integer." }).optional().nullable(),
+
+  payment_mode_id: z.number({
+    invalid_type_error: "Payment mode ID must be a number.",
+  }).int({ message: "Payment mode ID must be an integer." }).optional().nullable(),
+
+  cnic: z.string({
+    invalid_type_error: "CNIC must be a string.",
+  }).regex(/^\d{13}$/, "CNIC must be 13 digits without dashes.").optional().nullable(),
+
+  contact: z.string({
+    invalid_type_error: "Contact must be a string.",
+  }).regex(/^03\d{9}$/, "Contact must be a valid Pakistani number (e.g. 03001234567).").optional().nullable(),
+});
+
+export const validateOrderCode = z.object({
+  order_code: z.string({
+    required_error: "Order code is required.",
+    invalid_type_error: "Order code must be a string.",
+  }).min(1, "Order code can not be empty"),
+});
+
 export type OrderSchema = z.infer<typeof validateOrderSchema>;
 export type CCTransactionSchema = z.infer<typeof validateCCTransactionSchema>;
+export type ListSchema = z.infer<typeof validateListSchema>;
+export type OrderCodeSchema = z.infer<typeof validateOrderCode>;

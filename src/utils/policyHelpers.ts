@@ -404,7 +404,7 @@ export async function courierBooking(
                 product_weight: "1",
                 product_quantity: "1",
                 product_variations: "document",
-                sku_code: data.product_details.sku,
+                sku_code: data.product_details.item_name,
             },
         ],
     };
@@ -427,5 +427,108 @@ export async function courierBooking(
         });
     } else {
         console.error("BlueEx booking failed:", response.data);
+    }
+}
+
+export async function courierBookingForRepush(
+    orderId: number,
+    policyId: number,
+    code: string,
+    options: {
+        shipping_name?: string;
+        shipping_email?: string;
+        shipping_phone?: string;
+        shipping_address?: string;
+        customer_city_id?: number;
+        takaful_policy?: boolean;
+        received_premium: number;
+        product_name: string;
+        sku: string;
+    },
+    tx: any
+) {
+    // Fetch city if provided
+    const city = options.customer_city_id
+        ? await tx.city.findUnique({
+            where: { id: options.customer_city_id },
+        })
+        : null;
+
+    // Get courier
+    const courier = await getCourier(options.takaful_policy ?? false);
+    if (!courier) {
+        console.error("Courier not found for takaful status:", options.takaful_policy);
+        return;
+    }
+
+    // Auth token
+    const token = Buffer.from(
+        `${process.env.BLUEEX_USERNAME}:${process.env.BLUEEX_PASSWORD}`
+    ).toString("base64");
+
+    const datatoSend = {
+        shipper_name: "Jubilee General Insurance",
+        shipper_email: "support@jubileegeneral.com.pk",
+        shipper_contact: "021-111-654-321",
+        shipper_address:
+            "Jubilee General Insurance Co Ltd, 2nd Floor, Jubilee Insurance House, I. I. Chundrigar Road Karachi",
+        shipper_city: "KHI",
+
+        customer_name: options.shipping_name,
+        customer_email: options.shipping_email,
+        customer_contact: options.shipping_phone,
+        customer_address: options.shipping_address,
+        customer_city: city ? city.city_code : "KHI",
+        customer_country: "PK",
+        customer_comment: "Policy courier dispatch",
+
+        shipping_charges: "100",
+        payment_type: "COD",
+        service_code: "BE",
+        total_order_amount: options.received_premium.toString(),
+        total_order_weight: "1",
+        order_refernce_code: "",
+        fragile: "N",
+        parcel_type: "N",
+        insurance_require: "N",
+        insurance_value: "0",
+        testbit: "Y",
+        cn_generate: "Y",
+        multi_pickup: "N",
+        products_detail: [
+            {
+                product_code: code,
+                product_name: options.product_name,
+                product_price: options.received_premium.toString(),
+                product_weight: "1",
+                product_quantity: "1",
+                product_variations: "document",
+                sku_code: options.sku,
+            },
+        ],
+    };
+
+    try {
+        const response = await axios.post(courier.book_url, datatoSend, {
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Basic ${token}`,
+            },
+        });
+
+        if (response.data?.status === "1") {
+            await tx.order.update({
+                where: { id: orderId },
+                data: { tracking_number: response.data.cnno, status: "pendingCOD" },
+            });
+            await tx.policy.update({
+                where: { id: policyId },
+                data: { status: "pendingCOD" },
+            });
+        } else {
+            console.error("BlueEx booking failed:", response.data);
+        }
+    } catch (err: any) {
+        console.error("BlueEx courier error:", err.response?.data || err.message);
     }
 }

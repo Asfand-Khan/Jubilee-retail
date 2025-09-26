@@ -102,8 +102,8 @@ enum DurationType {
 model User {
   id                   Int            @id @default(autoincrement())
   fullname             String
-  email                String         @unique
-  phone                String         @unique @db.VarChar(20)
+  email                String
+  phone                String         @db.VarChar(20)
   image                String         @default("default-user.png")
   username             String         @unique
   user_type            User_Type_Enum @default(dashboard_user)
@@ -158,7 +158,12 @@ model User {
   PolicyTravel                  PolicyTravel[]
   PolicyHomecare                PolicyHomecare[]
   PolicyPurchaseProtection      PolicyPurchaseProtection[]
+  FblPolicyRider                FblPolicyRider[]
 
+  @@index([id])
+  @@index([username], name: "idx_username")
+  @@index([email], name: "idx_email")
+  @@index([phone], name: "idx_phone")
   @@fulltext([username, fullname, email, phone])
 }
 
@@ -184,6 +189,9 @@ model ApiUser {
   PremiumRangeProtection PremiumRangeProtection[]
   Order                  Order[]
   Policy                 Policy[]
+
+  @@index([id])
+  @@index([user_id], name: "idx_user_id")
 }
 
 model Menu {
@@ -255,6 +263,11 @@ model Branch {
   Client             Client[]
   MotorQuote         MotorQuote[]
   Order              Order[]
+
+  @@index([id], name: "idx_branch_id")
+  @@index([name], name: "idx_branch_name")
+  @@index([igis_branch_code], name: "idx_branch_code")
+  @@index([igis_branch_takaful_code], name: "idx_branch_takaful_code")
 }
 
 model DevelopmentOfficer {
@@ -277,7 +290,9 @@ model DevelopmentOfficer {
   Agent  Agent[]
   Order  Order[]
 
+  @@index([id], name: "idx_development_officer_id")
   @@index([branch_id], name: "idx_branch_id")
+  @@index([igis_do_code], name: "idx_do_code")
 }
 
 model Agent {
@@ -305,6 +320,7 @@ model Agent {
   MotorQuote          MotorQuote[]
   Order               Order[]
 
+  @@index([id], name: "idx_agent_id")
   @@index([branch_id], name: "idx_branch_id")
   @@index([development_officer_id], name: "idx_development_officer_id")
   @@index([igis_agent_code], name: "idx_agent_code")
@@ -313,12 +329,12 @@ model Agent {
 model Client {
   id               Int    @id @default(autoincrement())
   name             String @db.VarChar(100)
-  igis_client_code String @unique @db.VarChar(18)
+  igis_client_code String @db.VarChar(18)
   address          String @db.VarChar(200)
   telephone        String @db.VarChar(15)
   contact_person   String @db.VarChar(100)
 
-  branch_id  Int
+  branch_id  Int?
   is_active  Boolean @default(true)
   is_deleted Boolean @default(false)
 
@@ -330,9 +346,10 @@ model Client {
   deleted_at DateTime?
 
   // Relations
-  branch Branch  @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  branch Branch? @relation(fields: [branch_id], references: [id], onDelete: Restrict, onUpdate: Cascade)
   Order  Order[]
 
+  @@index([id], name: "idx_client_id")
   @@index([branch_id], name: "idx_branch_id")
   @@index([igis_client_code], name: "idx_code")
 }
@@ -357,6 +374,7 @@ model Courier {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
+  @@index([id], name: "idx_courier_id")
   @@index([name], name: "idx_name")
   @@index([account_number], name: "idx_account_number")
 }
@@ -378,6 +396,9 @@ model Country {
   deleted_at DateTime?
 
   City City[]
+
+  @@index([id], name: "idx_country_id")
+  @@index([country_code], name: "idx_country_code")
 }
 
 model City {
@@ -403,6 +424,9 @@ model City {
 
   country    Country      @relation(fields: [country_id], references: [id])
   MotorQuote MotorQuote[]
+
+  @@index([id], name: "idx_city_id")
+  @@index([city_code], name: "idx_city_code")
 }
 
 model CallUsData {
@@ -420,6 +444,8 @@ model CallUsData {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  @@index([id], name: "idx_call_us_data_id")
 }
 
 model BusinessRegion {
@@ -436,6 +462,9 @@ model BusinessRegion {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  @@index([id], name: "idx_business_region_id")
+  @@index([igis_business_region_code], name: "idx_business_region_code")
 }
 
 model IgisMake {
@@ -454,6 +483,9 @@ model IgisMake {
   deleted_at DateTime?
 
   IgisSubMake IgisSubMake[]
+
+  @@index([id], name: "idx_igis_make_id")
+  @@index([igis_make_code], name: "idx_igis_make_code")
 }
 
 model IgisSubMake {
@@ -476,6 +508,9 @@ model IgisSubMake {
   deleted_at DateTime?
 
   make IgisMake @relation(fields: [make_id], references: [id])
+
+  @@index([id], name: "idx_igis_sub_make_id")
+  @@index([igis_sub_make_code], name: "idx_igis_sub_make_code")
 }
 
 model MotorQuote {
@@ -518,6 +553,9 @@ model MotorQuote {
   city   City?   @relation(fields: [city_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   agent  Agent?  @relation(fields: [agent_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   branch Branch? @relation(fields: [branch_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([id], name: "idx_motor_quote_id")
+  @@index([quote_id], name: "idx_quote_id")
 }
 
 model Plan {
@@ -538,8 +576,8 @@ model Plan {
   webappMappers WebappMapper[]
   Policy        Policy[]
 
-  @@index([created_by])
-  @@index([deleted_by])
+  @@index([id], name: "idx_plan_id")
+  @@index([name], name: "idx_plan_name")
 }
 
 model ProductCategory {
@@ -561,8 +599,7 @@ model ProductCategory {
   deletedBy User?     @relation("ProductCategoryDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
   products  Product[]
 
-  @@index([created_by])
-  @@index([deleted_by])
+  @@index([id], name: "idx_product_category_id")
 }
 
 model Product {
@@ -591,9 +628,9 @@ model Product {
   CouponProduct  CouponProduct[]
   Policy         Policy[]
 
-  @@index([product_category_id])
-  @@index([created_by])
-  @@index([deleted_by])
+  @@index([id], name: "idx_product_id")
+  @@index([product_name], name: "idx_product_name")
+  @@index([product_type], name: "idx_product_type")
 }
 
 model ProductOption {
@@ -632,8 +669,6 @@ model ProductOption {
   Policy        Policy[]
 
   @@index([product_id])
-  @@index([created_by])
-  @@index([deleted_by])
 }
 
 model ProductType {
@@ -652,8 +687,7 @@ model ProductType {
   createdBy User? @relation("ProductTypeCreatedBy", fields: [created_by], references: [id], onDelete: Restrict)
   deletedBy User? @relation("ProductTypeDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull)
 
-  @@index([created_by])
-  @@index([deleted_by])
+  @@index([id], name: "idx_product_type_id")
 }
 
 model RelationMapping {
@@ -673,8 +707,7 @@ model RelationMapping {
   createdBy User  @relation("RelationMappingCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy User? @relation("RelationMappingDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
-  @@index([created_by])
-  @@index([deleted_by])
+  @@index([id], name: "idx_relation_mapping_id")
 }
 
 model WebappMapper {
@@ -852,9 +885,8 @@ model PremiumRangeProtection {
   createdBy User    @relation("PremiumRangeProtectionCreatedBy", fields: [created_by], references: [id], onDelete: Restrict, onUpdate: Cascade)
   deletedBy User?   @relation("PremiumRangeProtectionDeletedBy", fields: [deleted_by], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
+  @@index([id], name: "idx_premium_range_protection_id")
   @@index([api_user_id], name: "idx_api_user_id")
-  @@index([created_by])
-  @@index([deleted_by])
 }
 
 model Coupon {
@@ -881,6 +913,9 @@ model Coupon {
   couponProducts      CouponProduct[]
   CouponCustomerUsage CouponCustomerUsage[]
   Order               Order[]
+
+  @@index([id], name: "idx_coupon_id")
+  @@index([code], name: "idx_coupon_code")
 }
 
 model CouponProduct {
@@ -895,7 +930,7 @@ model CouponProduct {
 model CouponCustomerUsage {
   id            Int    @id @default(autoincrement())
   coupon_id     Int
-  customer_cnic String @unique @db.VarChar(25)
+  customer_cnic String @db.VarChar(25)
   coupon_use    Int    @default(1)
 
   created_at DateTime @default(now())
@@ -971,6 +1006,7 @@ model Order {
 
   Policy Policy[]
 
+  @@index([id], name: "idx_order_id")
   @@index([order_code], name: "idx_order_ordercode")
 }
 
@@ -1035,6 +1071,10 @@ model Policy {
   PolicyTravel             PolicyTravel[]
   PolicyHomecare           PolicyHomecare[]
   PolicyPurchaseProtection PolicyPurchaseProtection[]
+  FblPolicyRider           FblPolicyRider[]
+
+  @@index([id], name: "idx_policy_id")
+  @@index([policy_code], name: "idx_policy_code")
 }
 
 model PolicyDetail {
@@ -1052,7 +1092,7 @@ model PolicyDetail {
   gender          Gender?
   age             Int?
   type            String  @db.VarChar(50)
-  relation        String  @db.VarChar(50)
+  relation        String? @db.VarChar(50)
   passport_no     String? @db.VarChar(50)
   poc             String? @db.VarChar(50)
   nicop           String? @db.VarChar(50)
@@ -1070,6 +1110,9 @@ model PolicyDetail {
 
   policy        Policy @relation(fields: [policy_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([id], name: "idx_policy_detail_id")
+  @@index([policy_id], name: "idx_policy_id")
 }
 
 model PolicyTravel {
@@ -1103,6 +1146,9 @@ model PolicyTravel {
   // relations
   policy        Policy @relation(fields: [policy_id], references: [id])
   createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([id], name: "idx_policy_travel_id")
+  @@index([policy_id], name: "idx_policy_travel_policy_id")
 }
 
 model PolicyHomecare {
@@ -1128,15 +1174,10 @@ model PolicyHomecare {
   // Relations
   policy        Policy @relation(fields: [policy_id], references: [id], onDelete: Cascade)
   createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
-}
 
-// duration --required
-// duration_type -- required
-// name -- required
-// total_price -- required
-// imei
-// serial_number
-// retailer_sku
+  @@index([id], name: "idx_policy_homecare_id")
+  @@index([policy_id], name: "idx_policy_homecare_policy_id")
+}
 
 model PolicyPurchaseProtection {
   id               Int          @id @default(autoincrement())
@@ -1162,6 +1203,29 @@ model PolicyPurchaseProtection {
 
   // Relation
   policy        Policy @relation(fields: [policy_id], references: [id])
+  createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([id], name: "idx_policy_purchase_protection_id")
+  @@index([policy_id], name: "idx_policy_purchase_protection_policy_id")
+}
+
+model FblPolicyRider {
+  id          Int    @id @default(autoincrement())
+  policy_id   Int
+  rider_name  String @db.VarChar(50)
+  sum_insured String
+
+  is_active  Boolean @default(true)
+  is_deleted Boolean @default(false)
+
+  created_by Int
+  deleted_by Int?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  policy        Policy @relation(fields: [policy_id], references: [id], onDelete: Cascade, onUpdate: Cascade)
   createdByUser User   @relation(fields: [created_by], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 

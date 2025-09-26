@@ -83,7 +83,7 @@ export const updateIgisSubMake = async (igisSubMake: IgisSubMakeUpdateType) => {
 };
 
 export const getIgisSubMakeByIgisSubMakeCode = async (code: string) => {
-  return prisma.igisSubMake.findUnique({
+  return prisma.igisSubMake.findFirst({
     where: { igis_sub_make_code: code },
   });
 };

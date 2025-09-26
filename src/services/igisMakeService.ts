@@ -53,7 +53,7 @@ export const updateIgisMake = async (igisMake: IgisMakeUpdateType) => {
 };
 
 export const getIgisMakeByIgisMakeCode = async (code: string) => {
-  return prisma.igisMake.findUnique({
+  return prisma.igisMake.findFirst({
     where: { igis_make_code: code },
   });
 };

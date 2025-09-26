@@ -109,3 +109,72 @@ export const ccTransactionHandler = async (
     });
   }
 };
+
+export const fetchOrderListHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateListSchema.parse(req.body);
+    const newRecord = await service.orderList(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "List fetched successfully",
+      payload: newRecord,
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+export const singleOrderHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateOrderCode.parse(req.body);
+    const newRecord = await service.singleOrder(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Single order fetched successfully",
+      payload: [newRecord],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+export const repushOrderHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateOrderCode.parse(req.body);
+    const newRecord = await service.repushOrder(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Order repushed successfully",
+      payload: newRecord,
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};

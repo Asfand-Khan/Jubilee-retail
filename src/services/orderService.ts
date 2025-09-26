@@ -2,13 +2,13 @@ import prisma from "../config/db";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { CCTransactionSchema, OrderSchema } from "../validations/orderValidations";
+import { CCTransactionSchema, ListSchema, OrderCodeSchema, OrderSchema } from "../validations/orderValidations";
 import { format } from "date-fns";
 import { DurationType, Gender } from "@prisma/client";
 import { calculateAge } from "../utils/calculateAge";
 import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import axios from "axios";
-import { newPlanMapping, newPolicyCode, newProductCode } from "../utils/policyHelpers";
+import { courierBookingForRepush, newPlanMapping, newPolicyCode, newProductCode } from "../utils/policyHelpers";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -539,6 +539,334 @@ export const ccTransaction = async (data: CCTransactionSchema) => {
   return result;
 };
 
+export const orderList = async (data: ListSchema) => {
+  let query = "";
+  const filters: string[] = [];
+
+  switch (data.mode) {
+    case "orders":
+      query = `
+          SELECT
+	          ord.id AS 'id',
+	          ord.order_code AS 'order_code',
+	          ord.create_date AS 'create_date',
+	          ord.received_premium AS 'premium',
+	          ord.customer_name AS 'customer_name',
+	          ord.customer_contact AS 'customer_contact',
+	          ord.branch_name AS 'branch_name',
+	          ord.tracking_number AS 'cnno',
+	          pm.name AS 'payment_mode',
+	          au.name AS 'api_user_name',
+	          ord.status AS 'order_status'
+          FROM
+	          \`Order\` ord
+	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+          LEFT JOIN Policy p ON ord.id = p.order_id
+	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+      break;
+    case "policies":
+      query = `
+            SELECT
+	            ord.id AS 'id',
+	            ord.order_code AS 'order_code',
+	            p.policy_code AS 'policy_number',
+	            ord.create_date AS 'create_date',
+	            p.issue_date AS 'issue_date',
+	            p.expiry_date AS 'expiry_date',
+	            ord.received_premium AS 'premium',
+	            ord.customer_name AS 'customer_name',
+	            ord.customer_contact AS 'customer_contact',
+	            ord.branch_name AS 'branch_name',
+	            prod.product_name AS 'product',
+	            ord.tracking_number AS 'cnno',
+	            pm.name AS 'payment_mode',
+	            au.name AS 'api_user_name',
+	            ord.status AS 'order_status',
+	            p.status AS 'policy_status'
+            FROM
+	            \`Order\` ord
+	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+	          LEFT JOIN Policy p ON ord.id = p.order_id
+	          LEFT JOIN Product prod ON p.product_id = prod.id
+            WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+      break;
+    case "cbo":
+      query = `
+          SELECT
+            ord.order_code AS 'order_code',
+            ord.id AS 'id',
+            ord.create_date AS 'create_date',
+            p.policy_code AS 'policy_number',
+            p.issue_date AS 'issue_date',
+            p.expiry_date AS 'expiry_date',
+            ord.received_premium AS 'premium',
+            ord.customer_name AS 'customer_name',
+            ord.customer_contact AS 'customer_contact',
+            ord.branch_name AS 'branch_name',
+            prod.product_name AS 'product',
+            (SELECT COUNT(*) FROM PolicyDetail pd WHERE pd.policy_id = p.id ) AS 'no_of_persons_covered',
+            ord.tracking_number AS 'cnno',
+            pm.name AS 'payment_mode',
+            au.name AS 'api_user_name',
+            '---' AS 'policy_category',
+            '---' AS 'pec_coverage',
+            '---' AS 'renewal_coverage',
+            ord.status AS 'order_status',
+            p.status AS 'policy_status'
+          FROM
+            \`Order\` ord
+          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN Policy p ON ord.id = p.order_id
+          LEFT JOIN Product prod ON p.product_id = prod.id
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+      break;
+    case "renewal":
+      query = `
+            SELECT
+	            ord.id AS 'id',
+	            ord.order_code AS 'order_code',
+	            p.policy_code AS 'policy_number',
+	            ord.create_date AS 'create_date',
+	            p.issue_date AS 'issue_date',
+	            p.expiry_date AS 'expiry_date',
+	            ord.received_premium AS 'premium',
+	            ord.customer_name AS 'customer_name',
+	            ord.customer_contact AS 'customer_contact',
+	            ord.branch_name AS 'branch_name',
+	            prod.product_name AS 'product',
+	            ord.tracking_number AS 'cnno',
+	            pm.name AS 'payment_mode',
+	            au.name AS 'api_user_name',
+	            ord.status AS 'order_status',
+	            p.status AS 'policy_status'
+            FROM
+	            \`Order\` ord
+	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+	          LEFT JOIN Policy p ON ord.id = p.order_id
+	          LEFT JOIN Product prod ON p.product_id = prod.id 
+            WHERE
+	            ord.is_active = 1 
+	            AND ord.is_deleted = 0 
+	            AND MONTHNAME( p.expiry_date ) = 'September' 
+	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO' )`;
+      break;
+    default:
+      query = `
+          SELECT
+	          ord.id AS 'id',
+	          ord.order_code AS 'order_code',
+	          ord.create_date AS 'create_date',
+	          ord.received_premium AS 'premium',
+	          ord.customer_name AS 'customer_name',
+	          ord.customer_contact AS 'customer_contact',
+	          ord.branch_name AS 'branch_name',
+	          ord.tracking_number AS 'cnno',
+	          pm.name AS 'payment_mode',
+	          au.name AS 'api_user_name',
+	          ord.status AS 'order_status'
+          FROM
+	          \`Order\` ord
+	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+          LEFT JOIN Policy p ON ord.id = p.order_id
+	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+  }
+
+  // ---- Apply Filters ----
+  if (data.api_user_id) {
+    filters.push(`ord.api_user_id = ${data.api_user_id}`);
+  }
+
+  if (data.order_status) {
+    filters.push(`ord.status = '${data.order_status}'`);
+  }
+
+  if (data.policy_status) {
+    filters.push(`p.status = '${data.policy_status}'`);
+  }
+
+  if (data.month) {
+    filters.push(`LOWER(MONTHNAME(p.expiry_date)) = '${data.month.toLowerCase()}'`);
+  }
+
+  if (data.date) {
+    const [start, end] = data.date.split(" to ");
+    filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
+  }
+
+  if (data.product_id) {
+    filters.push(`p.product_id = ${data.product_id}`);
+  }
+
+  if (data.branch_id) {
+    filters.push(`ord.branch_id = ${data.branch_id}`);
+  }
+
+  if (data.payment_mode_id) {
+    filters.push(`ord.payment_method_id = ${data.payment_mode_id}`);
+  }
+
+  if (data.cnic) {
+    filters.push(`ord.customer_cnic = '${data.cnic}'`);
+  }
+
+  if (data.contact) {
+    filters.push(`ord.customer_contact = '${data.contact}'`);
+  }
+
+  if (filters.length > 0) {
+    query += " AND " + filters.join(" AND ");
+  }
+
+  const result = await prisma.$queryRawUnsafe<any[]>(query);
+
+  const serialized = result.map((row) =>
+    Object.fromEntries(
+      Object.entries(row).map(([key, value]) => [
+        key,
+        typeof value === "bigint" ? value.toString() : value,
+      ])
+    )
+  );
+
+  return serialized;
+};
+
+export const singleOrder = async (data: OrderCodeSchema) => {
+  const order = await prisma.order.findUnique({
+    where: { order_code: data.order_code },
+    include: {
+      payemntMethod: true,
+      coupon: true,
+      branch: true,
+      agent: true,
+      client: true,
+      developmentOfficer: true,
+      apiUser: true,
+      Policy: {
+        include: {
+          plan: true,
+          product: {
+            include: {
+              productCategory: true,
+            },
+          },
+          productOption: true,
+          policyDetails: true,
+          PolicyTravel: true,
+          PolicyHomecare: true,
+          PolicyPurchaseProtection: true
+        }
+      }
+    }
+  })
+
+  if (!order) {
+    throw new Error("Order not found")
+  }
+
+  return order;
+}
+
+export const repushOrder = async (data: OrderCodeSchema) => {
+  return await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { order_code: data.order_code },
+      include: {
+        Policy: {
+          include: {
+            product: {
+              include: {
+                productCategory: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    if (order.status !== "unverified") {
+      throw new Error("Only unverified orders can be repushed");
+    }
+
+    const policy = order.Policy?.[0];
+    if (!policy) {
+      throw new Error("Policy not found for order");
+    }
+
+    const { product } = policy;
+
+    const branch = order.branch_id
+      ? await tx.branch.findUnique({
+        where: { id: order.branch_id },
+        select: { his_code: true, his_code_takaful: true },
+      })
+      : await tx.branch.findFirst({
+        where: { name: "Direct" },
+        select: { his_code: true, his_code_takaful: true },
+      });
+
+    if (!branch) {
+      throw new Error("Branch not found");
+    }
+
+    const city = await tx.city.findFirst({
+      where: { city_name: order.customer_city || "" },
+    });
+
+    // ⚡ Regenerate policy code to ensure it’s fresh
+    let code = "";
+    if (product.product_type === "health") {
+      const plan = await tx.plan.findUnique({
+        where: { id: policy.plan_id },
+      });
+      const planId = newPlanMapping(product.product_name, plan?.name || "");
+      const prefix = "91";
+      code = `${prefix}${planId}${newPolicyCode(policy.id)}`;
+    } else {
+      const branchCode = policy.takaful_policy
+        ? branch.his_code_takaful
+        : branch.his_code;
+      const productCode = newProductCode(
+        Number(product.productCategory?.product_code || 0)
+      );
+      code = `${branchCode}-${productCode}-${newPolicyCode(policy.id)}`;
+    }
+
+    await tx.policy.update({
+      where: { id: policy.id },
+      data: { policy_code: code },
+    });
+
+    try {
+      await courierBookingForRepush(order.id, policy.id, code, {
+        shipping_name: order.shipping_name ?? undefined,
+        shipping_email: order.shipping_email ?? undefined,
+        shipping_phone: order.shipping_phone ?? undefined,
+        shipping_address: order.shipping_address ?? undefined,
+        customer_city_id: city?.id ?? undefined,
+        takaful_policy: policy.takaful_policy ?? undefined,
+        received_premium: Number(order.received_premium),
+        product_name: product.product_name,
+        sku: product.product_name || "",
+      }, tx);
+    } catch (err) {
+      console.error("Courier booking failed:", err);
+      throw new Error("Courier booking failed"); // rollback everything
+    }
+
+    return { policy_code: code };
+  });
+};
+
 export const orderByOrderCode = async (order_code: string, transaction?: any) => {
   if (transaction) {
     return await transaction.order.findUnique({ where: { order_code } });
@@ -573,4 +901,119 @@ export const getCourier = async (is_takaful: boolean) => {
       is_takaful: is_takaful
     }
   })
-}
+};
+
+
+
+
+
+
+
+
+
+
+
+// const orderQuery = `
+//   SELECT
+// 	  ord.id AS 'id',
+// 	  ord.order_code AS 'order_code',
+// 	  ord.create_date AS 'create_date',
+// 	  ord.received_premium AS 'premium',
+// 	  ord.customer_name AS 'customer_name',
+// 	  ord.customer_contact AS 'customer_contact',
+// 	  ord.branch_name AS 'branch_name',
+// 	  ord.tracking_number AS 'cnno',
+// 	  pm.name AS 'payment_mode',
+// 	  au.name AS 'api_user_name',
+// 	  ord.status
+//   FROM
+// 	\`Order\` ord
+// 	LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+// 	LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+//   WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+
+//   const policyQuery = `
+//   SELECT
+// 	  ord.id AS 'id',
+// 	  ord.order_code AS 'order_code',
+// 	  p.policy_code AS 'policy_number',
+// 	  ord.create_date AS 'create_date',
+// 	  p.issue_date AS 'issue_date',
+// 	  p.expiry_date AS 'expiry_date',
+// 	  ord.received_premium AS 'premium',
+// 	  ord.customer_name AS 'customer_name',
+// 	  ord.customer_contact AS 'customer_contact',
+// 	  ord.branch_name AS 'branch_name',
+// 	  prod.product_name AS 'product',
+// 	  ord.tracking_number AS 'cnno',
+// 	  pm.name AS 'payment_mode',
+// 	  au.name AS 'api_user_name',
+// 	  ord.status AS 'order_status',
+// 	  p.status AS 'policy_status'
+//   FROM
+// 	  \`Order\` ord
+// 	LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+// 	LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+// 	LEFT JOIN Policy p ON ord.id = p.order_id
+// 	LEFT JOIN Product prod ON p.product_id = prod.id
+//   WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+
+//   const cboQuery = `
+//   SELECT
+// 	  ord.id AS 'id',
+// 	  ord.order_code AS 'order_code',
+// 	  p.policy_code AS 'policy_number',
+// 	  ord.create_date AS 'create_date',
+// 	  p.issue_date AS 'issue_date',
+// 	  p.expiry_date AS 'expiry_date',
+// 	  ord.received_premium AS 'premium',
+// 	  ord.customer_name AS 'customer_name',
+// 	  ord.customer_contact AS 'customer_contact',
+// 	  ord.branch_name AS 'branch_name',
+// 	  prod.product_name AS 'product',
+// 	  (SELECT COUNT(*) FROM PolicyDetail pd WHERE pd.policy_id = p.id ) AS 'no_of_persons_covered',
+// 	  ord.tracking_number AS 'cnno',
+// 	  pm.name AS 'payment_mode',
+// 	  au.name AS 'api_user_name',
+// 	  '---' AS 'policy_category',
+// 	  '---' AS 'pec_coverage',
+// 	  '---' AS 'renewal_coverage',
+// 	  ord.status AS 'order_status',
+// 	  p.status AS 'policy_status'
+//   FROM
+// 	  \`Order\` ord
+// 	LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+// 	LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+// 	LEFT JOIN Policy p ON ord.id = p.order_id
+// 	LEFT JOIN Product prod ON p.product_id = prod.id
+//   WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+
+//   const renewalQuery = `
+//   SELECT
+// 	  ord.id AS 'id',
+// 	  ord.order_code AS 'order_code',
+// 	  p.policy_code AS 'policy_number',
+// 	  ord.create_date AS 'create_date',
+// 	  p.issue_date AS 'issue_date',
+// 	  p.expiry_date AS 'expiry_date',
+// 	  ord.received_premium AS 'premium',
+// 	  ord.customer_name AS 'customer_name',
+// 	  ord.customer_contact AS 'customer_contact',
+// 	  ord.branch_name AS 'branch_name',
+// 	  prod.product_name AS 'product',
+// 	  ord.tracking_number AS 'cnno',
+// 	  pm.name AS 'payment_mode',
+// 	  au.name AS 'api_user_name',
+// 	  ord.status AS 'order_status',
+// 	  p.status AS 'policy_status'
+//   FROM
+// 	  \`Order\` ord
+// 	LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
+// 	LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+// 	LEFT JOIN Policy p ON ord.id = p.order_id
+// 	LEFT JOIN Product prod ON p.product_id = prod.id
+//   WHERE
+// 	  ord.is_active = 1
+// 	  AND ord.is_deleted = 0
+// 	  AND MONTHNAME( p.expiry_date ) = 'September'
+// 	  AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO' )`

@@ -20,6 +20,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
     image,
     created_by,
     menu_rights,
+    user_type,
   } = input;
   try {
     const hashedPassword = await hashPassword(password);
@@ -32,6 +33,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
       password: hashedPassword,
       is_active,
       created_by,
+      user_type
     };
 
     let imageFileName: string | undefined;
@@ -245,13 +247,13 @@ export const resetFailedAttempts = async (username: string) => {
 };
 
 export const getUserByEmail = async (email: string) => {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: { email },
   });
 };
 
 export const getUserByContact = async (contact: string) => {
-  return prisma.user.findUnique({
+  return prisma.user.findFirst({
     where: { phone: contact },
   });
 };

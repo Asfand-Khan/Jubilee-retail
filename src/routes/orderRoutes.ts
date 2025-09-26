@@ -4,12 +4,45 @@ import {
   authenticate,
 } from "../middleware/authMiddleware";
 import * as controller from "../controllers/orderController";
+import prisma from "../config/db";
+import { generateOrderPDF } from "../utils/pdf";
 
 const router = Router();
 
-// router.get("/", authenticateApiUser, controller.getAllCouponsHandler); // Get All Orders --> Protected
 router.post("/", authenticateApiUser, controller.createOrderHandler); // Create Order --> Protected
 router.post("/cc-transaction", authenticateApiUser, controller.ccTransactionHandler); // Verify CC Transaction --> Protected
-// router.post("/", authenticateApiUser, controller.createCouponHandler); // Create Coupon --> Protected
+router.post("/list", authenticate, controller.fetchOrderListHandler); // Fetch List --> Protected
+router.post("/single", authenticate, controller.singleOrderHandler); // Fetch Single Order --> Protected
+
+router.get("/:order_code/pdf", async (req, res): Promise<any> => {
+  const { order_code } = req.params;
+
+  const order = await prisma.order.findUnique({
+    where: { order_code },
+    include: {
+      Policy: {
+        include: {
+          plan: true,
+          product: { include: { productCategory: true } },
+          PolicyTravel: true,
+          PolicyHomecare: true,
+          PolicyPurchaseProtection: true,
+          policyDetails: true,
+          FblPolicyRider: true,
+          apiUser: true,
+          productOption: {
+            include: { webappMappers: true }
+          },
+        },
+      },
+    }
+  });
+
+  if (!order) {
+    return res.status(404).json({ message: "Order not found" });
+  }
+
+  await generateOrderPDF(res, order);
+});
 
 export default router;

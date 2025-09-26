@@ -43,7 +43,7 @@ export const createProductCategory = async (
 
 export const getProductCategoryByProductIGISCode = async (code: string) => {
   try {
-    const result = await prisma.productCategory.findUnique({
+    const result = await prisma.productCategory.findFirst({
       where: { igis_product_code: code },
     });
     return result;

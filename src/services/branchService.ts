@@ -40,25 +40,25 @@ export const createBranch = async (branch: BranchType, createdBy: number) => {
 };
 
 export const getBranchByIGISBranchCode = async (code: string) => {
-  return prisma.branch.findUnique({
+  return prisma.branch.findFirst({
     where: { igis_branch_code: code },
   });
 };
 
 export const getBranchByIGISTakafulCode = async (takafulCode: string) => {
-  return prisma.branch.findUnique({
+  return prisma.branch.findFirst({
     where: { igis_branch_takaful_code: takafulCode },
   });
 };
 
 export const getBranchByHISBranchCode = async (hisBranchCode: string) => {
-  return prisma.branch.findUnique({
+  return prisma.branch.findFirst({
     where: { his_code: hisBranchCode },
   });
 };
 
 export const getBranchByHISTakafulCode = async (hisTakafulCode: string) => {
-  return prisma.branch.findUnique({
+  return prisma.branch.findFirst({
     where: { his_code_takaful: hisTakafulCode },
   });
 };

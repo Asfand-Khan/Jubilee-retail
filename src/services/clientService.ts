@@ -56,7 +56,7 @@ export const updateClient = async (client: ClientUpdateType) => {
 };
 
 export const getClientByIGISClientCode = async (code: string) => {
-  return prisma.client.findUnique({
+  return prisma.client.findFirst({
     where: { igis_client_code: code },
   });
 };
