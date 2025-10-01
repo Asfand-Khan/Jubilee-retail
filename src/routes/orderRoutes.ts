@@ -35,6 +35,7 @@ router.get("/:order_code/pdf", async (req, res): Promise<any> => {
           },
         },
       },
+      payemntMethod: true
     }
   });
 

@@ -86,6 +86,7 @@ enum PolicyStatus {
   pending
   pendingCOD
   pendingCBO
+  expired
 }
 
 enum Gender {

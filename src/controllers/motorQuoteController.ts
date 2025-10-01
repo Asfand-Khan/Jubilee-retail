@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
 import { z } from "zod";
-import { createMotorQuote, getAllMotorQuotes, getMotorQuoteById, getMotorQuoteByQuoteId, updateMotorQuote } from "../services/motorQuoteService";
-import { validateMotorQuote, validateMotorQuoteUpdate } from "../validations/motorQuoteValidations";
+import { createMotorQuote, getAllMotorQuotes, getMotorQuoteById, getMotorQuoteByQuoteId, updateMotorQuote, updateMotorQuoteStatus } from "../services/motorQuoteService";
+import { validateMotorQuote, validateMotorQuoteStatusUpdate, validateMotorQuoteUpdate } from "../validations/motorQuoteValidations";
 
 // Module --> Motor Quote
 // Method --> GET (Protected)
@@ -132,6 +132,42 @@ export const updateMotorQuoteHandler = async (
     return res.status(200).json({
       status: 1,
       message: "Updated quote successfully",
+      payload: [updatedQuote],
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        status: 0,
+        message: error.errors[0].message,
+        payload: [],
+      });
+    }
+
+    return res.status(500).json({
+      status: 0,
+      message: error.message,
+      payload: [],
+    });
+  }
+};
+
+
+// Module --> Motor Quote
+// Method --> PUT (Protected)
+// Endpoint --> /api/v1/motor-quotes/
+// Description --> Update motor quote
+export const updateMotorQuoteStatusHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsedQuote = validateMotorQuoteStatusUpdate.parse(req.body);
+
+    const updatedQuote = await updateMotorQuoteStatus(parsedQuote);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Updated motor quote status successfully",
       payload: [updatedQuote],
     });
   } catch (error: any) {
