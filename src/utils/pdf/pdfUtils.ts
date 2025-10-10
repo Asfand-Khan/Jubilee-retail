@@ -1,4 +1,4 @@
-import PDFDocument, { polygon } from "pdfkit";
+import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { format } from "date-fns/format";
 
@@ -305,4 +305,64 @@ export const createGeneralApiTable1 = (doc: InstanceType<typeof PDFDocument>, po
 
     doc.moveTo(doc.page.width - 15, yStart - 5).lineTo(doc.page.width - 15, yStart + 27).stroke(); // vertical line
     doc.moveTo(15, yStart + 27).lineTo(doc.page.width - 15, yStart + 27).stroke(); // Horizontal line
+}
+
+export const creatHealthcareChildDetail = (doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder) => {
+    const x = 20;
+    const kid1Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid1");
+    const kid2Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid2");
+    const kid3Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid3");
+    const kid4Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid4");
+    const kid5Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid5");
+    const kid6Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid6");
+    const kid7Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid7");
+    const kid8Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid8");
+
+    doc.fontSize(10).font("Helvetica-Bold").text("Children's Details", x).moveDown(0.5);
+
+    doc = doc.fontSize(8);
+    const yStart = doc.y;
+    const padding = 15;
+    const rowHeight = 15;
+    let currentY = yStart;
+
+    // Draw the vertical lines based on calculated height
+    doc.moveTo(padding, yStart - 5).lineTo(doc.page.width - padding, yStart - 5).stroke(); // Top Horizontal line
+
+    if (kid1Data != null && kid1Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid1Data.name || "", kid1Data.relation || "", kid1Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid2Data != null && kid2Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid2Data.name || "", kid2Data.relation || "", kid2Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid3Data != null && kid3Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid3Data.name || "", kid3Data.relation || "", kid3Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid4Data != null && kid4Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid4Data.name || "", kid4Data.relation || "", kid4Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid5Data != null && kid5Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid5Data.name || "", kid5Data.relation || "", kid5Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid6Data != null && kid6Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid6Data.name || "", kid6Data.relation || "", kid6Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid7Data != null && kid7Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid7Data.name || "", kid7Data.relation || "", kid7Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+    if (kid8Data != null && kid8Data != undefined) {
+        drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid8Data.name || "", kid8Data.relation || "", kid8Data.age?.toString() || ""], [200, 166.6, 166.6]);
+        currentY += rowHeight;
+    }
+
+    doc.moveTo(padding, yStart - 5).lineTo(padding, currentY).stroke(); // Left Vertical line
+    doc.moveTo(doc.page.width - padding, yStart - 5).lineTo(doc.page.width - padding, currentY).stroke(); // Right Vertical line
+    doc.moveTo(padding, currentY).lineTo(doc.page.width - padding, currentY).stroke(); // Bottom Horizontal line
 }

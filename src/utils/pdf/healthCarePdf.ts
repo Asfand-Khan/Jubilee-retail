@@ -1,46 +1,19 @@
 import PDFDocument from "pdfkit";
-import { Response } from "express";
-
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
-import { createGeneralApiTable1, drawTable, drawTableRow, drawTableRowWithBorders } from "./pdfUtils";
+import { createGeneralApiTable1, creatHealthcareChildDetail, drawTable, drawTableRow } from "./pdfUtils";
 import { format } from "date-fns/format";
-import { table } from "console";
 
 export type PolicyDetail = FullOrder["Policy"][0]["policyDetails"][0];
 
-export function getCustomerDetail(policy: FullPolicy, type: string): PolicyDetail | undefined {
-    // Assuming policy.policyDetails is an array of objects like PolicyDetail
-    // The Java code uses .getCustomer("Customer"), .getCustomer("Spouse"), etc.
-    // The equivalent here seems to be a lookup in policyDetails or in PolicyTravel/PolicyHomecare etc.
-
-    // For simplicity, we'll stick to the core data used in the provided creatHealthcareTable2
-    // which seems to only use a 'customer' type for the main details.
-
-    const lowerType = type.toLowerCase();
-
-    // For 'Customer'
-    if (lowerType === 'customer' || lowerType === 'proposer') {
-        return policy.policyDetails.find(d => d.type.toLowerCase() === 'customer');
-    }
-
-    // For Spouse/Kid/Beneficiary (Need to map from policyDetails or assumed structure)
-    // The exact structure for Spouse/Kid is not 100% clear from the Prisma type, but the Java code implies 
-    // a helper function is used. We will simulate that for the parts where details are fetched for others.
-
-    // For now, only basic customer detail retrieval is directly possible:
-    if (lowerType === 'spouse') {
-        // Find if a spouse detail exists, maybe a separate entry with type 'spouse'
-        return policy.policyDetails.find(d => d.type.toLowerCase() === 'spouse');
-    }
-
-    // For children, the Java logic iterates through Kid1 to Kid8. This is highly application-specific.
-    // For now, return undefined for non-customer/proposer unless explicitly handled.
-    return policy.policyDetails.find(d => d.type.toLowerCase() === lowerType);
-}
-
 export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder) {
     console.log("Creating policy health care document");
+
+    const apiUser = policy.apiUser;
+    const paymentMethod = order.payemntMethod;
+    const spouseData = policy.policyDetails.find(detail => detail.type.toLowerCase() === "spouse")
+    const kid1Data = policy.policyDetails.find(detail => detail.type.toLowerCase() === "kid1")
+    const productName = policy.product.product_name.toLowerCase()
 
     let isFranchiseOrder = false;
     let isFaysalBankOrder = false;
@@ -53,23 +26,20 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     let isLetsCompareOrder = false;
     let isMMBLOrder = false;
 
-    const spouseData = policy.policyDetails.find(detail => detail.type.toLowerCase() === "spouse")
-    const kid1Data = policy.policyDetails.find(detail => detail.type.toLowerCase() === "kid1")
+    isFaysalBankOrder = (apiUser != null && apiUser.name.toLowerCase().includes("faysalbank"));
+    isFranchiseOrder = (paymentMethod.name.toLowerCase() === "franchise");
+    isSCBOrder = (apiUser != null && apiUser.name.toLowerCase().includes("scb"));
+    isHMBOrder = (apiUser != null && apiUser.name.toLowerCase().includes("hmb"));
+    isHBLMFBOrder = (apiUser != null && apiUser.name.toLowerCase().includes("hbl microfinance bank"));
+    isMMBLOrder = (apiUser != null && apiUser.name.toLowerCase().includes("mmbl"));
 
-    isFaysalBankOrder = (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("faysalbank"));
-    isFranchiseOrder = (order.payemntMethod.name.toLowerCase() === "franchise");
-    isSCBOrder = (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("scb"));
-    isHMBOrder = (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("hmb"));
-    isHBLMFBOrder = (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("hbl microfinance bank"));
-    isMMBLOrder = (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("mmbl"));
-
-    if (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("easyinsurance")) {
+    if (apiUser != null && apiUser.name.toLowerCase().includes("easyinsurance")) {
         isEasyInsuranceOrder = true;
-    } else if (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("smartchoice")) {
+    } else if (apiUser != null && apiUser.name.toLowerCase().includes("smartchoice")) {
         isSmartChoiceOrder = true;
-    } else if (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("mawazna")) {
+    } else if (apiUser != null && apiUser.name.toLowerCase().includes("mawazna")) {
         isMawazanaOrder = true;
-    } else if (policy.apiUser != null && policy.apiUser.name.toLowerCase().includes("lets compare")) {
+    } else if (apiUser != null && apiUser.name.toLowerCase().includes("lets compare")) {
         isLetsCompareOrder = true;
     }
 
@@ -158,30 +128,21 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     //     doc.moveDown(1.5);
     // }
     const creatHealthcareTable2 = (doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder, isHMBOrder: boolean) => {
-
         const x = 20;
-        const productName = policy.product.product_name.toLowerCase();
+        
         const customerData = policy.policyDetails.find(detail => detail.type.toLowerCase() === "customer");
         const beneficiaryData = policy.policyDetails.find(detail => detail.type.toLowerCase() === "beneficiary");
-        const apiUser = policy.apiUser;
-
         let contribution = "Premium";
         let policyType = "Policy";
         let DATE_FORMAT = "MMM dd, yyyy HH:mm:ss";
-
-        // NOTE: The Java logic uses policy.getTotalPrice(), which is assumed to be order.payment 
-        // in the existing TS code. We rely on the existing variables for amount calculation.
         let NUMBER_FORMAT = new Intl.NumberFormat('en-US', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 2
         })
-
         let inPatientAmount = "";
         let outPatientAmount = "";
-
         let tableHeading = "";
 
-        // --- 1. Determine Heading and Formatting ---
         if (apiUser != null && (apiUser.name.includes("faysalbank") || apiUser.name.includes("scb"))) {
             DATE_FORMAT = "MMM dd, yyyy";
         }
@@ -189,7 +150,7 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
         if (policy.takaful_policy) {
             tableHeading = "Participant's Details";
             policyType = "Document";
-            contribution = "Contribution"; // Java logic uses conditional for contribution name change
+            contribution = "Contribution";
         } else {
             tableHeading = "Personal Details";
         }
@@ -382,66 +343,6 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
         doc.moveTo(padding, currentY).lineTo(doc.page.width - padding, currentY).stroke(); // Bottom Horizontal line
     }
 
-    const creatHealthcareChildDetail = (doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder) => {
-        const x = 20;
-        const kid1Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid1");
-        const kid2Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid2");
-        const kid3Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid3");
-        const kid4Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid4");
-        const kid5Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid5");
-        const kid6Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid6");
-        const kid7Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid7");
-        const kid8Data = policy.policyDetails.find(detail => detail.type.toLowerCase() == "kid8");
-
-        doc.fontSize(10).font("Helvetica-Bold").text("Children's Details", x).moveDown(0.5);
-
-        doc = doc.fontSize(8);
-        const yStart = doc.y;
-        const padding = 15;
-        const rowHeight = 15;
-        let currentY = yStart;
-
-        // Draw the vertical lines based on calculated height
-        doc.moveTo(padding, yStart - 5).lineTo(doc.page.width - padding, yStart - 5).stroke(); // Top Horizontal line
-
-        if (kid1Data != null && kid1Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid1Data.name || "", kid1Data.relation || "", kid1Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid2Data != null && kid2Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid2Data.name || "", kid2Data.relation || "", kid2Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid3Data != null && kid3Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid3Data.name || "", kid3Data.relation || "", kid3Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid4Data != null && kid4Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid4Data.name || "", kid4Data.relation || "", kid4Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid5Data != null && kid5Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid5Data.name || "", kid5Data.relation || "", kid5Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid6Data != null && kid6Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid6Data.name || "", kid6Data.relation || "", kid6Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid7Data != null && kid7Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid7Data.name || "", kid7Data.relation || "", kid7Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-        if (kid8Data != null && kid8Data != undefined) {
-            drawTableRow(doc, currentY, ["Name", "Relation", "Age"], [kid8Data.name || "", kid8Data.relation || "", kid8Data.age?.toString() || ""], [200, 166.6, 166.6]);
-            currentY += rowHeight;
-        }
-
-        doc.moveTo(padding, yStart - 5).lineTo(padding, currentY).stroke(); // Left Vertical line
-        doc.moveTo(doc.page.width - padding, yStart - 5).lineTo(doc.page.width - padding, currentY).stroke(); // Right Vertical line
-        doc.moveTo(padding, currentY).lineTo(doc.page.width - padding, currentY).stroke(); // Bottom Horizontal line
-    }
-
     const createParentCareTable = (doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder) => {
         const x = 20;
         let motherName = "Mother's Name";
@@ -558,16 +459,16 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     const creatHealthcareTable4 = (doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder) => {
         const x = 20;
 
-        doc.fontSize(10).font("Helvetica-Bold").text("Benefit Plans", x, doc.y).moveDown(0.5);
+        doc.fontSize(10).font("Helvetica-Bold").text("Benefit Plans", x, doc.y + 2).moveDown(0.5);
 
         doc = doc.fontSize(8);
-        const yStart = doc.y;
+        const yStart = doc.y - 5;
         const padding = 15;
         const rowHeight = 15;
         let currentY = yStart;
 
 
-        // if (isFaysalBankOrder && productName.includes("female centric health takaful")) {
+        if (isFaysalBankOrder && productName.includes("female centric health takaful")) {
             const plan = policy.plan.name.toLowerCase();
             let hospitalizationLimitValue = "";
             let herCareValue = "";
@@ -633,13 +534,1000 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
                 columnWidths: [180, 200, 180],
                 headers: ["Benefits", "Description", "Coverage"],
             });
+        }
+        else if (productName.includes("parents-care-plus")) {
+
+            const planName = policy.plan.name.toLowerCase();
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: ["Parents Care Plus"],
+            });
+            currentY = doc.y + 1.2;
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: ["Parents Benefit Table"],
+            });
+
+            let coverageLimitValue = "";
+            let roomPerDayValue = "";
+            let icuChargesValue = "Actual";
+            let ambulanceCharges = "PKR 3,000";
+            let preHospitalizationValue = "30 days";
+            let nursingBenefitsValue = "The product also provides a nursing care benefit of PKR " +
+                "20,000 in case of hospitalization due to paralysis, stroke " +
+                "or fracture and nursing care is advised by the attending " +
+                "physician. The benefit is payable once a year only";
+            let dayCareValue = "Covered";
+            let preExistingValue = "a. 1st year 10% of Annual Limit\n" +
+                "b. 2nd year 20% of Annual Limit\n" +
+                "c. 3rd year 30% of Annual Limit\n" +
+                "d. 4th year & onward 50% of Annual Limit";
+            let msoValue = "Covered";
+            let onlineDoctorValue = "Covered";
+
+            if (planName.includes("silver")) {
+                coverageLimitValue = "Rs. 90,000";
+                roomPerDayValue = "PKR 10,000";
+            } else if (planName.includes("gold")) {
+                coverageLimitValue = "Rs. 230,000";
+                roomPerDayValue = "PKR 25,000";
+            } else if (planName.includes("platinum")) {
+                coverageLimitValue = "Rs. 460,000";
+                roomPerDayValue = "PKR 40,000";
+            }
+
+            currentY = doc.y + 1.2;
+            drawTable(doc, [
+                ["Plan", planName.toUpperCase()],
+                ["Limit Per Person (annual) Hospital Expense Benefit – (Total Room Rent, Hospital/Surgical Expenses for a minimum 24 hours)", `${coverageLimitValue}/-`]
+            ], {
+                x: 15,
+                y: currentY,
+                columnWidths: [400, 165],
+                headers: [],
+            });
+
+            currentY = doc.y + 10;
+            drawTable(doc, [
+                ["Sub Limits"],
+            ], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: [],
+            });
+
+            currentY = doc.y + 1.2;
+            drawTable(doc, [
+                ["Room Limit per Day", roomPerDayValue],
+                ["ICU / Operation Theatre charges", `${icuChargesValue}`],
+                ["Ambulance - per Hospitalization / per policy", `${ambulanceCharges}/-`],
+                ["Pre Hospitalization", `${preHospitalizationValue}`],
+                ["Post Hospitalization – Nursing Care Benefit: PKR 20,000 / Year", `${nursingBenefitsValue}`],
+                ["Day-Care Procedures & Specialized Investigations in outpatient setting including but not limited to:\n" + "Dialysis, Cataract Surgery, MRI, CT Scan, Endoscopy, Thallium Scan, Angiography, and Treatment of Fracture. Emergency dental treatment due to accidental injuries within 48 hours (for pain relief only).", `${dayCareValue}`],
+                ["Pre-Existing Conditions & Congenital Anomalies Coverage", `${preExistingValue}`],
+                ["International Medical Second Opinion (MSO) Benefit:\n" + " International Medic al Second opinion from MediGuide International from some of the best hospitals across the world.", `${msoValue}`],
+                ["Online Doctor Consultation:\n" + "Online Audio / Video consultation through our Partner", `${onlineDoctorValue}`]
+            ], {
+                x: 15,
+                y: currentY,
+                columnWidths: [400, 165],
+                headers: [],
+            });
+
+        }
+        else if (isMMBLOrder) {
+            let tableHeading = "COMPREHENSIVE HEALTH COVER";
+            if (productName.includes("maternity")) {
+                tableHeading = "COMPREHENSIVE HEALTH + MATERNITY COVER";
+            }
+
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: [tableHeading],
+            });
+
+            currentY = doc.y + 1.2;
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: ["Product Benefit Table"],
+            });
+
+            currentY = doc.y + 1.2;
+            drawTable(doc, [
+                ["Hospitalization Limit", "PKR 400,000"],
+                ["Room & Board entitlement (Per day)", "PKR 8,500"],
+                ["Age Limit", "Entry Age: 18-60 years\n" + "Renewal up to 65 years \n" + "Children 02-24 Years\n"],
+                ["In case of Accidental Hospitalization", "Covered"],
+                ["-Pre-Hospitalization Diagnostic Charges (30 days prior to Hospitalization)\n" +
+                    "-Post-Hospitalization Follow-up Charges (30 days after discharge)\n" +
+                    "-Physician’s Visit (In-Patient visit) Charges\n" +
+                    "-Specialist Consultation (In-Patient visit) Charges \n" +
+                    "-Intensive Care Unit (ICU) Charges \n" +
+                    "-Miscellaneous Hospital Expenses\n" +
+                    "-Surgical Operation Charges \n" +
+                    "-Day-care Surgery Charges\n" +
+                    "-Hospital Casualty Ward Accident & Emergency Services\n", "Covered"],
+                ["Pre-existing Condition Covered (Waiting Period)", "45 Days (PEC not covered for some conditions as mentioned below in major conditions & exclusions)"],
+                ["Specialized Investigations Outpatient Cover: (Magnetic Resonance Imaging (MRI), Computed Tomography (CT) Scan, Endoscopy. Thallium Scan, Angiography)", "Covered during hospitalization only"],
+                ["Treatment of Fractures & Lacerated Wound, Local road ambulance for emergencies only.", "Covered"],
+                ["Emergency Dental Treatment due to Accidental Injuries within 48 hours for pain relief only)", "Covered"],
+                ["Treatment for Interferon Therapy for Hepatitis B&C", "Covered"],
+                ["Ambulance Charges (Per visit)", "3000/="],
+                ["Burial Charges", "10,000/-"],
+                ["Loss of Income during Hospitalization (Patient should be confined within a hospital for at least 7 Consecutive days & Benefit will be payable for admitted days only of each hospitalization).", "1000/- per day"],
+                productName.includes("maternity") ? ["Maternity - Normal/C-Section (Waiting period 60 days)", "PKR 100,000/="] : []
+            ], {
+                x: 15,
+                y: currentY,
+                columnWidths: [400, 165],
+                headers: [],
+            });
+
+        }
+        // else {
+        //     const productName = policy.product.product_name.toLowerCase();
+        //     const planName = policy.plan.name.toLowerCase();
+        //     let isParent = false;
+
+        //     let tableHeading = "FAMILY HEALTH CARE";
+        //     if (isFaysalBankOrder) {
+        //         if (productName.includes("family")) {
+        //             tableHeading = "Takaful Family Health Cover";
+        //         } else {
+        //             tableHeading = "Takaful Health Cover";
+        //         }
+        //     } else if (isHBLMFBOrder) {
+        //         tableHeading = "SelfCare (Accidental Death, Disability & Medical Expense Insurance Cover)";
+        //     } else if (productName.includes("personal")) {
+        //         tableHeading = "PERSONAL HEALTH CARE";
+        //     } else if (productName.includes("hercare")) {
+        //         tableHeading = "HER CARE";
+        //     } else if (productName.includes("mib") && productName.includes("family")) {
+        //         tableHeading = "MIB FAMILY HEALTH PLAN";
+        //     } else if (productName.includes("hbl")) {
+        //         tableHeading = "HBL Daily Hospital Cash";
+        //     } else if (productName.includes("shifa-daily")) {
+        //         tableHeading = "SHIFA-Daily Cash Insurance";
+        //     } else if (isSCBOrder) {
+        //         tableHeading = "HOSPITAL TAKAFUL COVER";
+        //     } else if (isHMBOrder) {
+        //         tableHeading = "COMPREHENSIVE HEALTH COVER";
+        //     } else {
+        //         tableHeading = "FAMILY HEALTH CARE";
+        //     }
+
+        //     drawTable(doc, [], {
+        //         x: 15,
+        //         y: currentY,
+        //         columnWidths: [565],
+        //         headers: [tableHeading],
+        //     });
+
+        //     currentY = doc.y + 1.2;
+
+        //     let benefitTableHeading = "Product Benefit Table";
+        //     if (productName.includes("parent")) {
+        //         isParent = true;
+        //         benefitTableHeading = "Product Benefit Table / Per Annum / Per Parent";
+        //     }
+
+        //     drawTable(doc, [], {
+        //         x: 15,
+        //         y: currentY,
+        //         columnWidths: [565],
+        //         headers: [benefitTableHeading],
+        //     });
+
+        //     let hospitalLimit = "550,000";
+        //     if (productName.includes("hercare")) {
+        //         if (planName.includes("platinum")) {
+        //             hospitalLimit = "1,000,000";
+        //         } else if (planName.includes("diamond")) {
+        //             hospitalLimit = "750,000";
+        //         } else if (planName.includes("gold")) {
+        //             hospitalLimit = "500,000";
+        //         }
+        //     }
+        //     let accidentalInjuries = "";
+        //     let room = "Private";
+        //     let hopstalBenifit;
+        //     let ambulanceExpense = "3,500";
+        //     if (productName.includes("family")) {
+        //         if (planName.includes("diamond")) {
+        //             hospitalLimit = "750,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "4,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "862,500";
+        //             }
+        //         }
+        //         if (planName.includes("platinum")) {
+        //             hospitalLimit = "1,000,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "4,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "1,150,000";
+        //             }
+        //         }
+        //         if (planName.includes("gold")) {
+        //             hospitalLimit = "550,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "3,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "632,500";
+        //             }
+        //         } else if (planName.includes("silver")) {
+        //             hospitalLimit = "275,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Semi-Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "2,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "316,250";
+        //             }
+        //         }
 
 
+        //     }
+        //     if (productName.includes("personal")) {
+        //         if (planName.includes("diamond")) {
+        //             hospitalLimit = "750,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "4,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "862,500";
+        //             }
+        //         }
+        //         if (planName.includes("platinum")) {
+        //             hospitalLimit = "1,000,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "5,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "1,150,000";
+        //             }
+        //         }
+        //         if (planName.includes("gold")) {
+        //             hospitalLimit = "550,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "3,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "632,500";
+        //             }
+
+        //         } else if (planName.includes("silver")) {
+        //             hospitalLimit = "275,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Semi-Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "2,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "316,250";
+        //             }
+
+        //         } else if (planName.includes("bronze")) {
+        //             hospitalLimit = "125,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "General Ward";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "1,500";
+        //             if (policy?.policy_code?.includes("-R")
+        //                 && !policy?.policy_code?.includes("-R1")
+        //                 && !policy?.policy_code?.includes("-R2")) {
+        //                 hospitalLimit = "143,750";
+        //             }
+        //         }
+
+
+        //     }
+        //     if (isFaysalBankOrder) {
+
+        //         if (planName.includes("gold")) {
+        //             hospitalLimit = "600,000";
+        //             accidentalInjuries = "150,000";
+        //             room = "Private";
+        //             hopstalBenifit = "12,000";
+        //             ambulanceExpense = "5,000";
+        //         } else if (planName.includes("silver")) {
+        //             hospitalLimit = "400,000";
+        //             accidentalInjuries = "100,000";
+        //             room = "Semi Private";
+        //             hopstalBenifit = "8,000";
+        //             ambulanceExpense = "4,000";
+
+        //         } else {
+        //             hospitalLimit = "200,000";
+        //             accidentalInjuries = "50,000";
+        //             room = "Semi Private";
+        //             hopstalBenifit = "4,000";
+        //             ambulanceExpense = "2,000";
+        //         }
+        //     }
+        //     let accidentalDeathCoverageLimit = "";
+        //     if (isSCBOrder) {
+        //         if (planName.includes("silver")) {
+        //             hospitalLimit = "500,000";
+        //             accidentalInjuries = "100,000";
+        //             room = "20,000";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered";
+        //             accidentalDeathCoverageLimit = "500,000";
+        //         } else if (planName.includes("gold")) {
+        //             hospitalLimit = "750,000";
+        //             accidentalInjuries = "150,000";
+        //             room = "35,000";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered";
+        //             accidentalDeathCoverageLimit = "750,000";
+        //         } else if (planName.includes("platinum")) {
+        //             hospitalLimit = "1,000,000";
+        //             accidentalInjuries = "250,000";
+        //             room = "35,000";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered";
+        //             accidentalDeathCoverageLimit = "1,000,000";
+        //         }
+        //     }
+        //     if (isHMBOrder) {
+        //         if (planName.includes("bronze")) {
+        //             hospitalLimit = "150,000";
+        //             accidentalInjuries = "100,000";
+        //             room = "Semi Private";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered";
+        //             //accidentalDeathCoverageLimit = "500,000";
+        //         } else if (planName.includes("silver")) {
+        //             hospitalLimit = "500,000";
+        //             accidentalInjuries = "150,000";
+        //             room = "Private";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered";
+        //             //accidentalDeathCoverageLimit = "750,000";
+        //         } else if (planName.includes("gold")) {
+        //             hospitalLimit = "1,000,000";
+        //             accidentalInjuries = "300,000";
+        //             room = "Private";
+        //             //hopstalBenifit = "12,000";
+        //             ambulanceExpense = "Covered on actual basis";
+        //             //accidentalDeathCoverageLimit = "1,000,000";
+        //         }
+        //     }
+        //     if (isFranchiseOrder) {
+        //         hospitalLimit = "50,000";
+        //         accidentalInjuries = "50,000";
+        //         room = "1000";
+        //         hopstalBenifit = "4,000";
+        //         ambulanceExpense = "1,000";
+
+        //     }
+
+        //     currentY = doc.y + 1.2;
+        //     drawTable(doc, [
+        //         ["Plan", planName.toUpperCase()],
+        //         ["Hospitalization Limits", `${hospitalLimit}/-`]
+        //     ], {
+        //         x: 15,
+        //         y: currentY,
+        //         columnWidths: [400, 165],
+        //         headers: [],
+        //     });
+
+        //     currentY = doc.y + 10;
+        //     drawTable(doc, [
+        //         ["Sub Limits"],
+        //     ], {
+        //         x: 15,
+        //         y: currentY,
+        //         columnWidths: [565],
+        //         headers: [],
+        //     });
+
+        //     currentY = doc.y + 1.2;
+        //     drawTable(doc, [
+        //         ["Room & Board (Per Day)", room],
+        //         ["Pre hospitalization Expenses", "30 Days"],
+        //         ["Post hospitalization Expenses", "30 Days"],
+        //         ["Emergency Local Ambulance Expenses", `${ambulanceExpense}`],
+        //         ["Emergency International Expenses", "Covered"],
+        //         ["Medical Second Option", "Covered"],
+        //         ["Increase in Hospitalization due to accidental Injuries", `${accidentalInjuries}`],
+        //         ["Maternity Expenses", "Normal   30,000\nc-section   45,000"],
+        //         ["Emergency Accidental Outpatient Expenses", "Covered"],
+        //         ["Emergency Accidental Dental Expense", "Covered"],
+        //         ["Accidental Death Coverage", accidentalDeathCoverageLimit]
+        //     ], {
+        //         x: 15,
+        //         y: currentY,
+        //         columnWidths: [400, 165],
+        //         headers: [],
+        //     });
         // }
+        else {
+            const productName = policy.product.product_name.toLowerCase();
+            const planName = policy.plan.name.toLowerCase();
+            let isParent = false;
+
+            let tableHeading = "FAMILY HEALTH CARE";
+            if (isFaysalBankOrder) {
+                if (productName.includes("family")) {
+                    tableHeading = "Takaful Family Health Cover";
+                } else {
+                    tableHeading = "Takaful Health Cover";
+                }
+            } else if (isHBLMFBOrder) {
+                tableHeading = "SelfCare (Accidental Death, Disability & Medical Expense Insurance Cover)";
+            } else if (productName.includes("personal")) {
+                tableHeading = "PERSONAL HEALTH CARE";
+            } else if (productName.includes("hercare")) {
+                tableHeading = "HER CARE";
+            } else if (productName.includes("mib") && productName.includes("family")) {
+                tableHeading = "MIB FAMILY HEALTH PLAN";
+            } else if (productName.includes("hbl")) {
+                tableHeading = "HBL Daily Hospital Cash";
+            } else if (productName.includes("shifa-daily")) {
+                tableHeading = "SHIFA-Daily Cash Insurance";
+            } else if (isSCBOrder) {
+                tableHeading = "HOSPITAL TAKAFUL COVER";
+            } else if (isHMBOrder) {
+                tableHeading = "COMPREHENSIVE HEALTH COVER";
+            } else {
+                tableHeading = "FAMILY HEALTH CARE";
+            }
+
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: [tableHeading],
+            });
+
+            currentY = doc.y + 1.2;
+
+            let benefitTableHeading = "Product Benefit Table";
+            if (productName.includes("parent")) {
+                isParent = true;
+                benefitTableHeading = "Product Benefit Table / Per Annum / Per Parent";
+            }
+
+            drawTable(doc, [], {
+                x: 15,
+                y: currentY,
+                columnWidths: [565],
+                headers: [benefitTableHeading],
+            });
+
+            let hospitalLimit = "550,000";
+            if (productName.includes("hercare")) {
+                if (planName.includes("platinum")) {
+                    hospitalLimit = "1,000,000";
+                } else if (planName.includes("diamond")) {
+                    hospitalLimit = "750,000";
+                } else if (planName.includes("gold")) {
+                    hospitalLimit = "500,000";
+                }
+            }
+            let accidentalInjuries = "";
+            let room = "Private";
+            let hopstalBenifit = "12,000";
+            let ambulanceExpense = "3,500";
+            if (productName.includes("family")) {
+                if (planName.includes("diamond")) {
+                    hospitalLimit = "750,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "4,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "862,500";
+                    }
+                }
+                if (planName.includes("platinum")) {
+                    hospitalLimit = "1,000,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "4,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "1,150,000";
+                    }
+                }
+                if (planName.includes("gold")) {
+                    hospitalLimit = "550,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "3,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "632,500";
+                    }
+                } else if (planName.includes("silver")) {
+                    hospitalLimit = "275,000";
+                    accidentalInjuries = "50,000";
+                    room = "Semi-Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "2,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "316,250";
+                    }
+                }
+            }
+            if (productName.includes("personal")) {
+                if (planName.includes("diamond")) {
+                    hospitalLimit = "750,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "4,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "862,500";
+                    }
+                }
+                if (planName.includes("platinum")) {
+                    hospitalLimit = "1,000,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "5,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "1,150,000";
+                    }
+                }
+                if (planName.includes("gold")) {
+                    hospitalLimit = "550,000";
+                    accidentalInjuries = "50,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "3,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "632,500";
+                    }
+
+                } else if (planName.includes("silver")) {
+                    hospitalLimit = "275,000";
+                    accidentalInjuries = "50,000";
+                    room = "Semi-Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "2,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "316,250";
+                    }
+
+                } else if (planName.includes("bronze")) {
+                    hospitalLimit = "125,000";
+                    accidentalInjuries = "50,000";
+                    room = "General Ward";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "1,500";
+                    if (policy?.policy_code?.includes("-R")
+                        && !policy?.policy_code?.includes("-R1")
+                        && !policy?.policy_code?.includes("-R2")) {
+                        hospitalLimit = "143,750";
+                    }
+                }
+            }
+            if (isFaysalBankOrder) {
+
+                if (planName.includes("gold")) {
+                    hospitalLimit = "600,000";
+                    accidentalInjuries = "150,000";
+                    room = "Private";
+                    hopstalBenifit = "12,000";
+                    ambulanceExpense = "5,000";
+
+                } else if (planName.includes("silver")) {
+                    hospitalLimit = "400,000";
+                    accidentalInjuries = "100,000";
+                    room = "Semi Private";
+                    hopstalBenifit = "8,000";
+                    ambulanceExpense = "4,000";
+
+                } else {
+                    hospitalLimit = "200,000";
+                    accidentalInjuries = "50,000";
+                    room = "Semi Private";
+                    hopstalBenifit = "4,000";
+                    ambulanceExpense = "2,000";
+                }
+            }
+            let accidentalDeathCoverageLimit = "";
+            if (isSCBOrder) {
+                if (planName.includes("silver")) {
+                    hospitalLimit = "500,000";
+                    accidentalInjuries = "100,000";
+                    room = "20,000";
+                    ambulanceExpense = "Covered";
+                    accidentalDeathCoverageLimit = "500,000";
+                } else if (planName.includes("gold")) {
+                    hospitalLimit = "750,000";
+                    accidentalInjuries = "150,000";
+                    room = "35,000";
+                    ambulanceExpense = "Covered";
+                    accidentalDeathCoverageLimit = "750,000";
+                } else if (planName.includes("platinum")) {
+                    hospitalLimit = "1,000,000";
+                    accidentalInjuries = "250,000";
+                    room = "35,000";
+                    ambulanceExpense = "Covered";
+                    accidentalDeathCoverageLimit = "1,000,000";
+                }
+            }
+            if (isHMBOrder) {
+                if (planName.includes("bronze")) {
+                    hospitalLimit = "150,000";
+                    accidentalInjuries = "100,000";
+                    room = "Semi Private";
+                    ambulanceExpense = "Covered";
+                } else if (planName.includes("silver")) {
+                    hospitalLimit = "500,000";
+                    accidentalInjuries = "150,000";
+                    room = "Private";
+                    ambulanceExpense = "Covered";
+                } else if (planName.includes("gold")) {
+                    hospitalLimit = "1,000,000";
+                    accidentalInjuries = "300,000";
+                    room = "Private";
+                    ambulanceExpense = "Covered on actual basis";
+                }
+            }
+            if (isFranchiseOrder) {
+                hospitalLimit = "50,000";
+                accidentalInjuries = "50,000";
+                room = "1000";
+                hopstalBenifit = "4,000";
+                ambulanceExpense = "1,000";
+            }
+
+            if (isParent) {
+                if (planName.includes("platinum")) {
+                    hospitalLimit = "500,000";
+                    room = "Private";
+                } else if (planName.includes("gold")) {
+                    hospitalLimit = "300,000";
+                    room = "Private";
+                } else if (planName.includes("silver")) {
+                    hospitalLimit = "200,000";
+                    room = "Semi-pvt";
+                } else if (planName.includes("titanium")) {
+                    if (planName.includes("plus")) {
+                        hospitalLimit = "1,000,000";
+                    } else {
+                        hospitalLimit = "700,000";
+                    }
+                    room = "Private";
+                }
+                tableHeading = "PARENT CARE";
+            }
+
+            currentY = doc.y + 1.4;
+
+            if (isHBLMFBOrder) {
+                let accidentalDeath = "";
+                let accidentalMedicalExpense = "";
+                let totalSumInsured = "";
+                let netPremiumMonthly = "";
+                if (policy.plan.name === "Plan A") {
+                    accidentalDeath = "100,000";
+                    accidentalMedicalExpense = "10,000";
+                    totalSumInsured = "110,000";
+                    netPremiumMonthly = "Rs. 75";
+                } else if (policy.plan.name === "Plan B") {
+                    accidentalDeath = "300,000";
+                    accidentalMedicalExpense = "30,000";
+                    totalSumInsured = "330,000";
+                    netPremiumMonthly = "Rs. 200";
+                } else if (policy.plan.name === "Plan C") {
+                    accidentalDeath = "500,000";
+                    accidentalMedicalExpense = "50,000";
+                    totalSumInsured = "550,000";
+                    netPremiumMonthly = "Rs. 350";
+                }
+
+                drawTable(doc, [
+                    ["Plan", policy.plan.name],
+                    ["Accidental Death & Permanent Disability", accidentalDeath],
+                    ["Accidental Medical Expense", accidentalMedicalExpense],
+                    ["Total Sum Insured", totalSumInsured],
+                    ["Net Premium Monthly- auto payment", netPremiumMonthly],
+                    ["Commission", "20% on Gross Premium"]
+                ], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [400, 165],
+                    headers: [],
+                });
+            } else if (productName.includes("hbl")) {
+                let hospitalBenefits = "";
+                let surgeryBenefits = "";
+                let accidentBenefits = "";
+                let icuBenefits = "";
+                let dailyCashMaxLimit = "";
+                let surgeryMaxLimit = "";
+                let icuMaxLimit = "";
+                let premium = "";
+                if (policy.plan.name === "Plan A") {
+                    hospitalBenefits = "1,000";
+                    surgeryBenefits = "1,500";
+                    accidentBenefits = "1,500";
+                    icuBenefits = "1,500";
+                    dailyCashMaxLimit = "30,000";
+                    surgeryMaxLimit = "45,000";
+                    icuMaxLimit = "45,000";
+                    premium = "1,700";
+                } else if (policy.plan.name === "Plan B") {
+                    hospitalBenefits = "3,000 ";
+                    surgeryBenefits = "4,500";
+                    accidentBenefits = "4,500";
+                    icuBenefits = "4,500";
+                    dailyCashMaxLimit = "90,000";
+                    surgeryMaxLimit = "135,000";
+                    icuMaxLimit = "135,000";
+                    premium = "5,060";
+                } else if (policy.plan.name === "Plan C") {
+                    hospitalBenefits = "5,000 ";
+                    surgeryBenefits = "7,500";
+                    accidentBenefits = "7,500";
+                    icuBenefits = "7,500";
+                    dailyCashMaxLimit = "150,000";
+                    surgeryMaxLimit = "225,000";
+                    icuMaxLimit = "225,000";
+                    premium = "7,890";
+                }
+
+                drawTable(doc, [
+                    ["Daily Cash", "Rs./Day"],
+                    ["Min 2 days & 10 days Max one Confinement & 30 days in a year\n1. Pays daily benefit for as long as the policyholder is confined to the hospital. The amount will depend on the nature of hospitalization and the mode of treatment.", hospitalBenefits],
+                    ["2- The benefit payable is increased by 50% if the hospitalization is due to surgery", surgeryBenefits],
+                    ["3- The benefit payable is increased by 50% if the hospitalization is due to accident.", accidentBenefits],
+                    ["4- The benefit payable is increased by 50% if the patient is confined to an ICU.", icuBenefits],
+                    ["Daily Cash Max Limit in Aggregate", dailyCashMaxLimit],
+                    ["In Case of Surgery/Accident Max Limit", surgeryMaxLimit],
+                    ["In Case of ICU Treatment Max Limit", icuMaxLimit],
+                    ["Premium", premium]
+                ], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [400, 165],
+                    headers: [],
+                });
+            } else if (productName.includes("shifa-daily")) {
+                let dailyBenifit = "";
+                let surgeryOrAccidentBenifit = "";
+                let icuBenifit = "";
+                let dailyCashMaxLimit = "";
+                let surgeryOrAccidentMaxLimit = "";
+                let icuMaxLimit = "";
+                let premium = "";
+                if (policy.plan.name === "SHIFA Silver") {
+                    dailyBenifit = "5,000";
+                    surgeryOrAccidentBenifit = "7,500";
+                    icuBenifit = "10,000";
+                    dailyCashMaxLimit = "900,000";
+                    surgeryOrAccidentMaxLimit = "1,350,000";
+                    icuMaxLimit = "1,800,000";
+                    premium = "2,500";
+                } else if (policy.plan.name === "SHIFA Gold") {
+                    dailyBenifit = "10,000";
+                    surgeryOrAccidentBenifit = "15,000";
+                    icuBenifit = "20,000";
+                    dailyCashMaxLimit = "1,800,000";
+                    surgeryOrAccidentMaxLimit = "2,700,000";
+                    icuMaxLimit = "3,600,000";
+                    premium = "5,000";
+                }
+
+                drawTable(doc, [
+                    ["This product shall provide coverage to the insured person in case of hospitalization due to illness or accident. Where a fixed daily amount for the number of hospitalization days will be reimbursed to assured person as per the plan selected.\n-Minimum 24 hours & maximum 180 days hospitalization in a year.\n-While the number of days for cases of ICU /accident /surgery will be up to 15 days max per confinement.", "Rs./Day"],
+                    [" 1. Pays daily benefit for as long as the policyholder is confined to the hospital. The amount will depend on the nature of hospitalization and the mode of treatment. ", dailyBenifit],
+                    [" 2. The benefit payable is increased by 50% if the hospitalization is due to surgery & accident", surgeryOrAccidentBenifit],
+                    [" 3. The benefit payable is increased by 100% if the patient is confined to an ICU.", icuBenifit],
+                    ["Daily Cash Max Limit in Aggregate", dailyCashMaxLimit],
+                    ["In Case of Surgery/Accident Max Limit", surgeryOrAccidentMaxLimit],
+                    ["In Case of ICU Treatment Max Limit", icuMaxLimit],
+                    ["NET PREMIUM (Incl.Taxes & Levis) ", premium]
+                ], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [400, 165],
+                    headers: [],
+                });
+            } else if (!productName.includes("hbl") && !productName.includes("shifa-daily") && !productName.includes("sehat plan")) {
+                let hospitalizationHeading = "Hospitalization Limits";
+                if (isHMBOrder) {
+                    hospitalizationHeading = "Annual Hospitalization Limit";
+                }
+
+                drawTable(doc, [
+                    ["Plan", policy.plan.name],
+                    [hospitalizationHeading, hospitalLimit]
+                ], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [400, 165],
+                    headers: [],
+                });
+
+                currentY = doc.y + 1.4;
+
+                drawTable(doc, [
+                    ["Sub Limits"],
+                ], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [565],
+                    headers: [],
+                });
+
+                currentY = doc.y + 1.4;
+
+                let subLimitRows = [];
+                let roomHeading = "Room & Board (Per Day)";
+                if (isHMBOrder) {
+                    roomHeading = "Room Entitlement";
+                }
+                subLimitRows.push([roomHeading, room]);
+
+                if (isParent) {
+                    subLimitRows.push(["ICU / Operation Theatre charges", "Actual"]);
+                    subLimitRows.push(["Ambulance - per Hospitalization / per policy", "3,000"]);
+                    subLimitRows.push(["Pre hospitalization Expenses", "30 Days"]);
+                    subLimitRows.push(["Post hospitalization Expenses", "30 Days"]);
+                    subLimitRows.push(["Day-Care Procedures & Specialized Investigations in outpatient setting including but not limited to: Dialysis, Cataract Surgery, MRI, CT Scan, Endoscopy, Thallium Scan, Angiography, Treatment of Fracture. Emergency dental treatment due to accidental injuries within 48 hours(forpain relief only) ", "Covered"]);
+                } else {
+                    let prePostHeading = "Pre hospitalization Expenses";
+                    let prePostValue = "30 Days";
+                    if (isHMBOrder) {
+                        prePostHeading = "Pre & Post Hospitalization Exp:\nCovering Consultation, Medicines, and \nlab tests preceding admission to the hospital \nand after discharge from hospital";
+                    }
+                    subLimitRows.push([prePostHeading, prePostValue]);
+                    subLimitRows.push(["Post hospitalization Expenses", "30 Days"]);
+                    subLimitRows.push(["Emergency Local Ambulance Expenses", ambulanceExpense]);
+                    if (!isFranchiseOrder) {
+                        let internationalValue = "Covered";
+                        if (isHMBOrder) {
+                            internationalValue = "Covered Reasonable & Customary charges only for emergency hospitalization abroad";
+                        }
+                        subLimitRows.push(["Emergency International Expenses", internationalValue]);
+                    }
+                }
+
+                if (productName.includes("mib")) {
+                    subLimitRows.push(["Increase in Hospitalization due to accidental Injuries", accidentalInjuries]);
+                }
+
+                if (isFaysalBankOrder) {
+                    subLimitRows.push(["Increase in Hospitalization due to accidental Injuries", accidentalInjuries]);
+                    subLimitRows.push(["Day Care procedures and specialized investigation ", "Covered"]);
+                    subLimitRows.push(["Emergency Accidental Outpatient Expenses ", "Covered "]);
+                    subLimitRows.push(["Emergency Accidental Dental Expense ", "Covered "]);
+                    let maternityHeading = "Maternity Expenses";
+                    let maternityValue = "Normal   30,000\nc-section   45,000";
+                    if (productName.includes("family")) {
+                        maternityHeading = "Pre Existing Conditions Coverage";
+                        maternityValue = "1st year 20% of annual limit\n 2nd year 50% of annual limit\n 3rd year 100% of annual limit\n";
+                    }
+                    subLimitRows.push([maternityHeading, maternityValue]);
+                }
+
+                if (isSCBOrder) {
+                    subLimitRows.push(["Increase in Hospitalization due to accidental Injuries", accidentalInjuries]);
+                    subLimitRows.push(["Day Care procedures and specialized investigation ", "Covered"]);
+                    subLimitRows.push(["Emergency Accidental Outpatient Expenses ", "Covered "]);
+                    subLimitRows.push(["Emergency Accidental Dental Expense ", "Covered "]);
+                    subLimitRows.push(["Accidental Death Coverage", accidentalDeathCoverageLimit]);
+                } else if (isHMBOrder) {
+                    subLimitRows.push(["Increase in Hospitalization due to accidental Injuries", accidentalInjuries]);
+                    let dayCareHeading = "Day Care procedures and specialized investigation ";
+                    let dayCareValue = "Covered";
+                    if (isHMBOrder) {
+                        dayCareHeading = "Day Care procedures and specialized investigation: \nDialysis, Cataract Surgery, MRI, CT scan, Endoscopy, \nThallium Scan, Angiography, and Treatment of Fracture etc.";
+                    }
+                    subLimitRows.push([dayCareHeading, dayCareValue]);
+                    let emergencyAccidentalValue = "Covered";
+                    if (isHMBOrder) {
+                        emergencyAccidentalValue = "Covered (within 48 hours of an accident only)";
+                    }
+                    subLimitRows.push(["Emergency Accidental Outpatient Expenses ", emergencyAccidentalValue]);
+                    let emergencyDentalValue = "Covered ";
+                    if (isHMBOrder) {
+                        emergencyDentalValue = "Covered (within 48 hours for pain relief only)";
+                    }
+                    subLimitRows.push(["Emergency Accidental Dental Expense ", emergencyDentalValue]);
+                    subLimitRows.push(["Pre-Existing Conditions Coverage", "1st year 20% of annual limit\n 2nd year 30% of annual limit\n 3rd year 50% of annual limit\n"]);
+                } else if (!isFranchiseOrder && !productName.includes("mib")) {
+                    subLimitRows.push(["Medical Second Option", "Covered"]);
+                }
+
+                if (isParent) {
+                    subLimitRows.push(["Pre Existing Conditions & Congenital Anomalies", "a. 1st Year 10% of Annual Limit.\nb. 2nd Year 20% of Annual Limit.\nc. 3rd Year 30% of Annual Limit.\nd. 4th Year & onward 50% of Annual Limit."]);
+                    subLimitRows.push(["Online Doctor Consultation*: ", "Covered"]);
+                }
+
+                if ((isEasyInsuranceOrder || isMawazanaOrder || isSmartChoiceOrder || isLetsCompareOrder) && !isParent) {
+                    subLimitRows.push(["Online Doctor Consultation*: ", "Covered"]);
+                }
+
+                if (!isParent) {
+                    subLimitRows.push(["Increase in Hospitalization due to accidental Injuries", accidentalInjuries]);
+                    subLimitRows.push(["Maternity Expenses", "Normal   30,000\nc-section   45,000"]);
+                    subLimitRows.push(["Day Care procedures and specialized investigation ", "Covered"]);
+                    subLimitRows.push(["Emergency Accidental Outpatient Expenses ", "Covered "]);
+                    subLimitRows.push(["Emergency Accidental Dental Expense ", "Covered "]);
+                }
+
+                drawTable(doc, subLimitRows, {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [400, 165],
+                    headers: [],
+                });
+            }
+
+            currentY = doc.y + 6;
+
+            if (isParent || isEasyInsuranceOrder || isMawazanaOrder || isSmartChoiceOrder || isLetsCompareOrder) {
+                const wording = "* Online Doctor Consultation is being provided by, owned, and operated by a third party “Sehat Kahani”, over which Jubilee General has no control, neither Jubilee assumes any liability arising due to the quality of service being provided by the third-party vendor.";
+                drawTable(doc, [[wording]], {
+                    x: 15,
+                    y: currentY,
+                    columnWidths: [565],
+                    headers: [],
+                });
+            }
+        }
 
     }
-
-
     // 
     // 
     // 
@@ -649,28 +1537,28 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     const jubileeImage = policy && policy.takaful_policy ? `${__dirname}../../../../assets/logo/takaful_logo.png` : `${__dirname}../../../../assets/logo/insurance_logo.png`;
     let productLogo = `${__dirname}../../../../assets/logo/family.png`;
 
-    const productName = policy.product.product_name.toLowerCase();
-
     if (policy.productOption.webappMappers.some(mapper => mapper.child_sku.toLowerCase().includes("personal"))) {
         productLogo = `${__dirname}../../../../assets/logo/personal.png`;
     } else if (productName.includes("lifestyle")) {
         productLogo = `${__dirname}../../../../assets/logo/lifestyle.png`;
-    } else if (productName.includes("parent")) {
+    } else if (productName.includes("Parents-Care-Plus")) {
+        productLogo = `${__dirname}../../../../assets/logo/parent-care-plus-icon.png`;
+    }else if (productName.includes("parent")) {
         productLogo = `${__dirname}../../../../assets/logo/parent.png`;
     } else if (productName.includes("hercare")) {
         productLogo = `${__dirname}../../../../assets/logo/HC-HerCare.png`;
     } else if (isFaysalBankOrder) {
         if (productName.includes("family")) {
-            productLogo = jubileeImage;
+            productLogo = `${__dirname}../../../../assets/logo/family.png`; // Change
         } else if (productName.includes("personal accident")) {
-            productLogo = jubileeImage;
+            productLogo = `${__dirname}../../../../assets/logo/personal-accident.png`;
         } else if (productName.includes("female centric health takaful")) {
-            productLogo = jubileeImage;
+            productLogo = `${__dirname}../../../../assets/logo/female.png`;
         } else {
-            productLogo = jubileeImage;
+            productLogo = `${__dirname}../../../../assets/logo/family.png`; // Change
         }
     } else if (productName.includes("mib") && productName.includes("family")) {
-        productLogo = jubileeImage;
+        productLogo = `${__dirname}../../../../assets/logo/family.png`;
     } else if (productName.includes("mib") && productName.includes("personal")) {
         productLogo = jubileeImage;
     } else if (isHBLMFBOrder) {

@@ -5,8 +5,14 @@ import { DurationType, Gender } from "@prisma/client";
 import { calculateAge } from "../utils/calculateAge";
 import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import { courierBooking, newPlanMapping, newPolicyCode, newProductCode } from "../utils/policyHelpers";
+import { Request } from "express";
+import { sendEmail } from "../utils/sendEmail";
+import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
+import { getPolicyWording } from "../utils/getPolicyWordings";
+import { sendSms } from "../utils/sendSms";
+import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
 
-export const createOrder = async (data: OrderSchema, createdBy: number) => {
+export const createOrder = async (data: OrderSchema, createdBy: number, req: Request) => {
     const create_date = format(new Date(), "yyyy-MM-dd");
 
     const result = await prisma.$transaction(
@@ -56,8 +62,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                 include: { productCategory: true },
             });
             if (!product) throw new Error("Product not found");
-            if (!product.productCategory)
-                throw new Error("Product category not found");
+            if (!product.productCategory) throw new Error("Product category not found");
 
 
             if (product.product_type === "travel") { // if product type is travel then check travel details
@@ -158,9 +163,12 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                     kiosk_pin: data.kiosk_pin,
                     kiosk_last_digit: data.kiosk_last_digit,
                     test_book: data.test_book,
-                    api_user_id: data.api_user_id,
+                    api_user_id: createdBy,
                     created_by: createdBy,
                 },
+                include: {
+                    apiUser: true
+                }
             });
 
             // Create policy
@@ -259,6 +267,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                     data: homecareDetails,
                     skipDuplicates: true,
                 });
+
             } else if (product.product_type === "purchase_protection" && data.purchase_protection) {
                 await tx.policyPurchaseProtection.create({
                     data: {
@@ -308,6 +317,10 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                 policyId: policy.id,
                 paymentMode: paymentMode.payment_code,
                 productType: product.product_type,
+                order: newOrder,
+                policy,
+                product,
+                plan: mapper.plan
             };
         },
         {
@@ -322,10 +335,12 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                 policy_code: result.code,
             },
         });
-        courierBooking(result.orderId, result.policyId, result.code, data).catch(
+        courierBooking(result.orderId, result.policyId, result.code, data, result, req).catch(
             (err) => console.error("Courier booking failed:", err)
         );
     } else if (result.paymentMode === "B2B") {
+        const apiUser = result.order.apiUser;
+
         await prisma.order.update({
             where: { id: result.orderId },
             data: { status: "verified" },
@@ -337,6 +352,117 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
                 status: result.productType === "health" ? "pendingCBO" : "pendingIGIS",
             },
         });
+
+        // Email And Sms
+        const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
+
+        let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+        let customerName: string = result.order.customer_name;
+        let orderId: string = result.order.order_code;
+        let createdDate: string = result.order.create_date;
+        let Insurance: string;
+        let insurance: string;
+        let doc: string;
+        let buisness: string;
+        let url: string;
+        let jubilee: string;
+        let takaful: boolean;
+        let smsString: string;
+
+        const policyWording = getPolicyWording(apiUser?.name.toLowerCase(), result.product.product_name, result.policy.takaful_policy, false);
+        const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+        const extraDocs = policyWording.extraUrls.map(url => ({
+            filename: url,
+            path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+            contentType: 'application/pdf',
+        }));
+
+        if (result.policy.takaful_policy) {
+            url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
+            logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+            Insurance = "Takaful";
+            insurance = "";
+            doc = "PMD(s)";
+            buisness = "Takaful Retail Business Division";
+            jubilee = "Jubilee General Takaful";
+            takaful = true;
+            smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # is ${result.code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+        } else {
+            url = "https://jubileegeneral.com.pk/getinsurance/policy-verification";
+            logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+            Insurance = "Insurance";
+            insurance = "insurance";
+            doc = "policy document(s)";
+            if (apiUser != null && apiUser.name.toLowerCase().includes("hblbanca")) {
+                buisness = "Bancassurance Department";
+            } else {
+                buisness = "Retail Business Division";
+            }
+            jubilee = "Jubilee General Insurance";
+            takaful = false;
+            smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # is ${result.code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+        }
+
+        await sendEmail({
+            to: result.order.customer_email || "",
+            subject: "Policy Order Successful",
+            html: getOrderB2BTemplate(
+                logo,
+                customerName,
+                Insurance,
+                insurance,
+                doc,
+                orderId,
+                createdDate,
+                buisness,
+                url,
+                jubilee,
+                takaful,
+                result.product.product_name,
+                result.order.received_premium
+            ),
+            attachments: [
+                {
+                    filename: `${result.code}.pdf`,
+                    path: policyDocumentUrl,
+                    contentType: 'application/pdf',
+                },
+                {
+                    filename: policyWording.wordingFile,
+                    path: policyWordingUrl,
+                    contentType: 'application/pdf',
+                },
+                ...extraDocs
+            ],
+        })
+
+        if (!result.product.product_name.toLowerCase().includes("parents-care-plus")) {
+            await sendSms(result.order.customer_contact || "", smsString);
+        } else {
+            if (result.policy.takaful_policy) {
+                await sendWhatsAppMessage({
+                    policyType: "takaful_digital",
+                    phoneNumber: "03150226944",
+                    params: [
+                        result.order.customer_name,
+                        result.plan.name,
+                        result.code,
+                        policyDocumentUrl
+                    ]
+                })
+            } else {
+                await sendWhatsAppMessage({
+                    policyType: "conventional_digital",
+                    phoneNumber: result.order.customer_contact || "",
+                    params: [
+                        result.order.customer_name,
+                        result.plan.name,
+                        result.code,
+                        policyDocumentUrl
+                    ]
+                })
+            }
+        }
     }
 
     return { policy_code: result.code };
@@ -366,6 +492,9 @@ export const parentAndChildSkuExists = async (
             parent_sku,
             child_sku,
         },
+        include: {
+            plan: true
+        }
     });
     return mapper;
 };

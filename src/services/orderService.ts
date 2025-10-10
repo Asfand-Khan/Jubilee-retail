@@ -9,6 +9,12 @@ import { calculateAge } from "../utils/calculateAge";
 import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import axios from "axios";
 import { courierBookingForRepush, newPlanMapping, newPolicyCode, newProductCode } from "../utils/policyHelpers";
+import { Request } from "express";
+import { getPolicyWording } from "../utils/getPolicyWordings";
+import { sendEmail } from "../utils/sendEmail";
+import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
+import { sendSms } from "../utils/sendSms";
+import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -452,7 +458,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
   return orderTrx;
 };
 
-export const ccTransaction = async (data: CCTransactionSchema) => {
+export const ccTransaction = async (data: CCTransactionSchema, req: Request) => {
   const order = await orderByOrderCode(data.order_code);
   if (!order) {
     throw new Error("Order not found");
@@ -486,7 +492,14 @@ export const ccTransaction = async (data: CCTransactionSchema) => {
         include: {
           plan: { select: { name: true } },
           product: {
-            include: { productCategory: true },
+            include: {
+              productCategory: true,
+              webappMappers: {
+                select: {
+                  plan: true
+                }
+              }
+            },
           },
         },
       }),
@@ -530,10 +543,126 @@ export const ccTransaction = async (data: CCTransactionSchema) => {
           },
         }),
       ]);
-      return { policy_code: code };
-    }
 
-    return { policy_code: null };
+      // Email And SMS Same (B2B)
+
+      // Email Start / End
+      const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${order.order_code}/pdf`;
+      const apiUser = order.apiUser;
+
+      let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+      let customerName: string = order.customer_name;
+      let orderId: string = order.order_code;
+      let createdDate: string = order.create_date;
+      let Insurance: string;
+      let insurance: string;
+      let doc: string;
+      let buisness: string;
+      let url: string;
+      let jubilee: string;
+      let takaful: boolean;
+      let smsString: string;
+
+      const policyWording = getPolicyWording(apiUser?.name.toLowerCase(), policy.product.product_name, policy.takaful_policy, false);
+      const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+      const extraDocs = policyWording.extraUrls.map(url => ({
+        filename: url,
+        path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+        contentType: 'application/pdf',
+      }));
+
+      if (policy.takaful_policy) {
+        url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
+        logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+        Insurance = "Takaful";
+        insurance = "";
+        doc = "PMD(s)";
+        buisness = "Takaful Retail Business Division";
+        jubilee = "Jubilee General Takaful";
+        takaful = true;
+        smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+      } else {
+        url = "https://jubileegeneral.com.pk/getinsurance/policy-verification";
+        logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+        Insurance = "Insurance";
+        insurance = "insurance";
+        doc = "policy document(s)";
+        if (apiUser != null && apiUser.name.toLowerCase().includes("hblbanca")) {
+          buisness = "Bancassurance Department";
+        } else {
+          buisness = "Retail Business Division";
+        }
+        jubilee = "Jubilee General Insurance";
+        takaful = false;
+        smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name}. Your Policy # is ${policy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+      }
+
+      await sendEmail({
+        to: order.customer_email,
+        subject: "Policy Order Successful",
+        html: getOrderB2BTemplate(
+          logo,
+          customerName,
+          Insurance,
+          insurance,
+          doc,
+          orderId,
+          createdDate,
+          buisness,
+          url,
+          jubilee,
+          takaful,
+          policy.product.product_name,
+          order.received_premium
+        ),
+        attachments: [
+          {
+            filename: `${policy.policy_code}.pdf`,
+            path: policyDocumentUrl,
+            contentType: 'application/pdf',
+          },
+          {
+            filename: policyWording.wordingFile,
+            path: policyWordingUrl,
+            contentType: 'application/pdf',
+          },
+          ...extraDocs
+        ],
+      })
+
+      if (!policy.product.product_name.toLowerCase().includes("parents-care-plus")) {
+        await sendSms(order.customer_contact, smsString);
+      } else {
+        if (policy.takaful_policy) {
+          await sendWhatsAppMessage({
+            policyType: "takaful_digital",
+            phoneNumber: "03150226944",
+            params: [
+              order.customer_name,
+              policy.plan.name,
+              policy.policy_code,
+              policyDocumentUrl
+            ]
+          })
+        } else {
+          await sendWhatsAppMessage({
+            policyType: "conventional_digital",
+            phoneNumber: order.customer_contact,
+            params: [
+              order.customer_name,
+              policy.plan.name,
+              policy.policy_code,
+              policyDocumentUrl
+            ]
+          })
+        }
+
+
+        return { policy_code: code };
+      }
+
+      return { policy_code: null };
+    }
   });
 
   return result;
@@ -869,9 +998,9 @@ export const repushOrder = async (data: OrderCodeSchema) => {
 
 export const orderByOrderCode = async (order_code: string, transaction?: any) => {
   if (transaction) {
-    return await transaction.order.findUnique({ where: { order_code } });
+    return await transaction.order.findUnique({ where: { order_code }, include: { apiUser: true } });
   } else {
-    return await prisma.order.findUnique({ where: { order_code } });
+    return await prisma.order.findUnique({ where: { order_code }, include: { apiUser: true } });
   }
 };
 

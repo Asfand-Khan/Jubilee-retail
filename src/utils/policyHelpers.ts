@@ -2,6 +2,12 @@ import { OrderSchema } from "../validations/orderValidations";
 import prisma from "../config/db";
 import { getCourier } from "../services/orderService2";
 import axios from "axios";
+import { Request } from "express";
+import { getPolicyWording } from "./getPolicyWordings";
+import { sendEmail } from "./sendEmail";
+import { getOrderB2BTemplate, getOrderCODTemplate } from "./getOrderB2BTemplate";
+import { sendSms } from "./sendSms";
+import { sendWhatsAppMessage } from "./sendWhatsappSms";
 
 // export function newPlanMapping(prod: string, plan: string): string {
 //     let planId = "000";
@@ -155,7 +161,13 @@ import axios from "axios";
 export function newPlanMapping(prod: string, plan: string): string {
     let planId = "000";
 
-    if (prod.includes("Female Centric Health Takaful") && prod.includes("FBL")) {
+    if (prod.includes("SEHAT SARMAYA (Maternity)")) {
+        planId = "122";
+    }
+    else if (prod.includes("SEHAT SARMAYA")) {
+        planId = "121";
+    }
+    else if (prod.includes("Female Centric Health Takaful") && prod.includes("FBL")) {
         if (plan.includes("Plan A")) {
             planId = "102";
         } else if (plan.includes("Plan B")) {
@@ -357,7 +369,9 @@ export async function courierBooking(
     orderId: number,
     policyId: number,
     code: string,
-    data: OrderSchema
+    data: OrderSchema,
+    result: any,
+    req: Request
 ) {
     const city = await prisma.city.findUnique({
         where: { id: data.customer_city },
@@ -425,6 +439,126 @@ export async function courierBooking(
             where: { id: policyId },
             data: { status: "pendingCOD" },
         });
+
+        const apiUser = result.order.apiUser;
+
+        // Email And Sms
+        const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
+
+        let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+        let customerName: string = result.order.customer_name;
+        let resultOrderId: string = result.order.order_code;
+        let createdDate: string = result.order.create_date;
+        let Insurance: string;
+        let insurance: string;
+        let doc: string;
+        let buisness: string;
+        let url: string;
+        let jubilee: string;
+        let takaful: boolean;
+        let smsString: string;
+
+        const policyWording = getPolicyWording(apiUser?.name.toLowerCase(), result.product.product_name, result.policy.takaful_policy, false);
+        const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+        const extraDocs = policyWording.extraUrls.map(url => ({
+            filename: url,
+            path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+            contentType: 'application/pdf',
+        }));
+
+        if (result.policy.takaful_policy) {
+            url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
+            logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+            Insurance = "Takaful";
+            insurance = "";
+            doc = "PMD(s)";
+            buisness = "Takaful Retail Business Division";
+            jubilee = "Jubilee General Takaful";
+            takaful = true;
+            smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # is ${result.code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+        } else {
+            url = "https://jubileegeneral.com.pk/getinsurance/policy-verification";
+            logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+            Insurance = "Insurance";
+            insurance = "insurance";
+            doc = "policy document(s)";
+            if (apiUser != null && apiUser.name.toLowerCase().includes("hblbanca")) {
+                buisness = "Bancassurance Department";
+            } else {
+                buisness = "Retail Business Division";
+            }
+            jubilee = "Jubilee General Insurance";
+            takaful = false;
+            smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # is ${result.code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+        }
+
+        await sendEmail({
+            to: result.order.customer_email || "",
+            subject: "Policy Order Successful",
+            html: getOrderCODTemplate(
+                logo,
+                customerName,
+                Insurance,
+                insurance,
+                doc,
+                resultOrderId,
+                createdDate,
+                buisness,
+                url,
+                jubilee,
+                takaful,
+                result.product.product_name,
+                result.order.received_premium,
+                result.order.shipping_name,
+                result.order.shipping_email,
+                result.order.shipping_address,
+                result.order.shipping_charges,
+                result.order.shipping_contact,
+                response.data.cnno
+            ),
+            attachments: [
+                {
+                    filename: `${result.code}.pdf`,
+                    path: policyDocumentUrl,
+                    contentType: 'application/pdf',
+                },
+                {
+                    filename: policyWording.wordingFile,
+                    path: policyWordingUrl,
+                    contentType: 'application/pdf',
+                },
+                ...extraDocs
+            ],
+        })
+
+        if (!result.product.product_name.toLowerCase().includes("parents-care-plus")) {
+            await sendSms(result.order.customer_contact || "", smsString);
+        } else {
+            if (result.policy.takaful_policy) {
+                await sendWhatsAppMessage({
+                    policyType: "takaful_digital",
+                    phoneNumber: "03150226944",
+                    params: [
+                        result.order.customer_name,
+                        result.plan.name,
+                        result.code,
+                        policyDocumentUrl
+                    ]
+                })
+            } else {
+                await sendWhatsAppMessage({
+                    policyType: "conventional_digital",
+                    phoneNumber: result.order.customer_contact || "",
+                    params: [
+                        result.order.customer_name,
+                        result.plan.name,
+                        result.code,
+                        policyDocumentUrl
+                    ]
+                })
+            }
+        }
+
     } else {
         console.error("BlueEx booking failed:", response.data);
     }

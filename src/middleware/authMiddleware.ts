@@ -68,7 +68,7 @@ export const authenticateApiUser = async (
       throw new Error("Invalid API user credentials");
     }
 
-    req.userRecord = user.user;
+    req.userRecord = user;
     next();
   } catch (error) {
     res.status(401).json({

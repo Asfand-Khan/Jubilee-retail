@@ -34,20 +34,20 @@ export const validateOrderSchema = z.object({
     .nullable(),
 
   customer_email: z
-    .string()
+    .string({
+      required_error: "Customer email is required"
+    })
     .email("Invalid email format.")
-    .max(150, { message: "Customer email must not exceed 150 characters." })
-    .optional()
-    .nullable(),
+    .max(150, { message: "Customer email must not exceed 150 characters." }),
 
   customer_contact: z
-    .string()
+    .string({
+      required_error: "Customer contact is required"
+    })
     .regex(
       /^03\d{9}$/,
       "Customrt contact must be a valid Pakistani number (e.g. 03001234567)."
-    )
-    .optional()
-    .nullable(),
+    ),
 
   customer_address: z
     .string()

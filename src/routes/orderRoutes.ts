@@ -43,7 +43,7 @@ router.get("/:order_code/pdf", async (req, res): Promise<any> => {
     return res.status(404).json({ message: "Order not found" });
   }
 
-  await generateOrderPDF(res, order);
+  await generateOrderPDF(res, order, req);
 });
 
 export default router;

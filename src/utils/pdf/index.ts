@@ -1,15 +1,12 @@
-import { Response } from "express";
+import { Response, Request } from "express";
 import { createPDF } from "./pdfBuilder";
-import { addScheduleHeader } from "./sections/header";
-import { addBenefitPlansTable, addInsuredDetailsTable, addPolicyDetailsTable } from "./sections/tables";
-import { addHealthDetails, addProgramDetails, addSponsorDetails, addTravelDetails } from "./sections/specializedSections";
-import { addDeclarationsAndExclusions } from "./sections/declarations";
-import { addVerificationAndQR } from "./sections/verification";
-import { addAssistanceContacts } from "./sections/contacts";
 import { addFooter } from "./sections/footer";
 import QRCode from "qrcode";
 import { healthCarePdf } from "./healthCarePdf";
 import { Prisma } from "@prisma/client";
+import { viaCarePdf } from "./viaCarePdf";
+import { homeCarePdf } from "./homeCarePdf";
+import { selfCarePdf } from "./selfCarePdf";
 
 export type FullOrder = Prisma.OrderGetPayload<{
     include: {
@@ -40,43 +37,38 @@ export type FullOrder = Prisma.OrderGetPayload<{
 
 export type FullPolicy = FullOrder["Policy"][0];
 
-export async function generateOrderPDF(res: Response, order: FullOrder): Promise<void> {
+export async function generateOrderPDF(res: Response, order: FullOrder, req: Request): Promise<void> {
     const policy = order.Policy && order.Policy.length > 0 ? order.Policy[0] : null;
+    const product = policy ? policy.product : null;
     const productType = policy ? policy.product.product_type : "general";
 
     let qrImageUrl = "";
-    const qrData = `Verification code: ${policy ? policy.policy_code : "123-456-7890"}`;
+    const qrData = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${order.order_code}/pdf`;
     try {
         qrImageUrl = await QRCode.toDataURL(qrData, { type: 'image/png' });
     } catch (err) {
         console.error("Error generating QR code:", err);
-        qrImageUrl = ""; // Fallback to empty if generation fails
+        qrImageUrl = "";
     }
 
     const doc = createPDF(res, `${order.order_code}`);
 
-    // addScheduleHeader(doc, order);
-
     order.Policy.forEach((policy) => {
-        // addPolicyDetailsTable(doc, policy);
-        // addInsuredDetailsTable(doc, policy);
-
-        // Dynamically add based on product type
         if (productType === "travel") {
-            // addTravelDetails(doc, policy.PolicyTravel);
-            // addProgramDetails(doc, policy.PolicyTravel);
-            // addSponsorDetails(doc, policy.PolicyTravel);
+            if (
+                (product?.product_name.toLowerCase().includes("selfcare")) ||
+                (product?.product_name.toLowerCase().includes("self care"))
+            ) {
+                selfCarePdf(doc, policy, order, qrImageUrl)
+            } else {
+                viaCarePdf(doc, policy, order, qrImageUrl);
+            }
         } else if (productType === "health") {
             healthCarePdf(doc, policy, order);
+        } else if (productType === "home") {
+            homeCarePdf(doc, policy, order, qrImageUrl);
         }
-        // Extend for other types like homecare, etc.
-
-        // addBenefitPlansTable(doc, policy);
-        // addDeclarationsAndExclusions(doc, policy);
-        // addVerificationAndQR(doc, policy, qrImageUrl);
-        // addAssistanceContacts(doc, policy);
     });
 
-    addFooter(doc);
     doc.end();
 }

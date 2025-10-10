@@ -6,6 +6,9 @@ import * as service2 from "../services/orderService2";
 import * as validations from "../validations/orderValidations";
 import { handleAppError } from "../utils/appErrorHandler";
 import { calculateAge } from "../utils/calculateAge";
+import { sendSms } from "../utils/sendSms";
+import { sendEmail } from "../utils/sendEmail";
+import { getOrderCODTemplate } from "../utils/getOrderB2BTemplate";
 
 // CREATE
 export const createOrderHandler = async (
@@ -69,12 +72,14 @@ export const createOrderHandler = async (
       });
     }
 
-    const newRecord = await service2.createOrder(parsed, user.id);
+    const newRecord = await service2.createOrder(parsed, user.id, req);
 
     return res.status(201).json({
       status: 1,
       message: "Order created successfully",
-      payload: [newRecord],
+      payload: [
+        newRecord
+      ],
     });
   } catch (error) {
     const err = handleAppError(error);
@@ -93,7 +98,7 @@ export const ccTransactionHandler = async (
   try {
     const parsed = validations.validateCCTransactionSchema.parse(req.body);
 
-    const newRecord = await service.ccTransaction(parsed);
+    const newRecord = await service.ccTransaction(parsed, req);
 
     return res.status(200).json({
       status: 1,

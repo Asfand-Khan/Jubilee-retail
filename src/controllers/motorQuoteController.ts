@@ -153,8 +153,8 @@ export const updateMotorQuoteHandler = async (
 
 
 // Module --> Motor Quote
-// Method --> PUT (Protected)
-// Endpoint --> /api/v1/motor-quotes/
+// Method --> POST (Protected)
+// Endpoint --> /api/v1/motor-quotes/status
 // Description --> Update motor quote
 export const updateMotorQuoteStatusHandler = async (
   req: Request,
