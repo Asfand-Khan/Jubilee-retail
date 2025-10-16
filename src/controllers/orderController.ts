@@ -77,9 +77,7 @@ export const createOrderHandler = async (
     return res.status(201).json({
       status: 1,
       message: "Order created successfully",
-      payload: [
-        newRecord
-      ],
+      payload: [newRecord],
     });
   } catch (error) {
     const err = handleAppError(error);
@@ -173,6 +171,30 @@ export const repushOrderHandler = async (
       status: 1,
       message: "Order repushed successfully",
       payload: newRecord,
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+export const generateHISHandler = async (req: Request, res: Response): Promise<any> => {
+  try {
+    const parsed = validations.validateGenerateHIS.parse(req.body);
+    const result = await service.generateHIS(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "HIS generated successfully",
+      payload: [
+        {
+          his_retail_zip: result,
+        },
+      ],
     });
   } catch (error) {
     const err = handleAppError(error);

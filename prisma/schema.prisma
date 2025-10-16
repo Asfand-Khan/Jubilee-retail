@@ -986,6 +986,8 @@ model Order {
   kiosk_last_digit      String?     @db.VarChar(5)
   test_book             Boolean     @default(false)
   api_user_id           Int?
+  renewal_number        String?
+  pec_coverage          String?
   created_by            Int
   deleted_by            Int?
 

@@ -2,22 +2,43 @@ import prisma from "../config/db";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { CCTransactionSchema, ListSchema, OrderCodeSchema, OrderSchema } from "../validations/orderValidations";
+import {
+  CCTransactionSchema,
+  GenerateHISSchema,
+  ListSchema,
+  OrderCodeSchema,
+  OrderSchema,
+} from "../validations/orderValidations";
 import { format } from "date-fns";
 import { DurationType, Gender } from "@prisma/client";
 import { calculateAge } from "../utils/calculateAge";
 import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import axios from "axios";
-import { courierBookingForRepush, newPlanMapping, newPolicyCode, newProductCode } from "../utils/policyHelpers";
+import {
+  courierBookingForRepush,
+  newPlanMapping,
+  newPolicyCode,
+  newProductCode,
+} from "../utils/policyHelpers";
 import { Request } from "express";
 import { getPolicyWording } from "../utils/getPolicyWordings";
 import { sendEmail } from "../utils/sendEmail";
 import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
 import { sendSms } from "../utils/sendSms";
 import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
+import { createZipFile, pad, sanitize, writeHISTextFile } from "../utils/fileUtils";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
+const Constants = {
+  DEFAULT_HIS_CODE: process.env.DEFAULT_HIS_CODE,
+  DEFAULT_FBL_HIS_CODE: process.env.DEFAULT_FBL_HIS_CODE,
+  DEFAULT_HIS_CODE_TAKAFULL: process.env.DEFAULT_HIS_CODE_TAKAFULL,
+  DEFAULT_FBL_HIS_CODE_TAKAFULL: process.env.DEFAULT_FBL_HIS_CODE_TAKAFULL,
+  BRANCH_CODE: process.env.BRANCH_CODE,
+  BRANCH_CODE_TAKAFUL: process.env.BRANCH_CODE_TAKAFUL,
+};
 
 export const createOrder = async (data: OrderSchema, createdBy: number) => {
   const create_date = format(new Date(), "yyyy-MM-dd");
@@ -84,21 +105,22 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
 
       // Check if product category exists
       const productCategory = await tx.productCategory.findUnique({
-        where: { id: product.product_category_id }
-      })
+        where: { id: product.product_category_id },
+      });
       if (!productCategory) {
         throw new Error("Product category not found");
       }
 
       // Fetch city based on customer city id
       const city = await tx.city.findUnique({
-        where: { id: data.customer_city }
-      })
+        where: { id: data.customer_city },
+      });
       if (!city) {
-        throw new Error("City not found")
+        throw new Error("City not found");
       }
 
-      if (product.product_type === "travel") { // if product type is travel then check travel details
+      if (product.product_type === "travel") {
+        // if product type is travel then check travel details
         if (
           data.travel_details &&
           (!data.travel_details.travel_from ||
@@ -120,7 +142,8 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
         ) {
           throw new Error("Travel start date must be before travel end date");
         }
-      } else if (product.product_type === "home") { // if product type is home then check homecare details
+      } else if (product.product_type === "home") {
+        // if product type is home then check homecare details
         if (!data.homecare_details || data.homecare_details.length === 0) {
           throw new Error("Homecare details are required for home product.");
         }
@@ -139,7 +162,8 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
             "Each homecare detail record must contain ownership_status, structure_type, plot_area, address, and city."
           );
         }
-      } else if (product.product_type === "purchase_protection") { // if product type is purchase protection then check purchase protection details
+      } else if (product.product_type === "purchase_protection") {
+        // if product type is purchase protection then check purchase protection details
         if (
           data.purchase_protection &&
           (!data.purchase_protection.name ||
@@ -300,7 +324,10 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
           data: homecareDetails,
           skipDuplicates: true,
         });
-      } else if (product.product_type === "purchase_protection" && data.purchase_protection) {
+      } else if (
+        product.product_type === "purchase_protection" &&
+        data.purchase_protection
+      ) {
         await tx.policyPurchaseProtection.create({
           data: {
             policy_id: policy.id,
@@ -314,10 +341,11 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
             item_price: data.product_details.item_price,
             received_premium: data.received_premium,
             duration: data.purchase_protection.duration,
-            duration_type: data.purchase_protection.duration_type as DurationType,
-            created_by: createdBy
-          }
-        })
+            duration_type: data.purchase_protection
+              .duration_type as DurationType,
+            created_by: createdBy,
+          },
+        });
       }
 
       let code = "";
@@ -328,8 +356,12 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
         const policyCode = newPolicyCode(policy.id);
         code = `${prefix}${planId}${policyCode}`;
       } else {
-        const branchCode = data.takaful_policy ? branch.his_code_takaful : branch.his_code;
-        const productCode = newProductCode(Number(productCategory?.product_code || 0));
+        const branchCode = data.takaful_policy
+          ? branch.his_code_takaful
+          : branch.his_code;
+        const productCode = newProductCode(
+          Number(productCategory?.product_code || 0)
+        );
         const policyCode = newPolicyCode(policy.id);
         code = `${branchCode}-${productCode}-${policyCode}`;
       }
@@ -349,12 +381,15 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
           if (!courier) {
             console.warn("Courier not found, will allow repush later");
           } else {
-            const token = Buffer.from(`${process.env.BLUEEX_USERNAME}:${process.env.BLUEEX_PASSWORD}`).toString("base64");
+            const token = Buffer.from(
+              `${process.env.BLUEEX_USERNAME}:${process.env.BLUEEX_PASSWORD}`
+            ).toString("base64");
             let datatoSend = {
               shipper_name: "Jubilee General Insurance",
               shipper_email: "support@jubileegeneral.com.pk",
               shipper_contact: "021-111-654-321",
-              shipper_address: "Jubilee General Insurance Co Ltd, 2nd Floor, Jubilee Insurance House, I. I. Chundrigar Road Karachi",
+              shipper_address:
+                "Jubilee General Insurance Co Ltd, 2nd Floor, Jubilee Insurance House, I. I. Chundrigar Road Karachi",
               shipper_city: "KHI",
               customer_name: data.shipping_name,
               customer_email: data.shipping_email,
@@ -362,7 +397,8 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
               customer_address: data.shipping_address,
               customer_city: city ? city.city_code : "KHI",
               customer_country: "PK",
-              customer_comment: "https://jubileegeneral.com.pk/policydoc?policy_no=910570059256-R6",
+              customer_comment:
+                "https://jubileegeneral.com.pk/policydoc?policy_no=910570059256-R6",
               shipping_charges: "100",
               payment_type: "COD",
               service_code: "BE",
@@ -424,7 +460,6 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
         } catch (err: any) {
           console.error("BlueEx error:", err.response?.data || err.message);
         }
-
       } else if (paymentMode.payment_code === "B2B") {
         await tx.policy.update({
           where: { id: policy.id },
@@ -433,9 +468,9 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
         const order = await tx.order.update({
           where: { id: newOrder.id },
           data: {
-            status: "verified"
-          }
-        })
+            status: "verified",
+          },
+        });
         if (order?.status === "verified" && product.product_type === "health") {
           await tx.policy.update({
             where: { id: policy.id },
@@ -458,7 +493,10 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
   return orderTrx;
 };
 
-export const ccTransaction = async (data: CCTransactionSchema, req: Request) => {
+export const ccTransaction = async (
+  data: CCTransactionSchema,
+  req: Request
+) => {
   const order = await orderByOrderCode(data.order_code);
   if (!order) {
     throw new Error("Order not found");
@@ -473,7 +511,7 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
       where: { id: order.id },
       data: {
         cc_transaction_id: data.transaction_id,
-        cc_approval_code: data.approval_code
+        cc_approval_code: data.approval_code,
       },
     });
 
@@ -496,9 +534,9 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
               productCategory: true,
               webappMappers: {
                 select: {
-                  plan: true
-                }
-              }
+                  plan: true,
+                },
+              },
             },
           },
         },
@@ -563,12 +601,17 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
       let takaful: boolean;
       let smsString: string;
 
-      const policyWording = getPolicyWording(apiUser?.name.toLowerCase(), policy.product.product_name, policy.takaful_policy, false);
+      const policyWording = getPolicyWording(
+        apiUser?.name.toLowerCase(),
+        policy.product.product_name,
+        policy.takaful_policy,
+        false
+      );
       const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
-      const extraDocs = policyWording.extraUrls.map(url => ({
+      const extraDocs = policyWording.extraUrls.map((url) => ({
         filename: url,
         path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
-        contentType: 'application/pdf',
+        contentType: "application/pdf",
       }));
 
       if (policy.takaful_policy) {
@@ -587,7 +630,10 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
         Insurance = "Insurance";
         insurance = "insurance";
         doc = "policy document(s)";
-        if (apiUser != null && apiUser.name.toLowerCase().includes("hblbanca")) {
+        if (
+          apiUser != null &&
+          apiUser.name.toLowerCase().includes("hblbanca")
+        ) {
           buisness = "Bancassurance Department";
         } else {
           buisness = "Retail Business Division";
@@ -619,18 +665,20 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
           {
             filename: `${policy.policy_code}.pdf`,
             path: policyDocumentUrl,
-            contentType: 'application/pdf',
+            contentType: "application/pdf",
           },
           {
             filename: policyWording.wordingFile,
             path: policyWordingUrl,
-            contentType: 'application/pdf',
+            contentType: "application/pdf",
           },
-          ...extraDocs
+          ...extraDocs,
         ],
-      })
+      });
 
-      if (!policy.product.product_name.toLowerCase().includes("parents-care-plus")) {
+      if (
+        !policy.product.product_name.toLowerCase().includes("parents-care-plus")
+      ) {
         await sendSms(order.customer_contact, smsString);
       } else {
         if (policy.takaful_policy) {
@@ -641,9 +689,9 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
               order.customer_name,
               policy.plan.name,
               policy.policy_code,
-              policyDocumentUrl
-            ]
-          })
+              policyDocumentUrl,
+            ],
+          });
         } else {
           await sendWhatsAppMessage({
             policyType: "conventional_digital",
@@ -652,11 +700,10 @@ export const ccTransaction = async (data: CCTransactionSchema, req: Request) => 
               order.customer_name,
               policy.plan.name,
               policy.policy_code,
-              policyDocumentUrl
-            ]
-          })
+              policyDocumentUrl,
+            ],
+          });
         }
-
 
         return { policy_code: code };
       }
@@ -733,15 +780,17 @@ export const orderList = async (data: ListSchema) => {
             ord.received_premium AS 'premium',
             ord.customer_name AS 'customer_name',
             ord.customer_contact AS 'customer_contact',
+            (SELECT pd.cnic FROM PolicyDetail pd WHERE pd.policy_id = p.id AND LOWER(pd.type) = 'customer' ) AS 'customer_cnic',
             ord.branch_name AS 'branch_name',
             prod.product_name AS 'product',
+            prod.id AS 'product_id',
             (SELECT COUNT(*) FROM PolicyDetail pd WHERE pd.policy_id = p.id ) AS 'no_of_persons_covered',
             ord.tracking_number AS 'cnno',
             pm.name AS 'payment_mode',
             au.name AS 'api_user_name',
-            '---' AS 'policy_category',
-            '---' AS 'pec_coverage',
-            '---' AS 'renewal_coverage',
+            ord.renewal_number AS 'policy_category',
+            ord.pec_coverage AS 'pec_coverage',
+            ord.renewal_number AS 'renewal_number',
             ord.status AS 'order_status',
             p.status AS 'policy_status'
           FROM
@@ -750,7 +799,7 @@ export const orderList = async (data: ListSchema) => {
           LEFT JOIN ApiUser au ON ord.api_user_id = au.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
       break;
     case "renewal":
       query = `
@@ -819,7 +868,9 @@ export const orderList = async (data: ListSchema) => {
   }
 
   if (data.month) {
-    filters.push(`LOWER(MONTHNAME(p.expiry_date)) = '${data.month.toLowerCase()}'`);
+    filters.push(
+      `LOWER(MONTHNAME(p.expiry_date)) = '${data.month.toLowerCase()}'`
+    );
   }
 
   if (data.date) {
@@ -888,18 +939,18 @@ export const singleOrder = async (data: OrderCodeSchema) => {
           policyDetails: true,
           PolicyTravel: true,
           PolicyHomecare: true,
-          PolicyPurchaseProtection: true
-        }
-      }
-    }
-  })
+          PolicyPurchaseProtection: true,
+        },
+      },
+    },
+  });
 
   if (!order) {
-    throw new Error("Order not found")
+    throw new Error("Order not found");
   }
 
   return order;
-}
+};
 
 export const repushOrder = async (data: OrderCodeSchema) => {
   return await prisma.$transaction(async (tx) => {
@@ -976,17 +1027,23 @@ export const repushOrder = async (data: OrderCodeSchema) => {
     });
 
     try {
-      await courierBookingForRepush(order.id, policy.id, code, {
-        shipping_name: order.shipping_name ?? undefined,
-        shipping_email: order.shipping_email ?? undefined,
-        shipping_phone: order.shipping_phone ?? undefined,
-        shipping_address: order.shipping_address ?? undefined,
-        customer_city_id: city?.id ?? undefined,
-        takaful_policy: policy.takaful_policy ?? undefined,
-        received_premium: Number(order.received_premium),
-        product_name: product.product_name,
-        sku: product.product_name || "",
-      }, tx);
+      await courierBookingForRepush(
+        order.id,
+        policy.id,
+        code,
+        {
+          shipping_name: order.shipping_name ?? undefined,
+          shipping_email: order.shipping_email ?? undefined,
+          shipping_phone: order.shipping_phone ?? undefined,
+          shipping_address: order.shipping_address ?? undefined,
+          customer_city_id: city?.id ?? undefined,
+          takaful_policy: policy.takaful_policy ?? undefined,
+          received_premium: Number(order.received_premium),
+          product_name: product.product_name,
+          sku: product.product_name || "",
+        },
+        tx
+      );
     } catch (err) {
       console.error("Courier booking failed:", err);
       throw new Error("Courier booking failed"); // rollback everything
@@ -996,11 +1053,20 @@ export const repushOrder = async (data: OrderCodeSchema) => {
   });
 };
 
-export const orderByOrderCode = async (order_code: string, transaction?: any) => {
+export const orderByOrderCode = async (
+  order_code: string,
+  transaction?: any
+) => {
   if (transaction) {
-    return await transaction.order.findUnique({ where: { order_code }, include: { apiUser: true } });
+    return await transaction.order.findUnique({
+      where: { order_code },
+      include: { apiUser: true },
+    });
   } else {
-    return await prisma.order.findUnique({ where: { order_code }, include: { apiUser: true } });
+    return await prisma.order.findUnique({
+      where: { order_code },
+      include: { apiUser: true },
+    });
   }
 };
 
@@ -1027,20 +1093,279 @@ export const parentAndChildSkuExists = async (
 export const getCourier = async (is_takaful: boolean) => {
   return await prisma.courier.findFirst({
     where: {
-      is_takaful: is_takaful
-    }
-  })
+      is_takaful: is_takaful,
+    },
+  });
 };
 
+export const generateHIS = async (data: GenerateHISSchema) => {
+  const whereClause: any = {
+    status: "HISposted",
+    is_deleted: false,
+  };
 
+  // Optional date filter
+  if (data.date) {
+    const [start, end] = data.date.split("to").map((d) => d.trim());
+    whereClause.issue_date = {
+      gte: start,
+      lte: end,
+    };
+  }
 
+  const policies = await prisma.policy.findMany({
+    where: whereClause,
+    include: {
+      order: {
+        include: {
+          branch: true,
+          apiUser: true,
+          coupon: true,
+        },
+      },
+      policyDetails: true,
+      product: true,
+      plan: true,
+    },
+  });
 
+  const relationMapper = await prisma.relationMapping.findMany({
+    select: {
+      id: true,
+      name: true,
+      gender: true,
+      short_key: true,
+    },
+  });
 
+  const hisRetailLines: string[] = [];
+  const hisDependantLines: string[] = [];
 
+  for (const policy of policies) {
+    const { order, product, plan } = policy;
+    const customer = policy.policyDetails.find(
+      (item) => item.type.toLowerCase() == "customer"
+    );
 
+    const parentMother = policy.policyDetails.find(
+      (item) =>
+        item.type.toLowerCase().includes("parent") &&
+        item?.relation?.toLowerCase().includes("mother")
+    );
 
+    const parentFather = policy.policyDetails.find(
+      (item) =>
+        item.type.toLowerCase().includes("parent") &&
+        item?.relation?.toLowerCase().includes("father")
+    );
 
+    const childDataArray = policy.policyDetails.filter(item => !item.type.toLowerCase().includes("customer"));
 
+    const apiUser = order.apiUser;
+    let ProductName = product.product_name;
+
+    if (ProductName.includes("CriticalCare")) {
+      ProductName = "CriticalCare";
+    } else if (ProductName.includes("Personal")) {
+      ProductName = "Personal Health Care";
+    } else if (ProductName.includes("Family")) {
+      ProductName = "Family Health Care";
+    }
+
+    const branch = order.branch;
+
+    let his_code = Constants.DEFAULT_HIS_CODE;
+    if (apiUser != null && apiUser.name.includes("faysalbank")) {
+      his_code = Constants.DEFAULT_FBL_HIS_CODE;
+    }
+    if (policy.takaful_policy) {
+      if (apiUser != null && apiUser.name.includes("faysalbank")) {
+        his_code = Constants.DEFAULT_FBL_HIS_CODE_TAKAFULL;
+      } else {
+        his_code = Constants.DEFAULT_HIS_CODE_TAKAFULL;
+      }
+    }
+
+    if (branch != null) {
+      if (policy.takaful_policy) his_code = branch.his_code_takaful;
+      else his_code = branch.his_code;
+    }
+
+    let discount = parseFloat(policy.discount_amount);
+    let province = "-";
+    let city = order.customer_city == null ? "-" : order.customer_city;
+    let postalCode = "-";
+    let fax = "-";
+    let netPremium: string | number = +policy.received_premium;
+
+    let netPremiumNonFiler = netPremium;
+    if (policy.filer_tax_status === false) {
+      netPremiumNonFiler -= Number(policy.filer_tax_per_item);
+    }
+    let grossPremium: number | string = Math.round(
+      (netPremiumNonFiler - 20) / (0.01 + 1)
+    );
+    let fedralInsuranceFee: number | string = Math.round(grossPremium * 0.01);
+
+    netPremium = sanitize(policy.received_premium);
+    grossPremium = sanitize(grossPremium.toString());
+    fedralInsuranceFee = sanitize(fedralInsuranceFee.toString());
+
+    let line: string[] = [];
+    let dependentline: string[] = [];
+    if (customer != undefined) {
+      let hisCode = sanitize(his_code);
+      let policyCode = sanitize(policy.policy_code);
+      let customerName = sanitize(customer.name);
+      let DOB = customer.dob
+        ? sanitize(dayjs(customer.dob).format("YYYY-MM-DD"))
+        : "";
+      let address = sanitize(customer.address);
+      let CNIC = sanitize(customer.cnic);
+      let contact = sanitize(customer.contact_number);
+      let gender = sanitize(
+        customer.gender ? customer.gender.charAt(0).toUpperCase() : ""
+      );
+      let passport = sanitize(customer.passport_no);
+      const status = policy.status == "cancelled" ? "Cancelled" : "Verified";
+      let email = sanitize(customer.email);
+      let occupation = sanitize(customer.occupation);
+      let issue_date = sanitize(policy.issue_date);
+      let start_date = sanitize(policy.start_date);
+      let expiry_date = sanitize(policy.expiry_date);
+      let planName = sanitize(plan.name);
+      let sumInsured = sanitize(Math.round(+policy.sum_insured).toString());
+      let filer_tax_per_item = sanitize(
+        Math.round(+policy.filer_tax_per_item) == 0
+          ? ""
+          : Math.round(+policy.filer_tax_per_item).toString()
+      );
+      let renewalNumber = sanitize(order.renewal_number ?? "N");
+      let pecCoverage = sanitize(order.pec_coverage ?? "0");
+
+      if (parentMother != null && parentMother != undefined) {
+        customerName = sanitize(parentMother.name ?? "");
+        DOB = parentMother.dob
+          ? dayjs(parentMother.dob).format("YYYY-MM-DD")
+          : "";
+        address = sanitize(parentMother.address ?? "");
+        CNIC = sanitize(parentMother.cnic ?? "");
+        contact = sanitize(parentMother.contact_number ?? "");
+      }
+
+      if (parentFather != null && parentFather != undefined) {
+        customerName = sanitize(parentFather.name ?? "");
+        DOB = parentFather.dob
+          ? dayjs(parentFather.dob).format("YYYY-MM-DD")
+          : "";
+        address = sanitize(parentFather.address ?? "");
+        CNIC = sanitize(parentFather.cnic ?? "");
+        contact = sanitize(parentFather.contact_number ?? "");
+      }
+
+      if (customer.relation?.toLowerCase() == "self") {
+        DOB = customer.dob ? dayjs(customer.dob).format("YYYY-MM-DD") : "";
+      }
+
+      line.push(hisCode);
+      line.push(policyCode);
+      line.push(customerName);
+      line.push(gender);
+      line.push(address);
+      line.push(DOB);
+      line.push(CNIC);
+      line.push(passport);
+      line.push(contact);
+      line.push(email);
+      line.push(occupation);
+      line.push(issue_date);
+      line.push(start_date);
+      line.push(expiry_date);
+      line.push(ProductName);
+      line.push(planName);
+      line.push(sumInsured);
+      line.push(grossPremium);
+      line.push(status);
+      line.push(province);
+      line.push(city);
+      line.push(postalCode);
+      line.push(fax);
+
+      if (policy.filer_tax_status === false) {
+        line.push(sanitize("4"));
+        line.push(filer_tax_per_item);
+      } else {
+        line.push("");
+        line.push("");
+      }
+
+      line.push(sanitize("20"));
+      line.push(fedralInsuranceFee);
+      line.push(netPremium);
+      line.push("-");
+      line.push("-");
+      line.push("-");
+      line.push("-");
+      line.push(renewalNumber);
+      line.push(pecCoverage);
+
+      hisRetailLines.push(line.join("\t"));
+    }
+
+    if (childDataArray.length > 0) {
+      childDataArray.forEach((item) => {
+        let dependentline: string[] = [];
+
+        const relation = relationMapper.find(
+          (mapper) =>
+            mapper.gender == item.gender &&
+            mapper.name
+              ?.toLowerCase()
+              .includes(item.relation ? item.relation.toLowerCase() : "")
+        );
+
+        let packageId = "087";
+        dependentline.push(sanitize(his_code));
+        dependentline.push(sanitize(policy.policy_code));
+        dependentline.push(packageId);
+        dependentline.push(sanitize(item.name));
+        dependentline.push(
+          sanitize(item.dob ? dayjs(item.dob).format("DD/MM/YYYY") : "")
+        );
+
+        if (relation && relation.short_key) {
+          dependentline.push(relation.short_key.toUpperCase());
+        } else {
+          dependentline.push(
+            item.relation ? item.relation.toUpperCase().charAt(0) : ""
+          );
+        }
+
+        dependentline.push("-");
+        hisDependantLines.push(dependentline.join("\t"));
+      });
+    }
+
+  }
+
+  const retailPathDependent = await writeHISTextFile(
+    "his_retail_dependent.txt",
+    hisDependantLines
+  );
+  const retailPath = await writeHISTextFile("his_retail.txt", hisRetailLines);
+
+  // ✅ Create a ZIP file containing both
+  const zipFileName = `his_files_${Date.now()}.zip`;
+  const zipPath = await createZipFile(
+    [
+      { path: retailPath, name: "his_retail.txt" },
+      { path: retailPathDependent, name: "his_retail_dependent.txt" },
+    ],
+    zipFileName
+  );
+
+  return zipPath;
+};
 
 // const orderQuery = `
 //   SELECT

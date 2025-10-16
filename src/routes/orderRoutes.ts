@@ -13,6 +13,7 @@ router.post("/", authenticateApiUser, controller.createOrderHandler); // Create 
 router.post("/cc-transaction", authenticateApiUser, controller.ccTransactionHandler); // Verify CC Transaction --> Protected
 router.post("/list", authenticate, controller.fetchOrderListHandler); // Fetch List --> Protected
 router.post("/single", authenticate, controller.singleOrderHandler); // Fetch Single Order --> Protected
+router.post("/generate-his", controller.generateHISHandler); // Fetch Single Order --> Protected
 
 router.get("/:order_code/pdf", async (req, res): Promise<any> => {
   const { order_code } = req.params;

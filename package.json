@@ -16,6 +16,7 @@
     "@prisma/client": "^6.8.2",
     "@typescript-eslint/eslint-plugin": "^8.12.2",
     "@typescript-eslint/parser": "^8.12.2",
+    "archiver": "^7.0.1",
     "axios": "^1.12.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -41,6 +42,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/archiver": "^6.0.3",
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

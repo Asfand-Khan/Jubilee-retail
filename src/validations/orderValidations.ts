@@ -35,14 +35,14 @@ export const validateOrderSchema = z.object({
 
   customer_email: z
     .string({
-      required_error: "Customer email is required"
+      required_error: "Customer email is required",
     })
     .email("Invalid email format.")
     .max(150, { message: "Customer email must not exceed 150 characters." }),
 
   customer_contact: z
     .string({
-      required_error: "Customer contact is required"
+      required_error: "Customer contact is required",
     })
     .regex(
       /^03\d{9}$/,
@@ -56,7 +56,10 @@ export const validateOrderSchema = z.object({
     .nullable(),
 
   customer_city: z
-    .number({ invalid_type_error: "Customer city must be a number.", required_error: "Customer city is required." })
+    .number({
+      invalid_type_error: "Customer city must be a number.",
+      required_error: "Customer city is required.",
+    })
     .int({ message: "Customer city must be an integer." }),
 
   customer_occupation: z
@@ -670,100 +673,175 @@ export const validateOrderSchema = z.object({
     .nullable(),
 
   // purchase protection details
-  purchase_protection: z.object({
-    duration: z
-      .number({
-        required_error: "Purchase protection details - Duration is required.",
-        invalid_type_error:
-          "Purchase protection details - Duration must be a number.",
-      })
-      .min(1, {
-        message: "Purchase protection details - Duration cannot be empty",
+  purchase_protection: z
+    .object({
+      duration: z
+        .number({
+          required_error: "Purchase protection details - Duration is required.",
+          invalid_type_error:
+            "Purchase protection details - Duration must be a number.",
+        })
+        .min(1, {
+          message: "Purchase protection details - Duration cannot be empty",
+        }),
+      duration_type: z.enum(["days", "months", "years"], {
+        message:
+          "Duration is required - can only be one from 'days', 'months', 'years'",
       }),
-    duration_type: z.enum(["days", "months", "years"], {
-      message: "Duration is required - can only be one from 'days', 'months', 'years'"
-    }),
-    name: z
-      .string({
-        required_error: "Purchase protection details - Name is required.",
-        invalid_type_error:
-          "Purchase protection details - Name must be a string.",
-      })
-      .min(1, {
-        message: "Purchase protection details - Name cannot be empty",
-      }),
-    total_price: z
-      .string({
-        required_error: "Purchase protection details - Total price is required.",
-        invalid_type_error:
-          "Purchase protection details - Total price must be a string.",
-      })
-      .min(1, {
-        message: "Purchase protection details - Total price cannot be empty",
-      }),
-    imei: z
-      .string({
-        invalid_type_error: "Purchase protection details - IMEI must be a string.",
-      })
-      .optional()
-      .nullable(),
-    serial_number: z
-      .string({
-        invalid_type_error: "Purchase protection details - Serial number must be a string.",
-      })
-      .optional()
-      .nullable(),
-    retailer_sku: z
-      .string({
-        invalid_type_error: "Purchase protection details - Retailer SKU must be a string.",
-      })
-      .optional()
-      .nullable(),
-  }).nullable().optional(),
+      name: z
+        .string({
+          required_error: "Purchase protection details - Name is required.",
+          invalid_type_error:
+            "Purchase protection details - Name must be a string.",
+        })
+        .min(1, {
+          message: "Purchase protection details - Name cannot be empty",
+        }),
+      total_price: z
+        .string({
+          required_error:
+            "Purchase protection details - Total price is required.",
+          invalid_type_error:
+            "Purchase protection details - Total price must be a string.",
+        })
+        .min(1, {
+          message: "Purchase protection details - Total price cannot be empty",
+        }),
+      imei: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - IMEI must be a string.",
+        })
+        .optional()
+        .nullable(),
+      serial_number: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Serial number must be a string.",
+        })
+        .optional()
+        .nullable(),
+      retailer_sku: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Retailer SKU must be a string.",
+        })
+        .optional()
+        .nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export const validateCCTransactionSchema = z.object({
-  order_code: z.string({
-    required_error: "Order code is required.",
-    invalid_type_error: "Order code must be a string.",
-  }).min(1, "Order code can not be empty"),
+  order_code: z
+    .string({
+      required_error: "Order code is required.",
+      invalid_type_error: "Order code must be a string.",
+    })
+    .min(1, "Order code can not be empty"),
 
-  approval_code: z.string({
-    invalid_type_error: "Approval code must be a string.",
-  }).optional().nullable(),
+  approval_code: z
+    .string({
+      invalid_type_error: "Approval code must be a string.",
+    })
+    .optional()
+    .nullable(),
 
-  transaction_id: z.string({
-    invalid_type_error: "Transaction ID must be a string.",
-  }).optional().nullable(),
+  transaction_id: z
+    .string({
+      invalid_type_error: "Transaction ID must be a string.",
+    })
+    .optional()
+    .nullable(),
 
-  reason_code: z.string({
-    invalid_type_error: "Reason code must be a string.",
-  }).optional().nullable(),
-})
+  reason_code: z
+    .string({
+      invalid_type_error: "Reason code must be a string.",
+    })
+    .optional()
+    .nullable(),
+});
 
 export const validateListSchema = z.object({
-  mode: z.enum(["orders", "policies", "cbo", "renewal"], {
-    invalid_type_error: "Mode must be either 'orders', 'policies', 'cbo', or 'renewal'.",
-  }).default("orders"),
+  mode: z
+    .enum(["orders", "policies", "cbo", "renewal"], {
+      invalid_type_error:
+        "Mode must be either 'orders', 'policies', 'cbo', or 'renewal'.",
+    })
+    .default("orders"),
 
-  month: z.enum([
-    "january", "february", "march", "april", "may", "june",
-    "july", "august", "september", "october", "november", "december"
-  ], {
-    invalid_type_error: "Month must be one of 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', or 'december'.",
-  }).optional().nullable(),
+  month: z
+    .enum(
+      [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+      ],
+      {
+        invalid_type_error:
+          "Month must be one of 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', or 'december'.",
+      }
+    )
+    .optional()
+    .nullable(),
 
-  api_user_id: z.number({
-    invalid_type_error: "API user ID must be a number.",
-  }).int({ message: "API user ID must be an integer." }).optional().nullable(),
+  api_user_id: z
+    .number({
+      invalid_type_error: "API user ID must be a number.",
+    })
+    .int({ message: "API user ID must be an integer." })
+    .optional()
+    .nullable(),
 
-  order_status: z.enum(["accepted", "cancelled", "pendingCOD", "rejected", "unverified", "verified", "pending"], {
-    invalid_type_error: "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
-  }).optional().nullable(),
+  order_status: z
+    .enum(
+      [
+        "accepted",
+        "cancelled",
+        "pendingCOD",
+        "rejected",
+        "unverified",
+        "verified",
+        "pending",
+      ],
+      {
+        invalid_type_error:
+          "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+      }
+    )
+    .optional()
+    .nullable(),
 
-  policy_status: z.enum(["cancelled", "HISposted", "IGISposted", "pendingIGIS", "unverified", "verified", "pending", "pendingCOD", "pendingCBO"], {
-    invalid_type_error: "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
-  }).optional().nullable(),
+  policy_status: z
+    .enum(
+      [
+        "cancelled",
+        "HISposted",
+        "IGISposted",
+        "pendingIGIS",
+        "unverified",
+        "verified",
+        "pending",
+        "pendingCOD",
+        "pendingCBO",
+      ],
+      {
+        invalid_type_error:
+          "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+      }
+    )
+    .optional()
+    .nullable(),
 
   date: z
     .string({
@@ -773,37 +851,82 @@ export const validateListSchema = z.object({
     .regex(
       /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
       "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
-    ).optional().nullable(),
+    )
+    .optional()
+    .nullable(),
 
-  product_id: z.number({
-    invalid_type_error: "Product ID must be a number.",
-  }).int({ message: "Product ID must be an integer." }).optional().nullable(),
+  product_id: z
+    .number({
+      invalid_type_error: "Product ID must be a number.",
+    })
+    .int({ message: "Product ID must be an integer." })
+    .optional()
+    .nullable(),
 
-  branch_id: z.number({
-    invalid_type_error: "Branch ID must be a number.",
-  }).int({ message: "Branch ID must be an integer." }).optional().nullable(),
+  branch_id: z
+    .number({
+      invalid_type_error: "Branch ID must be a number.",
+    })
+    .int({ message: "Branch ID must be an integer." })
+    .optional()
+    .nullable(),
 
-  payment_mode_id: z.number({
-    invalid_type_error: "Payment mode ID must be a number.",
-  }).int({ message: "Payment mode ID must be an integer." }).optional().nullable(),
+  payment_mode_id: z
+    .number({
+      invalid_type_error: "Payment mode ID must be a number.",
+    })
+    .int({ message: "Payment mode ID must be an integer." })
+    .optional()
+    .nullable(),
 
-  cnic: z.string({
-    invalid_type_error: "CNIC must be a string.",
-  }).regex(/^\d{13}$/, "CNIC must be 13 digits without dashes.").optional().nullable(),
+  cnic: z
+    .string({
+      invalid_type_error: "CNIC must be a string.",
+    })
+    .regex(/^\d{13}$/, "CNIC must be 13 digits without dashes.")
+    .optional()
+    .nullable(),
 
-  contact: z.string({
-    invalid_type_error: "Contact must be a string.",
-  }).regex(/^03\d{9}$/, "Contact must be a valid Pakistani number (e.g. 03001234567).").optional().nullable(),
+  contact: z
+    .string({
+      invalid_type_error: "Contact must be a string.",
+    })
+    .regex(
+      /^03\d{9}$/,
+      "Contact must be a valid Pakistani number (e.g. 03001234567)."
+    )
+    .optional()
+    .nullable(),
 });
 
 export const validateOrderCode = z.object({
-  order_code: z.string({
-    required_error: "Order code is required.",
-    invalid_type_error: "Order code must be a string.",
-  }).min(1, "Order code can not be empty"),
+  order_code: z
+    .string({
+      required_error: "Order code is required.",
+      invalid_type_error: "Order code must be a string.",
+    })
+    .min(1, "Order code can not be empty"),
+});
+
+export const validateGenerateHIS = z.object({
+  date: z
+    .string({
+      required_error: "Date range is required.",
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+  option: z.enum([".xlsx", ".txt"], {
+    required_error: "Export option is required.",
+  }),
 });
 
 export type OrderSchema = z.infer<typeof validateOrderSchema>;
 export type CCTransactionSchema = z.infer<typeof validateCCTransactionSchema>;
 export type ListSchema = z.infer<typeof validateListSchema>;
 export type OrderCodeSchema = z.infer<typeof validateOrderCode>;
+export type GenerateHISSchema = z.infer<typeof validateGenerateHIS>;
