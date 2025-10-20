@@ -9,7 +9,7 @@ import {
   getBranchByIGISTakafulCode,
   updateBranchById,
 } from "../services/branchService";
-import { validateBranchCreate, validateBranchUpdate } from "../validations/branchValidations";
+import { validateBranchCreate, validateBranchListing, validateBranchUpdate } from "../validations/branchValidations";
 import { z } from "zod";
 import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
@@ -23,7 +23,8 @@ export const getAllBranchesHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const branches = await getAllBranches();
+    const parsed = validateBranchListing.parse(req.body);
+    const branches = await getAllBranches(parsed);
     return res.status(200).json({
       status: 1,
       message: "Branches fetched successfully",

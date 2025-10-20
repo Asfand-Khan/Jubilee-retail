@@ -64,6 +64,31 @@ export const validateMotorQuoteStatusUpdate = z.object({
   status: z.enum(["approved", "cancelled"]),
 });
 
+export const validateMotorQuoteListing = z.object({
+  status: z
+    .array(
+      z.enum(["approved", "cancelled", "pending"], {
+        invalid_type_error:
+          "Status must be one of 'approved', 'cancelled', or 'pending'.",
+      })
+    )
+    .optional()
+    .nullable(),
+  date: z
+    .string({
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+});
+
 export type MotorQuote = z.infer<typeof validateMotorQuote>;
 export type MotorQuoteUpdateType = z.infer<typeof validateMotorQuoteUpdate>;
-export type MotorQuoteStatusUpdateType = z.infer<typeof validateMotorQuoteStatusUpdate>;
+export type MotorQuoteStatusUpdateType = z.infer<
+  typeof validateMotorQuoteStatusUpdate
+>;
+export type MotorQuoteListingType = z.infer<typeof validateMotorQuoteListing>;

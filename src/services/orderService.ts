@@ -7,6 +7,7 @@ import {
   GenerateHISSchema,
   ListSchema,
   OrderCodeSchema,
+  OrderPolicyStatusSchema,
   OrderSchema,
 } from "../validations/orderValidations";
 import { format } from "date-fns";
@@ -26,7 +27,16 @@ import { sendEmail } from "../utils/sendEmail";
 import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
 import { sendSms } from "../utils/sendSms";
 import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
-import { createZipFile, pad, sanitize, writeHISTextFile } from "../utils/fileUtils";
+import {
+  createZipFile,
+  pad,
+  sanitize,
+  writeHISTextFile,
+} from "../utils/fileUtils";
+import { BulkOrder } from "../validations/bulkOrderValidations";
+import { skuDetails } from "./orderService2";
+import { AuthRequest } from "../types/types";
+import { sendVerificationNotifications } from "../utils/utils";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -38,6 +48,462 @@ const Constants = {
   DEFAULT_FBL_HIS_CODE_TAKAFULL: process.env.DEFAULT_FBL_HIS_CODE_TAKAFULL,
   BRANCH_CODE: process.env.BRANCH_CODE,
   BRANCH_CODE_TAKAFUL: process.env.BRANCH_CODE_TAKAFUL,
+};
+
+export const bulkOrder = async (
+  data: BulkOrder,
+  createdBy: number,
+  req: AuthRequest
+) => {
+  const successResults: any[] = [];
+  const failedResults: any[] = [];
+
+  const CHUNK_SIZE = 10;
+
+  for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+    const chunk = data.slice(i, i + CHUNK_SIZE);
+
+    const chunkPromises = chunk.map(async (order) => {
+      try {
+        const [orderExists, mapper, paymentMode] = await Promise.all([
+          orderByOrderCode(order.order_code),
+          skuDetails(order.child_sku),
+          getPaymentModeByCode(order.payment_mode_code),
+        ]);
+
+        if (orderExists) {
+          return {
+            order_code: order.order_code,
+            status: "failed" as const,
+            message: "Order code already exists",
+          };
+        }
+
+        if (!mapper) {
+          return {
+            order_code: order.order_code,
+            status: "failed" as const,
+            message: "Child SKU does not exist",
+          };
+        }
+
+        if (!paymentMode) {
+          return {
+            order_code: order.order_code,
+            status: "failed" as const,
+            message: "Payment mode not found",
+          };
+        }
+
+        const txResult = await prisma.$transaction(
+          async (tx) => {
+            const product = await tx.product.findUnique({
+              where: { id: mapper.product_id },
+              include: { productCategory: true },
+            });
+
+            if (!product) {
+              throw new Error("Product not found");
+            }
+            if (!product.productCategory) {
+              throw new Error("Product category not found");
+            }
+
+            // lastOrder lookup (if required by domain)
+            const lastOrder = (await tx.$queryRawUnsafe(`
+            SELECT 
+                pol.policy_code,
+                pol.issue_date,
+                pol.start_date,
+                ord.renewal_number
+            FROM \`Order\` ord
+            LEFT JOIN Policy pol ON ord.id = pol.order_id
+            WHERE
+                pol.status IS NOT NULL
+                AND ord.customer_cnic = '${order.customer_cnic}'
+                AND pol.product_id = ${mapper.product_id}
+                AND pol.status IN ( 'IGISposted', 'HISposted' )
+            ORDER BY ord.id DESC
+            LIMIT 1
+          `)) as {
+              policy_code?: string;
+              issue_date?: string;
+              start_date?: string;
+              renewal_number?: string;
+            }[];
+
+            // create order
+            const newOrder = await tx.order.create({
+              data: {
+                order_code: order.order_code,
+                create_date: dayjs(new Date()).format("YYYY-MM-DD"),
+                customer_name: order.customer_name ?? null,
+                customer_cnic: order.customer_cnic,
+                customer_dob: order.customer_dob ?? null,
+                customer_email: order.customer_email ?? null,
+                customer_contact: order.customer_contact ?? null,
+                customer_address: order.customer_address ?? null,
+                customer_occupation: order.customer_occupation ?? null,
+                payment_method_id: paymentMode.id,
+                payment: order.received_premium,
+                received_premium: order.received_premium,
+                created_by: createdBy,
+              },
+              include: {
+                apiUser: true,
+              },
+            });
+
+            // create policy
+            const policy = await tx.policy.create({
+              data: {
+                order_id: newOrder.id,
+                plan_id: mapper.plan_id,
+                product_id: mapper.product_id,
+                product_option_id: mapper.option_id,
+                issue_date: order.issue_date ?? null,
+                start_date: order.start_date ?? null,
+                expiry_date: order.expiry_date ?? null,
+                item_price: mapper.product_option?.price?.toString() ?? "0",
+                sum_insured: mapper.product_option?.price?.toString() ?? "0",
+                received_premium: order.received_premium,
+                type: product.product_type,
+                created_by: createdBy,
+              },
+            });
+
+            // create policy details if provided
+            if (order.policy_detail && order.policy_detail.length > 0) {
+              const policyDetails = order.policy_detail.map((c) => ({
+                policy_id: policy.id,
+                name: c.name ?? null,
+                dob: c.dob ?? null,
+                cnic: c.cnic ?? null,
+                gender: (c.gender as Gender) ?? null,
+                age: c.dob ? calculateAge(c.dob) : null,
+                relation: c.relation ?? null,
+                cnic_issue_date: c.cnic_issue_date ?? null,
+                type: c.type ?? null,
+                created_by: createdBy,
+              }));
+              await tx.policyDetail.createMany({ data: policyDetails });
+            }
+
+            // create riders if provided
+            if (order.rider && order.rider.length > 0) {
+              const policyRiders = order.rider.map((r) => ({
+                policy_id: policy.id,
+                rider_name: r.name,
+                sum_insured: r.sum_insured,
+                created_by: createdBy,
+              }));
+              await tx.fblPolicyRider.createMany({ data: policyRiders });
+            }
+
+            // Generate and set policy code
+            const planName = mapper.plan.name ?? "";
+            const planId = newPlanMapping(product.product_name, planName);
+            const code = `91${planId}${newPolicyCode(policy.id)}`;
+
+            const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${newOrder.order_code}/pdf`;
+
+            await tx.order.update({
+              where: { id: newOrder.id },
+              data: { status: "verified" },
+            });
+
+            const updatedPolicy = await tx.policy.update({
+              where: { id: policy.id },
+              data: {
+                qr_doc_url: policyDocumentUrl,
+                policy_code: code,
+                status: "pendingCBO",
+              },
+            });
+
+            // return stable identifiers to the outer scope
+            return {
+              orderId: newOrder.id,
+              policyId: policy.id,
+              lastOrder,
+              mapper: mapper,
+              order: newOrder,
+              policy: updatedPolicy,
+              product,
+            };
+          },
+          {
+            timeout: 20000, // 20 seconds
+          }
+        ); // end transaction
+
+        // set renewal number and pec coverage
+        const apiUser = txResult.order.apiUser;
+        if (apiUser?.name.toLowerCase() == "coverage") {
+          const split = txResult.order.order_code.split("-");
+          const renewalNumber = split[split.length - 1];
+
+          if (renewalNumber.includes("R")) {
+            const pec_coverage =
+              Number(renewalNumber.split("R")[1]) > 3 ? 100 : 0;
+            await prisma.order.update({
+              where: { id: txResult.orderId },
+              data: {
+                renewal_number: renewalNumber,
+                pec_coverage: pec_coverage.toString(),
+              },
+            });
+          } else {
+            await prisma.order.update({
+              where: { id: txResult.orderId },
+              data: { renewal_number: "R0", pec_coverage: "0" },
+            });
+          }
+        } else {
+          const lastOrder = txResult.lastOrder;
+          if (lastOrder.length > 0) {
+            const dayDiff =
+              lastOrder[0].start_date && txResult.policy.start_date
+                ? Math.abs(
+                    (new Date(txResult.policy.start_date).getTime() -
+                      new Date(lastOrder[0].start_date).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : 0;
+            if (dayDiff <= 405) {
+              const updatedRenewalNumber =
+                Number(lastOrder[0]?.renewal_number?.split("R")[1]) + 1;
+              let pec_coverage = 0;
+
+              if (apiUser?.name.toLowerCase().includes("faysalbank")) {
+                if (
+                  txResult.product.product_name
+                    .toLowerCase()
+                    .includes("personal") ||
+                  txResult.product.product_name.toLowerCase() ===
+                    "fbl-takaful health cover"
+                ) {
+                  if (updatedRenewalNumber > 2) pec_coverage = 100;
+                } else if (
+                  txResult.product.product_name.toLowerCase().includes("family")
+                ) {
+                  if (updatedRenewalNumber === 0) pec_coverage = 20;
+                  else if (updatedRenewalNumber === 1) pec_coverage = 50;
+                  else if (updatedRenewalNumber > 1) pec_coverage = 100;
+                }
+              } else if (apiUser?.name.toLowerCase().includes("mib")) {
+                pec_coverage =
+                  updatedRenewalNumber === 0
+                    ? 10
+                    : updatedRenewalNumber === 1
+                    ? 20
+                    : updatedRenewalNumber === 2
+                    ? 30
+                    : 50;
+              } else if (apiUser?.name.toLowerCase().includes("hmb")) {
+                pec_coverage =
+                  updatedRenewalNumber === 0
+                    ? 20
+                    : updatedRenewalNumber === 1
+                    ? 30
+                    : 50;
+              } else if (updatedRenewalNumber > 2) {
+                pec_coverage = 100;
+              }
+
+              await prisma.order.update({
+                where: { id: txResult.orderId },
+                data: {
+                  renewal_number: `R${updatedRenewalNumber}`,
+                  pec_coverage: pec_coverage.toString(),
+                },
+              });
+            } else {
+              await prisma.order.update({
+                where: { id: txResult.orderId },
+                data: {
+                  renewal_number: "R0",
+                  pec_coverage: "0",
+                },
+              });
+            }
+          } else {
+            await prisma.order.update({
+              where: { id: txResult.orderId },
+              data: {
+                renewal_number: "R0",
+                pec_coverage: "0",
+              },
+            });
+          }
+        }
+
+        // Email & Sms
+
+        let Insurance: string,
+          insurance: string,
+          doc: string,
+          buisness: string,
+          url: string,
+          jubilee: string,
+          takaful: boolean,
+          smsString: string,
+          logo: string,
+          customerName: string,
+          orderId: string,
+          createdDate: string;
+
+        logo = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+        customerName = txResult.order.customer_name;
+        orderId = txResult.order.order_code;
+        createdDate = txResult.order.create_date;
+
+        const policyWording = getPolicyWording(
+          apiUser?.name.toLowerCase(),
+          txResult.product.product_name,
+          txResult.policy.takaful_policy,
+          false
+        );
+        const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+        const extraDocs = policyWording.extraUrls.map((url) => ({
+          filename: url,
+          path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+          contentType: "application/pdf",
+        }));
+
+        if (txResult.mapper.child_sku.toLowerCase().includes("takaful")) {
+          url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
+          logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+          Insurance = "Takaful";
+          insurance = "";
+          doc = "PMD(s)";
+          buisness = "Takaful Retail Business Division";
+          jubilee = "Jubilee General Takaful";
+          takaful = true;
+          smsString = `Dear ${txResult.order.customer_name}, Thank you for choosing Jubilee General ${txResult.product.product_name} .Your PMD # is ${txResult.policy.policy_code}. Click here to view your PMD: ${txResult.policy.qr_doc_url}. For more information please dial our toll free # 0800 03786`;
+        } else {
+          url =
+            "https://jubileegeneral.com.pk/getinsurance/policy-verification";
+          logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+          Insurance = "Insurance";
+          insurance = "insurance";
+          doc = "policy document(s)";
+          if (
+            apiUser != null &&
+            apiUser.name.toLowerCase().includes("hblbanca")
+          ) {
+            buisness = "Bancassurance Department";
+          } else {
+            buisness = "Retail Business Division";
+          }
+          jubilee = "Jubilee General Insurance";
+          takaful = false;
+          smsString = `Dear ${txResult.order.customer_name}, Thank you for choosing Jubilee General ${txResult.product.product_name}. Your Policy # is ${txResult.policy.policy_code}. Click here to view your Policy: ${txResult.policy.qr_doc_url}. For more information please dial our toll free # 0800 03786`;
+        }
+
+        await sendEmail({
+          to: txResult.order.customer_email || "",
+          subject: "Policy Order Successful",
+          html: getOrderB2BTemplate(
+            logo,
+            customerName,
+            Insurance,
+            insurance,
+            doc,
+            orderId,
+            createdDate,
+            buisness,
+            url,
+            jubilee,
+            takaful,
+            txResult.product.product_name,
+            txResult.order.received_premium
+          ),
+          attachments: [
+            {
+              filename: `${txResult.policy.policy_code}.pdf`,
+              path: txResult.policy.qr_doc_url || "",
+              contentType: "application/pdf",
+            },
+            {
+              filename: policyWording.wordingFile,
+              path: policyWordingUrl,
+              contentType: "application/pdf",
+            },
+            ...extraDocs,
+          ],
+        });
+
+        if (
+          !txResult.product.product_name
+            .toLowerCase()
+            .includes("parents-care-plus")
+        ) {
+          await sendSms(txResult.order.customer_contact || "", smsString);
+        } else {
+          if (txResult.policy.takaful_policy) {
+            await sendWhatsAppMessage({
+              policyType: "takaful_digital",
+              phoneNumber: "03150226944",
+              params: [
+                txResult.order.customer_name,
+                txResult.mapper.plan.name,
+                txResult.policy.policy_code || "",
+                txResult.policy.qr_doc_url || "",
+              ],
+            });
+          } else {
+            await sendWhatsAppMessage({
+              policyType: "conventional_digital",
+              phoneNumber: txResult.order.customer_contact || "",
+              params: [
+                txResult.order.customer_name,
+                txResult.mapper.plan.name,
+                txResult.policy.policy_code || "",
+                txResult.policy.qr_doc_url || "",
+              ],
+            });
+          }
+        }
+
+        // transaction success
+        return {
+          order_code: order.order_code,
+          status: "success" as const,
+          message: "Created",
+          orderId: txResult.orderId,
+          policyId: txResult.policyId,
+        };
+      } catch (err: any) {
+        // Convert thrown errors into failed result with meaningful message
+        const message =
+          err?.message && typeof err?.message === "string"
+            ? err.message
+            : "Unexpected error during order processing";
+
+        return {
+          order_code: order.order_code,
+          status: "failed" as const,
+          message,
+        };
+      }
+    }); // end map
+
+    const chunkResults = await Promise.all(chunkPromises);
+
+    for (const r of chunkResults) {
+      if (r.status === "success") successResults.push(r);
+      else failedResults.push(r);
+    }
+  } // end for chunks
+
+  return {
+    total: data.length,
+    success: successResults.length,
+    failed: failedResults.length,
+    successResults,
+    failedResults,
+  };
 };
 
 export const createOrder = async (data: OrderSchema, createdBy: number) => {
@@ -518,13 +984,13 @@ export const ccTransaction = async (
     const [branch, policy] = await Promise.all([
       updatedOrder.branch_id
         ? tx.branch.findUnique({
-          where: { id: updatedOrder.branch_id },
-          select: { his_code: true, his_code_takaful: true },
-        })
+            where: { id: updatedOrder.branch_id },
+            select: { his_code: true, his_code_takaful: true },
+          })
         : tx.branch.findFirst({
-          where: { name: "Direct" },
-          select: { his_code: true, his_code_takaful: true },
-        }),
+            where: { name: "Direct" },
+            select: { his_code: true, his_code_takaful: true },
+          }),
       tx.policy.findFirst({
         where: { order_id: updatedOrder.id },
         include: {
@@ -715,6 +1181,142 @@ export const ccTransaction = async (
   return result;
 };
 
+export const manuallyVerifyCC = async (
+  data: CCTransactionSchema,
+  req: Request
+) => {
+  const order = await orderByOrderCode(data.order_code);
+  if (!order) throw new Error("Order not found");
+  if (order.status === "verified") throw new Error("Order is already verified");
+
+  const result = await prisma.$transaction(
+    async (tx) => {
+      const [branch, policy] = await Promise.all([
+        order.branch_id
+          ? tx.branch.findUnique({
+              where: { id: order.branch_id },
+              select: { his_code: true, his_code_takaful: true },
+            })
+          : tx.branch.findFirst({
+              where: { name: "Direct" },
+              select: { his_code: true, his_code_takaful: true },
+            }),
+        tx.policy.findFirst({
+          where: { order_id: order.id },
+          include: {
+            plan: { select: { name: true } },
+            product: {
+              include: {
+                productCategory: true,
+                webappMappers: {
+                  select: {
+                    plan: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+
+      if (!policy) {
+        throw new Error("Policy not found");
+      }
+
+      const policyCode = generatePolicyCode(policy, branch);
+
+      const [updatedOrder, updatedPolicy] = await Promise.all([
+        tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: "verified",
+            cc_transaction_id: data.transaction_id,
+            cc_approval_code: data.approval_code,
+          },
+          include: { apiUser: true },
+        }),
+        tx.policy.update({
+          where: { id: policy.id },
+          data: {
+            policy_code: policyCode,
+            status:
+              policy.product.product_type === "health"
+                ? "pendingCBO"
+                : "pendingIGIS",
+          },
+          include: {
+            plan: { select: { name: true } },
+            product: {
+              include: {
+                productCategory: true,
+                webappMappers: {
+                  select: {
+                    plan: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
+      ]);
+
+      return { policy: updatedPolicy, order: updatedOrder };
+    },
+    {
+      timeout: 15000,
+    }
+  );
+
+  try {
+    await sendVerificationNotifications(result.policy, result.order, req);
+  } catch (notifyErr) {
+    console.error("Notification error:", notifyErr);
+  }
+
+  return { policy_code: result.policy.policy_code };
+};
+
+export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
+  const { status, agent_id, branch_id, client_id, policy_id } = data;
+
+  if (status === "IGISposted" && (!agent_id || !branch_id || !client_id)) {
+    throw new Error("Agent, Branch, and Client are required");
+  }
+
+  const updatedPolicy = await prisma.$transaction(async (tx) => {
+    const policy = await tx.policy.findUnique({
+      where: { id: policy_id },
+      include: { order: true },
+    });
+
+    if (!policy) throw new Error("Policy not found");
+
+    const orderUpdateData: any = {
+      agent_id,
+      branch_id,
+      client_id,
+    };
+
+    if (status === "cancelled") {
+      orderUpdateData.status = "cancelled";
+    }
+
+    const updated = await tx.policy.update({
+      where: { id: policy_id },
+      data: {
+        status,
+        order: {
+          update: orderUpdateData,
+        },
+      },
+    });
+
+    return updated;
+  });
+
+  return updatedPolicy;
+};
+
 export const orderList = async (data: ListSchema) => {
   let query = "";
   const filters: string[] = [];
@@ -780,7 +1382,7 @@ export const orderList = async (data: ListSchema) => {
             ord.received_premium AS 'premium',
             ord.customer_name AS 'customer_name',
             ord.customer_contact AS 'customer_contact',
-            (SELECT pd.cnic FROM PolicyDetail pd WHERE pd.policy_id = p.id AND LOWER(pd.type) = 'customer' ) AS 'customer_cnic',
+            (SELECT pd.cnic FROM PolicyDetail pd WHERE pd.policy_id = p.id AND LOWER(pd.type) = 'customer' LIMIT 1 ) AS 'customer_cnic',
             ord.branch_name AS 'branch_name',
             prod.product_name AS 'product',
             prod.id AS 'product_id',
@@ -855,39 +1457,48 @@ export const orderList = async (data: ListSchema) => {
   }
 
   // ---- Apply Filters ----
-  if (data.api_user_id) {
-    filters.push(`ord.api_user_id = ${data.api_user_id}`);
+  if (data.api_user_id && data.api_user_id.length > 0) {
+    const ids = data.api_user_id.join(", ");
+    filters.push(`ord.api_user_id IN (${ids})`);
   }
 
-  if (data.order_status) {
-    filters.push(`ord.status = '${data.order_status}'`);
+  if (data.order_status && data.order_status.length > 0) {
+    const statuses = data.order_status
+      .map((m) => `'${m.toLowerCase()}'`)
+      .join(", ");
+    filters.push(`ord.status IN (${statuses})`);
   }
 
-  if (data.policy_status) {
-    filters.push(`p.status = '${data.policy_status}'`);
+  if (data.policy_status && data.policy_status.length > 0) {
+    const statuses = data.policy_status
+      .map((m) => `'${m.toLowerCase()}'`)
+      .join(", ");
+    filters.push(`p.status IN (${statuses})`);
   }
 
-  if (data.month) {
-    filters.push(
-      `LOWER(MONTHNAME(p.expiry_date)) = '${data.month.toLowerCase()}'`
-    );
+  if (data.month && data.month.length > 0) {
+    const months = data.month.map((m) => `'${m.toLowerCase()}'`).join(", ");
+    filters.push(`LOWER(MONTHNAME(p.expiry_date)) IN (${months})`);
   }
 
-  if (data.date) {
+  if (data.date && (!data.cnic || !data.contact)) {
     const [start, end] = data.date.split(" to ");
     filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
   }
 
-  if (data.product_id) {
-    filters.push(`p.product_id = ${data.product_id}`);
+  if (data.product_id && data.product_id.length > 0) {
+    const ids = data.product_id.join(", ");
+    filters.push(`p.product_id IN (${ids})`);
   }
 
-  if (data.branch_id) {
-    filters.push(`ord.branch_id = ${data.branch_id}`);
+  if (data.branch_id && data.branch_id.length > 0) {
+    const ids = data.branch_id.join(", ");
+    filters.push(`ord.branch_id IN (${ids})`);
   }
 
-  if (data.payment_mode_id) {
-    filters.push(`ord.payment_method_id = ${data.payment_mode_id}`);
+  if (data.payment_mode_id && data.payment_mode_id.length > 0) {
+    const ids = data.payment_mode_id.join(", ");
+    filters.push(`ord.payment_method_id IN (${ids})`);
   }
 
   if (data.cnic) {
@@ -986,13 +1597,13 @@ export const repushOrder = async (data: OrderCodeSchema) => {
 
     const branch = order.branch_id
       ? await tx.branch.findUnique({
-        where: { id: order.branch_id },
-        select: { his_code: true, his_code_takaful: true },
-      })
+          where: { id: order.branch_id },
+          select: { his_code: true, his_code_takaful: true },
+        })
       : await tx.branch.findFirst({
-        where: { name: "Direct" },
-        select: { his_code: true, his_code_takaful: true },
-      });
+          where: { name: "Direct" },
+          select: { his_code: true, his_code_takaful: true },
+        });
 
     if (!branch) {
       throw new Error("Branch not found");
@@ -1073,6 +1684,13 @@ export const orderByOrderCode = async (
 export const getPaymentMode = async (payment_mode_id: number) => {
   const paymentMode = await prisma.paymentMode.findUnique({
     where: { id: payment_mode_id },
+  });
+  return paymentMode;
+};
+
+export const getPaymentModeByCode = async (payment_mode_code: string) => {
+  const paymentMode = await prisma.paymentMode.findFirst({
+    where: { payment_code: payment_mode_code },
   });
   return paymentMode;
 };
@@ -1159,7 +1777,9 @@ export const generateHIS = async (data: GenerateHISSchema) => {
         item?.relation?.toLowerCase().includes("father")
     );
 
-    const childDataArray = policy.policyDetails.filter(item => !item.type.toLowerCase().includes("customer"));
+    const childDataArray = policy.policyDetails.filter(
+      (item) => !item.type.toLowerCase().includes("customer")
+    );
 
     const apiUser = order.apiUser;
     let ProductName = product.product_name;
@@ -1345,7 +1965,6 @@ export const generateHIS = async (data: GenerateHISSchema) => {
         hisDependantLines.push(dependentline.join("\t"));
       });
     }
-
   }
 
   const retailPathDependent = await writeHISTextFile(
@@ -1365,6 +1984,23 @@ export const generateHIS = async (data: GenerateHISSchema) => {
   );
 
   return zipPath;
+};
+
+export const generatePolicyCode = (policy: any, branch: any): string => {
+  if (policy.product.product_type === "health") {
+    const planId = newPlanMapping(
+      policy.product.product_name,
+      policy.plan?.name || ""
+    );
+    return `91${planId}${newPolicyCode(policy.id)}`;
+  }
+  const branchCode = policy.takaful_policy
+    ? branch?.his_code_takaful
+    : branch?.his_code;
+  const productCode = newProductCode(
+    Number(policy.product.productCategory?.product_code || 0)
+  );
+  return `${branchCode}-${productCode}-${newPolicyCode(policy.id)}`;
 };
 
 // const orderQuery = `

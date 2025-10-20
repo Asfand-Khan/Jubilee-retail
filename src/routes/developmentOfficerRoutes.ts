@@ -4,7 +4,7 @@ import { createDOHandler, getAllDOsHandler, getSingleDOHandler, updateDOHandler 
 
 const router = Router();
 
-router.get("/", authenticate, getAllDOsHandler); // Get All Development Officers --> Protected
+router.post("/all", authenticate, getAllDOsHandler); // Get All Development Officers --> Protected
 router.post("/", authenticate, createDOHandler); // Create Development Officers --> Protected
 router.get("/:id", authenticate, getSingleDOHandler); // Single Development Officers --> Protected
 router.put("/", authenticate, updateDOHandler); // Update Development Officers --> Protected

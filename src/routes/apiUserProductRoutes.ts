@@ -7,7 +7,7 @@ import * as controller from "../controllers/apiUserProductController";
 
 const router = Router();
 
-router.get("/", authenticate, controller.getAllApiUserProductHandler); // Get All Api User Products --> Protected
+router.post("/all", authenticate, controller.getAllApiUserProductHandler); // Get All Api User Products --> Protected
 router.post("/", authenticate, controller.createApiUserProductHandler); // Create Api User Product --> Protected
 router.post("/single", authenticate, controller.singleApiUserProductHandler); // Get Api User Product By Api User Id --> Protected
 router.put("/", authenticate, controller.updateApiUserProductHandler); // Update Api User Product By Api User Id --> Protected

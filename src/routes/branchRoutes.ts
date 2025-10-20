@@ -4,7 +4,7 @@ import { createBranchHandler, getAllBranchesHandler, getSingleBranchHandler, upd
 
 const router = Router();
 
-router.get("/", authenticate, getAllBranchesHandler); // Get All Branches --> Protected
+router.post("/all", authenticate, getAllBranchesHandler); // Get All Branches --> Protected
 router.post("/", authenticate, createBranchHandler); // Create Branch --> Protected
 router.get("/:id", authenticate, getSingleBranchHandler); // Single Branch --> Protected
 router.put("/", authenticate, updateBranchHandler); // Update Branch --> Protected

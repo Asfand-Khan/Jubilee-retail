@@ -7,7 +7,7 @@ import * as controller from "../controllers/leadMotorInfoController";
 
 const router = Router();
 
-router.get("/", authenticate, controller.getAllLeadMotorInfoHandler); // Get All Motor Quotes --> Protected
+router.post("/all", authenticate, controller.getAllLeadMotorInfoHandler); // Get All Motor Quotes --> Protected
 router.post("/", authenticateApiUser, controller.createLeadMotorInfoHandler); // Create Motor Quotes --> Protected
 router.post("/status", authenticate, controller.updateLeadMotorInfoStatusHandler); // Update Lead Info Status --> Protected
 

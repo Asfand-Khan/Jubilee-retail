@@ -11,9 +11,13 @@ const router = Router();
 
 router.post("/", authenticateApiUser, controller.createOrderHandler); // Create Order --> Protected
 router.post("/cc-transaction", authenticateApiUser, controller.ccTransactionHandler); // Verify CC Transaction --> Protected
+router.post("/repush", authenticate, controller.repushOrderHandler); // Repush the order to blueEx --> Protected
+router.post("/verify-manually", authenticate, controller.manuallyVerifyCCHandler); // Manually Verify CC Order --> Protected
 router.post("/list", authenticate, controller.fetchOrderListHandler); // Fetch List --> Protected
 router.post("/single", authenticate, controller.singleOrderHandler); // Fetch Single Order --> Protected
-router.post("/generate-his", controller.generateHISHandler); // Fetch Single Order --> Protected
+router.post("/generate-his",authenticate , controller.generateHISHandler); // Generate HIS CBO File --> Protected
+router.post("/bulk", authenticate , controller.bulkOrderHandler); // Create Bulk Order --> Protected
+router.post("/status", authenticate, controller.orderPolicyStatusHandler); // Manually Verify CC Order --> Protected
 
 router.get("/:order_code/pdf", async (req, res): Promise<any> => {
   const { order_code } = req.params;

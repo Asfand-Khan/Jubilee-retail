@@ -27,6 +27,7 @@ import paymentModeRoutes from "./paymentModeRoutes";
 import premiumRangeProtectionRoutes from "./premiumRangeProtectionRoutes";
 import couponRoutes from "./couponRoutes";
 import orderRoutes from "./orderRoutes";
+import commonRoutes from "./commonRoutes";
 
 const router = Router();
 
@@ -59,5 +60,13 @@ router.use("/payment-modes", paymentModeRoutes);
 router.use("/premium-range-protections", premiumRangeProtectionRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/orders", orderRoutes);
+router.use("/common", commonRoutes);
+
+// // Handle 404 errors
+// router.use((req, res, next) => {
+//     const err = new Error("Not Found");
+//     err.status = 404;
+//     next(err);
+// });
 
 export default router;

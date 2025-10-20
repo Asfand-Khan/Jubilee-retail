@@ -1,12 +1,26 @@
 import prisma from "../config/db";
-import { BranchType, BranchUpdateType } from "../validations/branchValidations";
+import {
+  BranchListingType,
+  BranchType,
+  BranchUpdateType,
+} from "../validations/branchValidations";
 
-export const getAllBranches = async () => {
+export const getAllBranches = async (data: BranchListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
     const allBranches = await prisma.branch.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allBranches;
   } catch (error: any) {

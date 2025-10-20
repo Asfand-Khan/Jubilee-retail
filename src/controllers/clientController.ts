@@ -2,19 +2,8 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
 import { z } from "zod";
-import {
-  createAgent,
-  getAgentById,
-  getAgentByIGISAgentCode,
-  getAllAgents,
-  updateAgent,
-} from "../services/agentService";
-import {
-  validateAgent,
-  validateAgentUpdate,
-} from "../validations/agentValidations";
 import { createClient, getAllClients, getClientById, getClientByIGISClientCode, updateClient } from "../services/clientService";
-import { validateClient, validateClientUpdate } from "../validations/clientValidations";
+import { validateClient, validateClientListing, validateClientUpdate } from "../validations/clientValidations";
 
 // Module --> Clients
 // Method --> GET (Protected)
@@ -25,7 +14,8 @@ export const getAllClientsHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const clients = await getAllClients();
+    const parsed = validateClientListing.parse(req.body);
+    const clients = await getAllClients(parsed);
     return res.status(200).json({
       status: 1,
       message: "Clients fetched successfully",

@@ -7,7 +7,11 @@ import {
   updateDO,
 } from "../services/developmentOfficerService";
 import { AuthRequest } from "../types/types";
-import { validateDevelopmentOfficer, validateDevelopmentOfficerUpdate } from "../validations/developmentOfficerValidations";
+import {
+  validateDevelopmentOfficer,
+  validateDevelopmentOfficerListing,
+  validateDevelopmentOfficerUpdate,
+} from "../validations/developmentOfficerValidations";
 import { User } from "@prisma/client";
 import { z } from "zod";
 
@@ -20,7 +24,8 @@ export const getAllDOsHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const developmentOfficers = await getAllDOs();
+    const parsed = validateDevelopmentOfficerListing.parse(req.body);
+    const developmentOfficers = await getAllDOs(parsed);
     return res.status(200).json({
       status: 1,
       message: "DOs fetched successfully",
@@ -80,7 +85,6 @@ export const createDOHandler = async (
     });
   }
 };
-
 
 // Module --> Development Officer
 // Method --> GET (Protected)

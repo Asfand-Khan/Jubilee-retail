@@ -35,6 +35,7 @@ import {
   validateUserLogin,
   validateUserRegister,
   validateUserUpdate,
+  validateUserList,
 } from "../validations/userValidations";
 import { getOTPEmailTemplate } from "../utils/getOtpTemplate";
 
@@ -234,7 +235,8 @@ export const getUserProfiles = async (
   res: Response
 ): Promise<any> => {
   try {
-    const profiles = await getProfiles();
+    const parsed = validateUserList.parse(req.body);
+    const profiles = await getProfiles(parsed);
     return res.status(200).json({
       status: 1,
       message: "User profiles fetched successfully",
@@ -576,7 +578,8 @@ export const getApiUserProfiles = async (
   res: Response
 ): Promise<any> => {
   try {
-    const profiles = await getApiProfiles();
+    const parsed = validateUserList.parse(req.body);
+    const profiles = await getApiProfiles(parsed);
     return res.status(200).json({
       status: 1,
       message: "API User profiles fetched successfully",

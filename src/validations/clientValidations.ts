@@ -39,5 +39,30 @@ export const validateClientUpdate = validateClient.extend({
     }),
 });
 
+export const validateClientListing = z.object({
+  branch: z
+    .array(
+      z.number({
+          invalid_type_error: "Branch ID must be a number",
+        })
+        .int({
+          message: "Branch ID must be an integer",
+        })
+    )
+    .optional()
+    .nullable(),
+  date: z
+    .string({
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+});
+
 export type ClientType = z.infer<typeof validateClient>;
 export type ClientUpdateType = z.infer<typeof validateClientUpdate>;
+export type ClientListingType = z.infer<typeof validateClientListing>;

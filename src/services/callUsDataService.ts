@@ -1,15 +1,25 @@
 import prisma from "../config/db";
 import {
+  CallUsDataListingType,
   CallUsDataType,
   CallUsDataUpdateType,
 } from "../validations/calUsDataValidations";
 
-export const getAllCallUsData = async () => {
+export const getAllCallUsData = async (data: CallUsDataListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
     const allCallUsData = await prisma.callUsData.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allCallUsData;
   } catch (error: any) {
@@ -41,7 +51,7 @@ export const createCallUsData = async (
   }
 };
 
-export const updateCallUsData= async (callUsData: CallUsDataUpdateType) => {
+export const updateCallUsData = async (callUsData: CallUsDataUpdateType) => {
   try {
     let data = {
       email: callUsData.email,

@@ -1,6 +1,7 @@
 import { CouponTypeEnum } from "@prisma/client";
 import prisma from "../config/db";
 import {
+  CouponListingSchema,
   CouponSchema,
   GetCouponSchema,
 } from "../validations/couponValidations";
@@ -11,11 +12,22 @@ import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-export const getAllCoupons = async () => {
+export const getAllCoupons = async (data: CouponListingSchema) => {
+  let whereClause = {
+    is_deleted: false,
+  } as any;
+
+  if (data.product_id && data.product_id.length > 0) {
+    whereClause.couponProducts = {
+      some: {
+        product_id: {
+          in: data.product_id,
+        },
+      },
+    };
+  }
   return await prisma.coupon.findMany({
-    where: {
-      is_deleted: false,
-    },
+    where: whereClause,
   });
 };
 

@@ -1,15 +1,26 @@
 import prisma from "../config/db";
 import {
+  DevelopmentOfficerListingType,
   DevelopmentOfficerType,
   DevelopmentOfficerUpdateType,
 } from "../validations/developmentOfficerValidations";
 
-export const getAllDOs = async () => {
+export const getAllDOs = async (data: DevelopmentOfficerListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
     const allDos = await prisma.developmentOfficer.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allDos;
   } catch (error: any) {

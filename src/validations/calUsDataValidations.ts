@@ -24,5 +24,19 @@ export const validateCallUsDataUpdate = validateCallUsData.extend({
     .int("City ID must be an integer."),
 });
 
+export const validateCallUsDataListing = z.object({
+  date: z
+    .string({
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+});
+
 export type CallUsDataType = z.infer<typeof validateCallUsData>;
 export type CallUsDataUpdateType = z.infer<typeof validateCallUsDataUpdate>;
+export type CallUsDataListingType = z.infer<typeof validateCallUsDataListing>;

@@ -130,7 +130,7 @@ export const createOrder = async (
         }
       }
 
-      const lastOrder = (await prisma.$queryRawUnsafe(` 
+      const lastOrder = (await tx.$queryRawUnsafe(` 
             SELECT 
                 pol.policy_code,
                 pol.issue_date,
@@ -387,6 +387,7 @@ export const createOrder = async (
     ).catch((err) => console.error("Courier booking failed:", err));
   } else if (result.paymentMode === "B2B") {
     const apiUser = result.order.apiUser;
+    const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
 
     await prisma.order.update({
       where: { id: result.orderId },
@@ -395,13 +396,13 @@ export const createOrder = async (
     await prisma.policy.update({
       where: { id: result.policyId },
       data: {
+        qr_doc_url: policyDocumentUrl,
         policy_code: result.code,
         status: result.productType === "health" ? "pendingCBO" : "pendingIGIS",
       },
     });
 
-    // Renewal Calculation Start
-
+    // Renewal number and pec coverage
     if (apiUser?.name.toLowerCase() == "coverage") {
       const split = result.order.order_code.split("-");
       const renewalNumber = split[split.length - 1];
@@ -502,7 +503,6 @@ export const createOrder = async (
     }
 
     // Email And Sms
-    const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
 
     let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
     let customerName: string = result.order.customer_name;
@@ -652,6 +652,19 @@ export const parentAndChildSkuExists = async (
     },
     include: {
       plan: true,
+    },
+  });
+  return mapper;
+};
+
+export const skuDetails = async (child_sku: string) => {
+  const mapper = await prisma.webappMapper.findFirst({
+    where: {
+      child_sku,
+    },
+    include: {
+      plan: true,
+      product_option: true,
     },
   });
   return mapper;

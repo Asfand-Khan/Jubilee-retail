@@ -11,6 +11,7 @@ import {
 } from "../services/agentService";
 import {
   validateAgent,
+  validateAgentListing,
   validateAgentUpdate,
 } from "../validations/agentValidations";
 
@@ -23,7 +24,8 @@ export const getAllAgentsHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const agents = await getAllAgents();
+    const parsed = validateAgentListing.parse(req.body);
+    const agents = await getAllAgents(parsed);
     return res.status(200).json({
       status: 1,
       message: "Agents fetched successfully",

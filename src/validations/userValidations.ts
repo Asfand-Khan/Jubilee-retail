@@ -175,8 +175,22 @@ export const verifyOtp = z.object({
     .max(6, { message: "OTP should be 6 digits" }),
 });
 
+export const validateUserList = z.object({
+  date: z
+    .string({
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+});
+
 export type VerifyOtp = z.infer<typeof verifyOtp>;
 export type SendOtp = z.infer<typeof validateSendOtp>;
 export type UserLogin = z.infer<typeof validateUserLogin>;
 export type UserRegister = z.infer<typeof validateUserRegister>;
 export type UserUpdate = z.infer<typeof validateUserUpdate>;
+export type UserList = z.infer<typeof validateUserList>;

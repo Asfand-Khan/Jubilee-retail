@@ -9,6 +9,7 @@ import {
   updateApiUserProduct,
 } from "../services/apiUserProductService";
 import {
+  validateApiUserProductListingSchema,
   validateApiUserProductSchema,
   validateSingleApiUserProductSchema,
 } from "../validations/apiUserProductValidations";
@@ -22,7 +23,8 @@ export const getAllApiUserProductHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const apiUserProducts = await getAllApiUserProducts();
+    const parsed = validateApiUserProductListingSchema.parse(req.body);
+    const apiUserProducts = await getAllApiUserProducts(parsed);
     return res.status(200).json({
       status: 1,
       message: "All API User Product fetched successfully",

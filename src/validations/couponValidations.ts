@@ -75,5 +75,13 @@ export const validateGetCouponSchema = z.object({
     .optional(),
 });
 
+export const validateCouponListingSchema = z.object({
+  product_id: z
+    .array(z.number(), { required_error: "Products are required." })
+    .optional()
+    .nullable(),
+});
+
 export type CouponSchema = z.infer<typeof validateCouponSchema>;
 export type GetCouponSchema = z.infer<typeof validateGetCouponSchema>;
+export type CouponListingSchema = z.infer<typeof validateCouponListingSchema>;

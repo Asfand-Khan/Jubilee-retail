@@ -1,15 +1,25 @@
 import prisma from "../config/db";
 import {
+  ProductListingType,
   ProductType,
   ProductUpdateType,
 } from "../validations/productValidations";
 
-export const getAllProducts = async () => {
+export const getAllProducts = async (data: ProductListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
     const allProducts = await prisma.product.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allProducts;
   } catch (error: any) {

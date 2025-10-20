@@ -1,9 +1,15 @@
 import prisma from "../config/db";
-import { ApiUserProductType } from "../validations/apiUserProductValidations";
+import {
+  ApiUserProductListingType,
+  ApiUserProductType,
+} from "../validations/apiUserProductValidations";
 
-export const getAllApiUserProducts = async () => {
-  // 1. Fetch the raw, flat data (similar to your original query)
-  const flatRecords: any[] = await prisma.$queryRaw`
+export const getAllApiUserProducts = async (
+  data: ApiUserProductListingType
+) => {
+  const filters: string[] = [];
+
+  let query = `
     SELECT
       au.id AS user_id,
       au.name,
@@ -22,9 +28,26 @@ export const getAllApiUserProducts = async () => {
       ApiUserProduct aup
     LEFT JOIN ApiUser au ON au.id = aup.api_user_id
     LEFT JOIN Product p ON p.id = aup.product_id
+    WHERE aup.is_deleted = 0
   `;
 
-  // 2. Process the flat results to group products by API User
+  if (data.date && (!data.api_user_id || data.api_user_id.length === 0)) {
+    const [start, end] = data.date.split(" to ");
+    filters.push(`DATE(aup.created_at) BETWEEN '${start}' AND '${end}'`);
+  }
+
+  if (data.api_user_id && data.api_user_id.length > 0) {
+    const ids = data.api_user_id.join(", ");
+    filters.push(`au.id IN (${ids})`);
+  }
+
+  if (filters.length > 0) {
+    query += " AND " + filters.join(" AND ");
+  }
+
+  const flatRecords: any[] = await prisma.$queryRawUnsafe(query);
+
+  // Process the flat results to group products by API User
   const groupedProducts = flatRecords.reduce((acc, current) => {
     const userId = current.user_id;
 
@@ -56,14 +79,15 @@ export const getAllApiUserProducts = async () => {
     }
 
     // Add the product to the user's products array
-    if (product.product_id) { // Only add if a product exists (i.e., LEFT JOIN was successful)
+    if (product.product_id) {
+      // Only add if a product exists (i.e., LEFT JOIN was successful)
       acc[userId].products.push(product);
     }
 
     return acc;
   }, {});
 
-  // 3. Convert the grouped object back into an array
+  // Convert the grouped object back into an array
   return Object.values(groupedProducts);
 };
 
@@ -122,7 +146,8 @@ export const getSingleApiUserProducts = async (id: number) => {
     }
 
     // Add the product to the user's products array
-    if (product.product_id) { // Only add if a product exists (i.e., LEFT JOIN was successful)
+    if (product.product_id) {
+      // Only add if a product exists (i.e., LEFT JOIN was successful)
       acc[userId].products.push(product);
     }
 

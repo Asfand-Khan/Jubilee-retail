@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 
-router.get("/", authenticate, getAllProductsHandler); // Get All Product --> Protected
+router.post("/all", authenticate, getAllProductsHandler); // Get All Product --> Protected
 router.post("/", authenticate, createProductHandler); // Create Product --> Protected
 router.post("/single", authenticate, getSingleProductHandler); // Single Product --> Protected
 router.put("/", authenticate, updateProductHandler); // Update Product --> Protected

@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 
-router.get("/", authenticate, getAllAgentsHandler); // Get All Agents --> Protected
+router.post("/all", authenticate, getAllAgentsHandler); // Get All Agents --> Protected
 router.post("/", authenticate, createAgentHandler); // Create Agents --> Protected
 router.get("/:id", authenticate, getSingleAgentHandler); // Single Agents --> Protected
 router.put("/", authenticate, updateAgentHandler); // Update Agents --> Protected

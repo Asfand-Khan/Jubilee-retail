@@ -9,7 +9,7 @@ import {
 
 const router = Router();
 
-router.get("/", authenticate, getAllClientsHandler); // Get All Clients --> Protected
+router.post("/all", authenticate, getAllClientsHandler); // Get All Clients --> Protected
 router.post("/", authenticate, createClientHandler); // Create Clients --> Protected
 router.get("/:id", authenticate, getSingleClientHandler); // Single Clients --> Protected
 router.put("/", authenticate, updateClientHandler); // Update Clients --> Protected

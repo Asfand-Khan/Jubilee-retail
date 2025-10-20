@@ -10,6 +10,7 @@ import {
 } from "../services/callUsDataService";
 import {
   validateCallUsData,
+  validateCallUsDataListing,
   validateCallUsDataUpdate,
 } from "../validations/calUsDataValidations";
 
@@ -22,7 +23,8 @@ export const getAllCallUsDataHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const callUsData = await getAllCallUsData();
+    const parsed = validateCallUsDataListing.parse(req.body);
+    const callUsData = await getAllCallUsData(parsed);
     return res.status(200).json({
       status: 1,
       message: "Call us data fetched successfully",

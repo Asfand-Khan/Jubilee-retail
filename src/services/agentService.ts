@@ -1,12 +1,26 @@
 import prisma from "../config/db";
-import { AgentType, AgentUpdateType } from "../validations/agentValidations";
+import {
+  AgentListingType,
+  AgentType,
+  AgentUpdateType,
+} from "../validations/agentValidations";
 
-export const getAllAgents = async () => {
+export const getAllAgents = async (data: AgentListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if(data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+    
     const allAgents = await prisma.agent.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allAgents;
   } catch (error: any) {

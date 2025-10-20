@@ -9,6 +9,7 @@ import { calculateAge } from "../utils/calculateAge";
 import { sendSms } from "../utils/sendSms";
 import { sendEmail } from "../utils/sendEmail";
 import { getOrderCODTemplate } from "../utils/getOrderB2BTemplate";
+import { bulkOrderSchema } from "../validations/bulkOrderValidations";
 
 // CREATE
 export const createOrderHandler = async (
@@ -113,6 +114,54 @@ export const ccTransactionHandler = async (
   }
 };
 
+export const manuallyVerifyCCHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateCCTransactionSchema.parse(req.body);
+
+    const newRecord = await service.manuallyVerifyCC(parsed, req);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Manually verified CC successfully",
+      payload: [newRecord],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+export const orderPolicyStatusHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateOrderPolicyStatusSchema.parse(req.body);
+
+    const newRecord = await service.orderPolicyStatus(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Policy status updated successfully",
+      payload: [newRecord],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
 export const fetchOrderListHandler = async (
   req: Request,
   res: Response
@@ -182,7 +231,10 @@ export const repushOrderHandler = async (
   }
 };
 
-export const generateHISHandler = async (req: Request, res: Response): Promise<any> => {
+export const generateHISHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
   try {
     const parsed = validations.validateGenerateHIS.parse(req.body);
     const result = await service.generateHIS(parsed);
@@ -195,6 +247,30 @@ export const generateHISHandler = async (req: Request, res: Response): Promise<a
           his_retail_zip: result,
         },
       ],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+export const bulkOrderHandler = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const user = req.userRecord as User;
+    const parsed = bulkOrderSchema.parse(req.body);
+    const result = await service.bulkOrder(parsed, user.id, req);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Bulk order created successfully",
+      payload: [{ ...result }],
     });
   } catch (error) {
     const err = handleAppError(error);

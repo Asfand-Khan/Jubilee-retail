@@ -2,7 +2,11 @@ import crypto from "crypto";
 import prisma from "../config/db";
 import { ApiUser, User } from "@prisma/client";
 import { hashPassword } from "../utils/authHelpers";
-import { UserRegister, UserUpdate } from "../validations/userValidations";
+import {
+  UserList,
+  UserRegister,
+  UserUpdate,
+} from "../validations/userValidations";
 import { generateRandomString } from "../utils/commonUtils";
 import {
   extractImageAndExtension,
@@ -33,7 +37,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
       password: hashedPassword,
       is_active,
       created_by,
-      user_type
+      user_type,
     };
 
     let imageFileName: string | undefined;
@@ -79,7 +83,10 @@ export const createUser = async (input: UserRegister): Promise<User> => {
   }
 };
 
-export const updateUserEntry = async (input: UserUpdate, createdBy: number): Promise<User> => {
+export const updateUserEntry = async (
+  input: UserUpdate,
+  createdBy: number
+): Promise<User> => {
   const {
     username,
     fullname,
@@ -208,12 +215,22 @@ export const updateApiUser = async (input: User): Promise<ApiUser> => {
   }
 };
 
-export const getProfiles = async () => {
+export const getProfiles = async (data: UserList) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
     const allUsers = await prisma.user.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allUsers;
   } catch (error: any) {
@@ -221,12 +238,22 @@ export const getProfiles = async () => {
   }
 };
 
-export const getApiProfiles = async () => {
+export const getApiProfiles = async (data: UserList) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
     const allApiUsers = await prisma.apiUser.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allApiUsers;
   } catch (error: any) {
@@ -404,4 +431,3 @@ export const getUserMenus = async (userId: number) => {
 
   return formattedMenus;
 };
-

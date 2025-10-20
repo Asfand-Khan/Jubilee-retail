@@ -763,6 +763,42 @@ export const validateCCTransactionSchema = z.object({
     .nullable(),
 });
 
+export const validateOrderPolicyStatusSchema = z.object({
+  policy_id: z
+    .number({
+      required_error: "Policy Id is required.",
+      invalid_type_error: "Policy Id must be a number.",
+    })
+    .min(1, "Policy Id can not be empty"),
+
+  status: z.enum(["IGISposted", "HISposted", "cancelled"], {
+    required_error: "Status is required.",
+    invalid_type_error:
+      "Status must be either 'IGISposted', 'HISposted', or 'cancelled'.",
+  }),
+
+  branch_id: z
+    .number({
+      invalid_type_error: "Branch Id must be a number.",
+    })
+    .optional()
+    .nullable(),
+
+  agent_id: z
+    .number({
+      invalid_type_error: "Agent Id must be a number.",
+    })
+    .optional()
+    .nullable(),
+
+  client_id: z
+    .number({
+      invalid_type_error: "Client Id must be a number.",
+    })
+    .optional()
+    .nullable(),
+});
+
 export const validateListSchema = z.object({
   mode: z
     .enum(["orders", "policies", "cbo", "renewal"], {
@@ -772,73 +808,82 @@ export const validateListSchema = z.object({
     .default("orders"),
 
   month: z
-    .enum(
-      [
-        "january",
-        "february",
-        "march",
-        "april",
-        "may",
-        "june",
-        "july",
-        "august",
-        "september",
-        "october",
-        "november",
-        "december",
-      ],
-      {
-        invalid_type_error:
-          "Month must be one of 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', or 'december'.",
-      }
+    .array(
+      z.enum(
+        [
+          "january",
+          "february",
+          "march",
+          "april",
+          "may",
+          "june",
+          "july",
+          "august",
+          "september",
+          "october",
+          "november",
+          "december",
+        ],
+        {
+          invalid_type_error:
+            "Month must be one of 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', or 'december'.",
+        }
+      )
     )
     .optional()
     .nullable(),
 
   api_user_id: z
-    .number({
-      invalid_type_error: "API user ID must be a number.",
-    })
-    .int({ message: "API user ID must be an integer." })
+    .array(
+      z
+        .number({
+          invalid_type_error: "API user ID must be a number.",
+        })
+        .int({ message: "API user ID must be an integer." })
+    )
     .optional()
     .nullable(),
 
   order_status: z
-    .enum(
-      [
-        "accepted",
-        "cancelled",
-        "pendingCOD",
-        "rejected",
-        "unverified",
-        "verified",
-        "pending",
-      ],
-      {
-        invalid_type_error:
-          "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
-      }
+    .array(
+      z.enum(
+        [
+          "accepted",
+          "cancelled",
+          "pendingCOD",
+          "rejected",
+          "unverified",
+          "verified",
+          "pending",
+        ],
+        {
+          invalid_type_error:
+            "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+        }
+      )
     )
     .optional()
     .nullable(),
 
   policy_status: z
-    .enum(
-      [
-        "cancelled",
-        "HISposted",
-        "IGISposted",
-        "pendingIGIS",
-        "unverified",
-        "verified",
-        "pending",
-        "pendingCOD",
-        "pendingCBO",
-      ],
-      {
-        invalid_type_error:
-          "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
-      }
+    .array(
+      z.enum(
+        [
+          "cancelled",
+          "HISposted",
+          "IGISposted",
+          "pendingIGIS",
+          "unverified",
+          "verified",
+          "pending",
+          "pendingCOD",
+          "pendingCBO",
+        ],
+        {
+          invalid_type_error:
+            "Order status must be one of 'accepted', 'cancelled', 'pendingCOD', 'rejected', 'unverified', 'verified', or 'pending'.",
+        }
+      )
     )
     .optional()
     .nullable(),
@@ -856,26 +901,35 @@ export const validateListSchema = z.object({
     .nullable(),
 
   product_id: z
-    .number({
-      invalid_type_error: "Product ID must be a number.",
-    })
-    .int({ message: "Product ID must be an integer." })
+    .array(
+      z
+        .number({
+          invalid_type_error: "Product ID must be a number.",
+        })
+        .int({ message: "Product ID must be an integer." })
+    )
     .optional()
     .nullable(),
 
   branch_id: z
-    .number({
-      invalid_type_error: "Branch ID must be a number.",
-    })
-    .int({ message: "Branch ID must be an integer." })
+    .array(
+      z
+        .number({
+          invalid_type_error: "Branch ID must be a number.",
+        })
+        .int({ message: "Branch ID must be an integer." })
+    )
     .optional()
     .nullable(),
 
   payment_mode_id: z
-    .number({
-      invalid_type_error: "Payment mode ID must be a number.",
-    })
-    .int({ message: "Payment mode ID must be an integer." })
+    .array(
+      z
+        .number({
+          invalid_type_error: "Payment mode ID must be a number.",
+        })
+        .int({ message: "Payment mode ID must be an integer." })
+    )
     .optional()
     .nullable(),
 
@@ -930,3 +984,6 @@ export type CCTransactionSchema = z.infer<typeof validateCCTransactionSchema>;
 export type ListSchema = z.infer<typeof validateListSchema>;
 export type OrderCodeSchema = z.infer<typeof validateOrderCode>;
 export type GenerateHISSchema = z.infer<typeof validateGenerateHIS>;
+export type OrderPolicyStatusSchema = z.infer<
+  typeof validateOrderPolicyStatusSchema
+>;

@@ -3,7 +3,7 @@ import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
 import { z } from "zod";
 import { createMotorQuote, getAllMotorQuotes, getMotorQuoteById, getMotorQuoteByQuoteId, updateMotorQuote, updateMotorQuoteStatus } from "../services/motorQuoteService";
-import { validateMotorQuote, validateMotorQuoteStatusUpdate, validateMotorQuoteUpdate } from "../validations/motorQuoteValidations";
+import { validateMotorQuote, validateMotorQuoteListing, validateMotorQuoteStatusUpdate, validateMotorQuoteUpdate } from "../validations/motorQuoteValidations";
 
 // Module --> Motor Quote
 // Method --> GET (Protected)
@@ -14,7 +14,8 @@ export const getAllMotorQuotesHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const quotes = await getAllMotorQuotes();
+    const parsed = validateMotorQuoteListing.parse(req.body);
+    const quotes = await getAllMotorQuotes(parsed);
     return res.status(200).json({
       status: 1,
       message: "Motor Quotes fetched successfully",

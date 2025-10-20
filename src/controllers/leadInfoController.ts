@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
 import {
+  validateLeadInfoListing,
   validateLeadInfoSchema,
   validateLeadInfoUpdateSchema,
 } from "../validations/leadInfoValidations";
@@ -21,7 +22,8 @@ export const getAllLeadInfoHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const leadInfos = await getAllLeadInfos();
+    const parsed = validateLeadInfoListing.parse(req.body);
+    const leadInfos = await getAllLeadInfos(parsed);
     return res.status(200).json({
       status: 1,
       message: "Lead infos fetched successfully",

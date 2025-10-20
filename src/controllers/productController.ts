@@ -11,6 +11,7 @@ import {
 } from "../services/productService";
 import {
   validateProductCreate,
+  validateProductListing,
   validateProductUpdate,
 } from "../validations/productValidations";
 
@@ -23,7 +24,8 @@ export const getAllProductsHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const allProducts = await getAllProducts();
+    const parsed = validateProductListing.parse(req.body);
+    const allProducts = await getAllProducts(parsed);
     return res.status(200).json({
       status: 1,
       message: "Products fetched successfully",

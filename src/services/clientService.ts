@@ -1,13 +1,32 @@
 import prisma from "../config/db";
-import { AgentType, AgentUpdateType } from "../validations/agentValidations";
-import { ClientType, ClientUpdateType } from "../validations/clientValidations";
+import {
+  ClientListingType,
+  ClientType,
+  ClientUpdateType,
+} from "../validations/clientValidations";
 
-export const getAllClients = async () => {
+export const getAllClients = async (data: ClientListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date && (!data.branch || data.branch.length === 0)) {
+      const [start, end] = data.date.split("to").map((d) => d.trim());
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
+    if (data.branch && data.branch.length > 0) {
+      whereClause.branch_id = {
+        in: data.branch,
+      };
+    }
+
     const allClients = await prisma.client.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allClients;
   } catch (error: any) {
@@ -45,9 +64,9 @@ export const updateClient = async (client: ClientUpdateType) => {
         contact_person: client.contact_person,
         telephone: client.telephone,
       },
-      where:{
-        id: client.client_id
-      }
+      where: {
+        id: client.client_id,
+      },
     });
     return updatedClient;
   } catch (error: any) {

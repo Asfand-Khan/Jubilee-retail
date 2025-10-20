@@ -119,5 +119,19 @@ export const validateBranchUpdate = validateBranchCreate.extend({
     }),
 });
 
+export const validateBranchListing = z.object({
+  date: z
+    .string({
+      invalid_type_error: "Date range must be a string.",
+    })
+    .regex(
+      /^\d{4}-\d{2}-\d{2}\s+to\s+\d{4}-\d{2}-\d{2}$/,
+      "Date must be in format 'YYYY-MM-DD to YYYY-MM-DD'."
+    )
+    .optional()
+    .nullable(),
+});
+
 export type BranchType = z.infer<typeof validateBranchCreate>;
 export type BranchUpdateType = z.infer<typeof validateBranchUpdate>;
+export type BranchListingType = z.infer<typeof validateBranchListing>;

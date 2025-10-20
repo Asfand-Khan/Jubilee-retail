@@ -7,7 +7,7 @@ import { createLeadInfoHandler, getAllLeadInfoHandler, updateLeadInfoStatusHandl
 
 const router = Router();
 
-router.get("/", authenticate, getAllLeadInfoHandler); // Get All Motor Quotes --> Protected
+router.post("/all", authenticate, getAllLeadInfoHandler); // Get All Motor Quotes --> Protected
 router.post("/", authenticateApiUser, createLeadInfoHandler); // Create Motor Quotes --> Protected
 router.post("/status", authenticate, updateLeadInfoStatusHandler); // Update Lead Info Status --> Protected
 // router.put("/", authenticate, updateMotorQuoteHandler); // Update Motor Quotes --> Protected

@@ -11,7 +11,8 @@ export const getAllCouponsHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const records = await service.getAllCoupons();
+    const parsed = validations.validateCouponListingSchema.parse(req.body);
+    const records = await service.getAllCoupons(parsed);
     return res.status(200).json({
       status: 1,
       message: "Fetched all coupons successfully",

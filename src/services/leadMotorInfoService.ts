@@ -1,6 +1,7 @@
 import prisma from "../config/db";
 import { LeadStatus } from "@prisma/client";
 import {
+  LeadMotorInfoListingType,
   LeadMotorInfoType,
   LeadMotorInfoUpdateType,
 } from "../validations/leadMotorInfoValidations";
@@ -20,14 +21,25 @@ const VALID_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   callback_scheduled: ["interested", "not_interested", "cancelled"],
 };
 
-export const getAllLeadMotorInfos = async () => {
+export const getAllLeadMotorInfos = async (data: LeadMotorInfoListingType) => {
+  let whereClause = {
+    is_deleted: false,
+  } as any;
+
+  if (data.date) {
+    const [start, end] = data.date.split("to").map((d) => d.trim());
+    whereClause.created_at = {
+      gte: new Date(start),
+      lte: new Date(end),
+    };
+  }
+
   const allLeadMotorInfos = await prisma.leadMotorInfo.findMany({
-    where: {
-      is_deleted: false,
-    },
+    where: whereClause,
   });
   return allLeadMotorInfos;
 };
+
 
 export const createLeadMotorInfo = async (
   data: LeadMotorInfoType,

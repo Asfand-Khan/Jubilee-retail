@@ -7,7 +7,7 @@ import {
   getAllLeadMotorInfos,
   updateLeadMotorStatus,
 } from "../services/leadMotorInfoService";
-import { validateLeadMotorInfoSchema, validateLeadMotorInfoUpdateSchema } from "../validations/leadMotorInfoValidations";
+import { validateLeadMotorInfoListing, validateLeadMotorInfoSchema, validateLeadMotorInfoUpdateSchema } from "../validations/leadMotorInfoValidations";
 
 // Module --> Lead Motor info
 // Method --> GET (Protected)
@@ -18,7 +18,8 @@ export const getAllLeadMotorInfoHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const leadMotorInfos = await getAllLeadMotorInfos();
+    const parsed = validateLeadMotorInfoListing.parse(req.body);
+    const leadMotorInfos = await getAllLeadMotorInfos(parsed);
     return res.status(200).json({
       status: 1,
       message: "Lead motor infos fetched successfully",

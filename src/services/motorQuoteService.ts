@@ -1,12 +1,33 @@
 import prisma from "../config/db";
-import { MotorQuote, MotorQuoteStatusUpdateType, MotorQuoteUpdateType } from "../validations/motorQuoteValidations";
+import {
+  MotorQuote,
+  MotorQuoteListingType,
+  MotorQuoteStatusUpdateType,
+  MotorQuoteUpdateType,
+} from "../validations/motorQuoteValidations";
 
-export const getAllMotorQuotes = async () => {
+export const getAllMotorQuotes = async (data: MotorQuoteListingType) => {
   try {
+    let whereClause = {
+      is_deleted: false,
+    } as any;
+
+    if (data.date && (!data.status || data.status.length === 0)) {
+      const [start, end] = data.date.split(" to ");
+      whereClause.created_at = {
+        gte: new Date(start),
+        lte: new Date(end),
+      };
+    }
+
+    if (data.status && data.status.length > 0) {
+      whereClause.status = {
+        in: data.status,
+      };
+    }
+
     const allQuotes = await prisma.motorQuote.findMany({
-      where: {
-        is_deleted: false,
-      },
+      where: whereClause,
     });
     return allQuotes;
   } catch (error: any) {
@@ -121,9 +142,9 @@ export const updateMotorQuote = async (motorQuote: MotorQuoteUpdateType) => {
 
     const updatedQuote = await prisma.motorQuote.update({
       data,
-      where:{
-        id: motorQuote.motor_quote_id
-      }
+      where: {
+        id: motorQuote.motor_quote_id,
+      },
     });
     return updatedQuote;
   } catch (error: any) {
@@ -131,15 +152,17 @@ export const updateMotorQuote = async (motorQuote: MotorQuoteUpdateType) => {
   }
 };
 
-export const updateMotorQuoteStatus = async (motorQuote: MotorQuoteStatusUpdateType) => {
+export const updateMotorQuoteStatus = async (
+  motorQuote: MotorQuoteStatusUpdateType
+) => {
   try {
     const updatedQuote = await prisma.motorQuote.update({
-      data:{
+      data: {
         status: motorQuote.status,
       },
-      where:{
-        id: motorQuote.motor_quote_id
-      }
+      where: {
+        id: motorQuote.motor_quote_id,
+      },
     });
     return updatedQuote;
   } catch (error: any) {
