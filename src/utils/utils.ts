@@ -8,9 +8,6 @@ import { getOrderB2BTemplate } from './getOrderB2BTemplate';
 import { sendSms } from './sendSms';
 import { sendWhatsAppMessage } from './sendWhatsappSms';
 
-/**
- * Emulates the Java Utilities.calculateAge(dobString)
- */
 export function calculateAge(dobString: string | null | undefined): number {
     if (!dobString) return 0;
     
@@ -21,9 +18,6 @@ export function calculateAge(dobString: string | null | undefined): number {
     return dayjs().diff(dob, 'year');
 }
 
-/**
- * Emulates CommonFunctions.isFBLRiderPresent
- */
 export function isFBLRiderPresent(isFaysalBankOrder: boolean, policy: any): boolean {
     // This logic needs external context, mocking based on simple assumption
     return isFaysalBankOrder && (policy.FblPolicyRider?.length > 0);

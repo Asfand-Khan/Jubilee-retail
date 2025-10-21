@@ -28,6 +28,7 @@ import {
   updateApiUserCredentials,
   updateLastLoginDateTime,
   updateUserEntry,
+  updateUserPasswordEntry,
 } from "../services/userService";
 import {
   verifyOtp as verifyOtpSchema,
@@ -36,6 +37,7 @@ import {
   validateUserRegister,
   validateUserUpdate,
   validateUserList,
+  validateUserPasswordUpdate,
 } from "../validations/userValidations";
 import { getOTPEmailTemplate } from "../utils/getOtpTemplate";
 
@@ -116,6 +118,39 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<any> 
     return res.status(200).json({
       status: 1,
       message: "User updated successfully",
+      payload: [newUser],
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        status: 0,
+        message: error.errors[0].message,
+        payload: [],
+      });
+    }
+
+    return res.status(500).json({
+      status: 0,
+      message: error.message,
+      payload: [],
+    });
+  }
+};
+
+// Module --> User
+// Method --> PUT (Protected)
+// Endpoint --> /api/v1/users/password
+// Description --> Update User's Password existing user
+export const updateUserPassword = async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const user = req.userRecord as User;
+    const parsedUser = validateUserPasswordUpdate.parse(req.body);
+
+    const newUser = await updateUserPasswordEntry(parsedUser, user.id);
+
+    return res.status(200).json({
+      status: 1,
+      message: "User password updated successfully",
       payload: [newUser],
     });
   } catch (error: any) {
@@ -382,7 +417,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
       return res.status(401).json({
         status: 0,
-        message: "Invalid username or password",
+        message: `Invalid username or password, you have ${4 - attempts} attempts left`,
         payload: [],
       });
     }

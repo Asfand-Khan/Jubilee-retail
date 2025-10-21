@@ -188,9 +188,21 @@ export const validateUserList = z.object({
     .nullable(),
 });
 
+export const validateUserPasswordUpdate = z.object({
+  oldPassword: z
+    .string({ required_error: "Old Password is required" })
+    .min(8, { message: "Old Password should be at least 8 characters" })
+    .trim(),
+  newPassword: z
+    .string({ required_error: "New Password is required" })
+    .min(8, { message: "New Password should be at least 8 characters" })
+    .trim(),
+});
+
 export type VerifyOtp = z.infer<typeof verifyOtp>;
 export type SendOtp = z.infer<typeof validateSendOtp>;
 export type UserLogin = z.infer<typeof validateUserLogin>;
 export type UserRegister = z.infer<typeof validateUserRegister>;
 export type UserUpdate = z.infer<typeof validateUserUpdate>;
 export type UserList = z.infer<typeof validateUserList>;
+export type UserPasswordUpdate = z.infer<typeof validateUserPasswordUpdate>;

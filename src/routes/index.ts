@@ -28,6 +28,7 @@ import premiumRangeProtectionRoutes from "./premiumRangeProtectionRoutes";
 import couponRoutes from "./couponRoutes";
 import orderRoutes from "./orderRoutes";
 import commonRoutes from "./commonRoutes";
+import communicationLogRoutes from "./communicationRoutes";
 
 const router = Router();
 
@@ -61,6 +62,7 @@ router.use("/premium-range-protections", premiumRangeProtectionRoutes);
 router.use("/coupons", couponRoutes);
 router.use("/orders", orderRoutes);
 router.use("/common", commonRoutes);
+router.use("/communication-logs", communicationLogRoutes);
 
 // // Handle 404 errors
 // router.use((req, res, next) => {

@@ -1,9 +1,10 @@
 import crypto from "crypto";
 import prisma from "../config/db";
 import { ApiUser, User } from "@prisma/client";
-import { hashPassword } from "../utils/authHelpers";
+import { comparePassword, hashPassword } from "../utils/authHelpers";
 import {
   UserList,
+  UserPasswordUpdate,
   UserRegister,
   UserUpdate,
 } from "../validations/userValidations";
@@ -166,6 +167,44 @@ export const updateUserEntry = async (
     return user;
   } catch (error: any) {
     throw new Error(`Failed to update user: ${error.message}`);
+  }
+};
+
+export const updateUserPasswordEntry = async (
+  input: UserPasswordUpdate,
+  userId: number
+): Promise<User> => {
+  const { oldPassword, newPassword } = input;
+
+  try {
+    // 🔍 Fetch existing user
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { password: true },
+    });
+
+    if (!existingUser) {
+      throw new Error("User not found");
+    }
+
+    // 🔐 Verify old password
+    const isMatch = await comparePassword(oldPassword, existingUser.password);
+    if (!isMatch) {
+      throw new Error("Old password is incorrect");
+    }
+
+    // 🚀 Hash the new password
+    const hashedPassword = await hashPassword(newPassword);
+
+    // 💾 Update user password
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return updatedUser;
+  } catch (error: any) {
+    throw new Error(`Failed to update user password: ${error.message}`);
   }
 };
 

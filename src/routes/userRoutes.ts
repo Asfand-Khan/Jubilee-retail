@@ -8,6 +8,7 @@ import {
   registerUser,
   sendOtp,
   updateUser,
+  updateUserPassword,
   verifyOtp,
 } from "../controllers/userController";
 import { authenticate, checkUserRights } from "../middleware/authMiddleware";
@@ -23,6 +24,7 @@ router.post("/register", authenticate, registerUser); // Register User --> Prote
 
 router.post("/", authenticate, getUserProfiles); // Get All Users --> Protected
 router.put("/", authenticate, updateUser); // Update User --> Protected
+router.put("/password", authenticate, updateUserPassword); // Update User --> Protected
 router.get("/my-profile", authenticate, getMyProfile); // Get Logged In User Profile --> Protected
 router.get("/:id", authenticate, getUserProfile); // Get Single User --> Protected
 router.delete("/:id", authenticate, deleteUserProfile); // Delete User --> Protected

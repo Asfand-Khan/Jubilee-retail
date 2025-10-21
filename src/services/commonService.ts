@@ -53,3 +53,65 @@ export const deleteCommon = async (data: CommonDelete) => {
     throw new Error(`Failed to delete record: ${error.message}`);
   }
 };
+
+export const statusCommon = async (data: CommonDelete) => {
+  try {
+    const { module, record_id } = data;
+
+    const normalizedModel = module.charAt(0).toLowerCase() + module.slice(1);
+
+    // ✅ Ensure Prisma client has this model
+    const modelClient = (prisma as any)[normalizedModel];
+    if (!modelClient) {
+      throw new Error(`Model "${module}" not found in Prisma client.`);
+    }
+
+    // ✅ Access Prisma internal metadata (case-insensitive search)
+    const dmmf = (prisma as any)._runtimeDataModel ?? (prisma as any)._dmmf;
+    const modelMap = dmmf.modelMap || dmmf.models;
+
+    // ✅ Handle both old and new Prisma structures
+    const modelMeta =
+      modelMap?.[module] ||
+      modelMap?.[normalizedModel] ||
+      Object.values(modelMap || {}).find(
+        (m: any) =>
+          m.name.toLowerCase() === module.toLowerCase() ||
+          m.dbName?.toLowerCase() === module.toLowerCase()
+      );
+
+    if (!modelMeta) {
+      throw new Error(`Model "${module}" not found in Prisma DMMF.`);
+    }
+
+    // ✅ Ensure model has `is_active` column
+    const hasIsActive = (modelMeta.fields || []).some(
+      (f: any) => f.name === "is_active"
+    );
+    if (!hasIsActive) {
+      throw new Error(`Model "${module}" does not have an "is_active" field.`);
+    }
+
+    // ✅ Fetch current record
+    const existing = await modelClient.findUnique({
+      where: { id: record_id },
+      select: { is_active: true },
+    });
+
+    if (!existing) {
+      throw new Error(`Record with ID ${record_id} not found in ${module}.`);
+    }
+
+    // ✅ Toggle is_active
+    const updated = await modelClient.update({
+      where: { id: record_id },
+      data: {
+        is_active: !existing.is_active, // toggle 1⇄0 or true⇄false
+      },
+    });
+
+    return updated;
+  } catch (error: any) {
+    throw new Error(`Failed to delete record: ${error.message}`);
+  }
+};

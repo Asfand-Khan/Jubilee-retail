@@ -1249,19 +1249,24 @@ model AllActivityLog {
 }
 
 model CommunicationLog {
-  id             Int                     @id @default(autoincrement())
-  recipient      String                  @db.VarChar(255)
-  recipientName  String?                 @db.VarChar(255)
-  channel        CommunicationLogChannel
-  messageSubject String?                 @db.VarChar(255)
-  messageBody    String                  @db.LongText
-  status         CommunicationLogStatus  @default(pending)
-  responseCode   String?                 @db.VarChar(255)
-  responseBody   String?                 @db.Text
-  sentBy         String?                 @db.VarChar(255)
-  sentAt         DateTime?
-  createdAt      DateTime                @default(now())
-  errorMessage   String?                 @db.Text
+  id             Int       @id @default(autoincrement())
+  type           String    // "email" | "sms" | "whatsapp"
+  recipient      String    // email or phone number
+  subject        String?   // applicable for emails
+  message        String?   // SMS/WhatsApp content or email plain text
+  htmlContent    String?   @db.LongText // HTML email content
+  params         Json?     // dynamic parameters (e.g., WhatsApp params, attachments, etc.)
+  status         String    @default("pending") // "pending" | "sent" | "failed"
+  error_message  String?   // error detail if failed
+  response_data  Json?     // raw API response (success or failure)
+  retried_count  Int       @default(0)
+  last_attempt_at DateTime @default(now())
+  next_retry_at  DateTime? // optional scheduling for retries
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
 
-  @@index([channel, status], name: "idx_channel_status")
+  // Optional tracking for system reference
+  reference_type String?   // e.g., "Order", "User", "Policy"
+  reference_id   Int?
 }
+

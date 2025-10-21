@@ -1,5 +1,10 @@
 import nodemailer, { Transporter } from "nodemailer";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
+import {
+  createPendingLog,
+  updateLogFailure,
+  updateLogSuccess,
+} from "./communicationLogUtil";
 
 interface SendEmailOptions {
   to: string;
@@ -26,6 +31,20 @@ export const sendEmail = async (options: SendEmailOptions) => {
     },
   } as SMTPTransport.Options);
 
+  // Create pending log first
+  const log = await createPendingLog({
+    type: "email",
+    recipient: options.to,
+    subject: options.subject,
+    message: options.text ?? null,
+    htmlContent: options.html ?? null,
+    params: {
+      bcc: options.bcc ?? null,
+      cc: options.cc ?? null,
+      attachments: options.attachments ?? null,
+    },
+  });
+
   // Optional: Verify connection before sending
   transporter.verify((error, success) => {
     if (error) {
@@ -36,7 +55,9 @@ export const sendEmail = async (options: SendEmailOptions) => {
   });
 
   const mailOptions: SMTPTransport.Options = {
-    from: `"${options.fromName || "Jubilee General"}" <${process.env.SMTP_EMAIL}>`,
+    from: `"${options.fromName || "Jubilee General"}" <${
+      process.env.SMTP_EMAIL
+    }>`,
     to: options.to,
     subject: options.subject,
     html: options.html,
@@ -48,8 +69,12 @@ export const sendEmail = async (options: SendEmailOptions) => {
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    await updateLogSuccess(log.id, { info });
     return info;
-  } catch (error) {
+  } catch (error: any) {
+    await updateLogFailure(log.id, error?.message ?? JSON.stringify(error), {
+      raw: error,
+    });
     throw new Error(`Email send error: ${JSON.stringify(error)}`);
   }
 };
