@@ -457,8 +457,6 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 // Endpoint --> /api/v1/users/send-otp
 // Description --> Sends OTP
 export const sendOtp = async (req: Request, res: Response): Promise<any> => {
-  // let userDetails = null;
-  // let parsedDetails = null;
   try {
     const parsedData = validateSendOtp.parse(req.body);
     const user = await getUserByUsername(parsedData.username);
@@ -470,9 +468,6 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
         payload: [],
       });
     }
-
-    // userDetails = user;
-    // parsedDetails = parsedData;
 
     if (user.otp_token === null || user.otp_token === undefined) {
       return res.status(400).json({
@@ -490,25 +485,15 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
         html: getOTPEmailTemplate(user.otp_token, user.fullname),
       });
     } else {
+      // result = await sendSms(
+      //   user.phone,
+      //   `Dear ${user.fullname}, to ensure the security of your account, We require verification through a one-time password (OTP).\n \nPlease find your OTP below:\n \nOTP: ${user.otp_token} \n \nKindly enter this OTP on the verification page to complete the process. If you did not initiate this verification, please contact our support. \n \nThank you for your cooperation`
+      // );
       result = await sendSms(
         user.phone,
-        `Dear ${user.fullname}, to ensure the security of your account, We require verification through a one-time password (OTP).\n \nPlease find your OTP below:\n \nOTP: ${user.otp_token} \n \nKindly enter this OTP on the verification page to complete the process. If you did not initiate this verification, please contact our support. \n \nThank you for your cooperation`
+        `Hello Hello`
       );
     }
-
-    // await prisma.communicationLog.create({
-    //   data: {
-    //     channel: parsedData.type,
-    //     recipient: parsedData.type === "email" ? user.email : user.phone,
-    //     recipientName: user.username,
-    //     messageBody: getOTPEmailTemplate(user.otp_token, user.fullname),
-    //     messageSubject: "OTP Verification",
-    //     responseCode: "200",
-    //     status: "sent",
-    //     sentAt: new Date(),
-    //     responseBody: JSON.stringify(result),
-    //   },
-    // });
 
     return res.status(200).json({
       status: 1,
