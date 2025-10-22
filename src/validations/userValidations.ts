@@ -35,6 +35,11 @@ export const validateUserRegister = z.object({
     .regex(base64Regex, { message: "Invalid base64 string" })
     .optional(),
   user_type: z.enum(["dashboard_user", "api_user"]).default("dashboard_user"),
+  redirection_url: z
+    .string({ invalid_type_error: "Redirection URL is required" })
+    .trim()
+    .optional()
+    .nullable(),
   is_active: z.boolean().default(false),
   created_by: z
     .number({

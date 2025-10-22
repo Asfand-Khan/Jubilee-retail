@@ -40,10 +40,23 @@ export const validateApiUserProductListingSchema = z.object({
     .nullable(),
 });
 
+export const validateExternalSingleApiUserProductSchema = z.object({
+  product_ids: z
+    .array(
+      z
+        .number({ required_error: "Api User ID is required" })
+        .int({ message: "Api User ID must be an integer" })
+    )
+    .default([]),
+});
+
 export type ApiUserProductType = z.infer<typeof validateApiUserProductSchema>;
 export type SingleApiUserProductType = z.infer<
   typeof validateSingleApiUserProductSchema
 >;
 export type ApiUserProductListingType = z.infer<
   typeof validateApiUserProductListingSchema
+>;
+export type ExternalSingleApiUserProductType = z.infer<
+  typeof validateExternalSingleApiUserProductSchema
 >;

@@ -26,6 +26,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
     created_by,
     menu_rights,
     user_type,
+    redirection_url
   } = input;
   try {
     const hashedPassword = await hashPassword(password);
@@ -39,6 +40,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
       is_active,
       created_by,
       user_type,
+      redirection_url
     };
 
     let imageFileName: string | undefined;

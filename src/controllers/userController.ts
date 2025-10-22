@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import prisma from "../config/db";
 import { User } from "@prisma/client";
 import { AuthRequest } from "../types/types";
 import { comparePassword, generateToken } from "../utils/authHelpers";
@@ -104,7 +103,10 @@ export const registerUser = async (
 // Method --> POST (Protected)
 // Endpoint --> /api/v1/users
 // Description --> Update existing user
-export const updateUser = async (req: AuthRequest, res: Response): Promise<any> => {
+export const updateUser = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
   try {
     const user = req.userRecord as User;
     const parsedUser = validateUserUpdate.parse(req.body);
@@ -141,7 +143,10 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<any> 
 // Method --> PUT (Protected)
 // Endpoint --> /api/v1/users/password
 // Description --> Update User's Password existing user
-export const updateUserPassword = async (req: AuthRequest, res: Response): Promise<any> => {
+export const updateUserPassword = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
   try {
     const user = req.userRecord as User;
     const parsedUser = validateUserPasswordUpdate.parse(req.body);
@@ -417,7 +422,9 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
 
       return res.status(401).json({
         status: 0,
-        message: `Invalid username or password, you have ${4 - attempts} attempts left`,
+        message: `Invalid username or password, you have ${
+          4 - attempts
+        } attempts left`,
         payload: [],
       });
     }
@@ -491,7 +498,15 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
       // );
       result = await sendSms(
         user.phone,
-        `Hello Hello`
+        `Dear ${user.fullname},
+          For your account's protection, we're confirming a recent action.
+
+          Your access key is provided below:
+          Access Key: ${user.otp_token}
+
+          Please enter this key on the verification page to proceed. If you didn't request this, kindly contact our support team.
+
+        We appreciate your prompt attention.`
       );
     }
 

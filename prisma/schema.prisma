@@ -112,6 +112,7 @@ model User {
   is_active            Boolean        @default(true)
   is_deleted           Boolean        @default(false)
   email_verified_at    DateTime?
+  redirection_url      String?
   failed_attempt       Int            @default(0)
   lock_time            DateTime?
   last_login_date      DateTime?
@@ -1249,24 +1250,23 @@ model AllActivityLog {
 }
 
 model CommunicationLog {
-  id             Int       @id @default(autoincrement())
-  type           String    // "email" | "sms" | "whatsapp"
-  recipient      String    // email or phone number
-  subject        String?   // applicable for emails
-  message        String?   // SMS/WhatsApp content or email plain text
-  htmlContent    String?   @db.LongText // HTML email content
-  params         Json?     // dynamic parameters (e.g., WhatsApp params, attachments, etc.)
-  status         String    @default("pending") // "pending" | "sent" | "failed"
-  error_message  String?   // error detail if failed
-  response_data  Json?     // raw API response (success or failure)
-  retried_count  Int       @default(0)
-  last_attempt_at DateTime @default(now())
-  next_retry_at  DateTime? // optional scheduling for retries
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
+  id              Int       @id @default(autoincrement())
+  type            String // "email" | "sms" | "whatsapp"
+  recipient       String // email or phone number
+  subject         String? // applicable for emails
+  message         String? // SMS/WhatsApp content or email plain text
+  htmlContent     String?   @db.LongText // HTML email content
+  params          Json? // dynamic parameters (e.g., WhatsApp params, attachments, etc.)
+  status          String    @default("pending") // "pending" | "sent" | "failed"
+  error_message   String? // error detail if failed
+  response_data   Json? // raw API response (success or failure)
+  retried_count   Int       @default(0)
+  last_attempt_at DateTime  @default(now())
+  next_retry_at   DateTime? // optional scheduling for retries
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   // Optional tracking for system reference
-  reference_type String?   // e.g., "Order", "User", "Policy"
+  reference_type String? // e.g., "Order", "User", "Policy"
   reference_id   Int?
 }
-

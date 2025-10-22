@@ -5,12 +5,14 @@ import { handleAppError } from "../utils/appErrorHandler";
 import {
   createApiUserProduct,
   getAllApiUserProducts,
+  getExternalSingleApiUserProducts,
   getSingleApiUserProducts,
   updateApiUserProduct,
 } from "../services/apiUserProductService";
 import {
   validateApiUserProductListingSchema,
   validateApiUserProductSchema,
+  validateExternalSingleApiUserProductSchema,
   validateSingleApiUserProductSchema,
 } from "../validations/apiUserProductValidations";
 
@@ -119,6 +121,43 @@ export const updateApiUserProductHandler = async (
     return res.status(200).json({
       status: 1,
       message: "API User Product updated successfully",
+      payload: apiUserProducts,
+    });
+  } catch (error: any) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
+
+// Module --> Api-User Product
+// Method --> POST (Protected)
+// Endpoint --> /api/v1/api-user-products/single
+// Description --> Single Api User Product
+export const singleApiUserProductForExternalUserHandler = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const user = req.userRecord as User;
+    const parsedData = validateExternalSingleApiUserProductSchema.parse(req.body);
+    const apiUserProducts = await getExternalSingleApiUserProducts(parsedData, user.id);
+
+    if (apiUserProducts.length === 0) {
+      return res.status(400).json({
+        status: 0,
+        message: "No API User Products found for the given API User ID",
+        payload: [],
+      })
+    }
+    
+    return res.status(200).json({
+      status: 1,
+      message: "Single API User Product fetched successfully",
       payload: apiUserProducts,
     });
   } catch (error: any) {
