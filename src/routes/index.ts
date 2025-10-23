@@ -29,6 +29,7 @@ import couponRoutes from "./couponRoutes";
 import orderRoutes from "./orderRoutes";
 import commonRoutes from "./commonRoutes";
 import communicationLogRoutes from "./communicationRoutes";
+import reportingRoutes from "./reportingRoutes";
 
 const router = Router();
 
@@ -63,6 +64,8 @@ router.use("/coupons", couponRoutes);
 router.use("/orders", orderRoutes);
 router.use("/common", commonRoutes);
 router.use("/communication-logs", communicationLogRoutes);
+router.use("/reportings", reportingRoutes);
+
 
 // // Handle 404 errors
 // router.use((req, res, next) => {
