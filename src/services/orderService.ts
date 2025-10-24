@@ -73,12 +73,8 @@ export const bulkOrder = async (
             message: "Order code already exists",
           };
         }
-
-        const [mapper, paymentMode] = await Promise.all([
-          skuDetails(order.child_sku),
-          getPaymentModeByCode(order.payment_mode_code),
-        ]);
       
+        const mapper = await skuDetails(order.child_sku);
         if (!mapper) {
           return {
             order_code: order.order_code,
@@ -87,6 +83,7 @@ export const bulkOrder = async (
           };
         }
 
+        const paymentMode = await getPaymentModeByCode(order.payment_mode_code);
         if (!paymentMode) {
           return {
             order_code: order.order_code,
