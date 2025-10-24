@@ -1,0 +1,5 @@
+Single Order
+    Jaha se SMS, Doc, Email -> Ammar API (policy number, order code, policy status, order status, cnno) -> aur policyurl save karalonga
+                            -> Ammar API (cnNumber, order code, policy code, policy status, order status)
+
+

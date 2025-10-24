@@ -24,7 +24,7 @@ const policyDetailItem = z.object({
     .regex(dateRegex, "Policy detail DOB must be in YYYY-MM-DD format.")
     .optional()
     .nullable(),
-  gender: z.string().optional().nullable(),
+  gender: z.string().toLowerCase().optional().nullable(),
 });
 
 const riderItem = z.object({

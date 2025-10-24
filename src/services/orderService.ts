@@ -97,6 +97,14 @@ export const bulkOrder = async (
 
         const txResult = await prisma.$transaction(
           async (tx) => {
+            const duplicate = await tx.order.findUnique({
+              where: { order_code: order.order_code },
+            });
+
+            if (duplicate) {
+              throw new Error("Duplicate order code inside transaction");
+            }
+            
             const product = await tx.product.findUnique({
               where: { id: mapper.product_id },
               include: { productCategory: true },

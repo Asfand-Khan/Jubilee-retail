@@ -416,10 +416,19 @@ export const createOrder = async (
             pec_coverage: pec_coverage.toString(),
           },
         });
+        await prisma.policy.update({
+          where: { id: result.policyId },
+          data: {
+            policy_code: `${result.code}-${renewalNumber}`,
+          },
+        });
       } else {
         await prisma.order.update({
           where: { id: result.orderId },
-          data: { renewal_number: "R0", pec_coverage: "0" },
+          data: {
+            renewal_number: "R0",
+            pec_coverage: "0",
+          },
         });
       }
     } else {
@@ -479,6 +488,12 @@ export const createOrder = async (
             data: {
               renewal_number: `R${updatedRenewalNumber}`,
               pec_coverage: pec_coverage.toString(),
+            },
+          });
+          await prisma.policy.update({
+            where: { id: result.policyId },
+            data: {
+              policy_code: `${result.code}-R${updatedRenewalNumber}`,
             },
           });
         } else {
@@ -657,17 +672,29 @@ export const parentAndChildSkuExists = async (
   return mapper;
 };
 
-export const skuDetails = async (child_sku: string) => {
-  const mapper = await prisma.webappMapper.findFirst({
-    where: {
-      child_sku,
-    },
-    include: {
-      plan: true,
-      product_option: true,
-    },
-  });
-  return mapper;
+export const skuDetails = async (child_sku: string, transaction?: any) => {
+  if (transaction) {
+    return await transaction.webappMapper.findFirst({
+      where: {
+        child_sku,
+      },
+      include: {
+        plan: true,
+        product_option: true,
+      },
+    });
+  } else {
+    const mapper = await prisma.webappMapper.findFirst({
+      where: {
+        child_sku,
+      },
+      include: {
+        plan: true,
+        product_option: true,
+      },
+    });
+    return mapper;
+  }
 };
 
 export const getCourier = async (is_takaful: boolean) => {
