@@ -233,7 +233,7 @@ export const bulkOrder = async (
             };
           },
           {
-            timeout: 20000, // 20 seconds
+            timeout: 30000, // 30 seconds
           }
         ); // end transaction
 
