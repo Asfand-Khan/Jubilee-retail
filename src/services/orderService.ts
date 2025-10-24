@@ -65,12 +65,7 @@ export const bulkOrder = async (
 
     const chunkPromises = chunk.map(async (order) => {
       try {
-        const [orderExists, mapper, paymentMode] = await Promise.all([
-          orderByOrderCode(order.order_code),
-          skuDetails(order.child_sku),
-          getPaymentModeByCode(order.payment_mode_code),
-        ]);
-
+        const orderExists = await orderByOrderCode(order.order_code);
         if (orderExists) {
           return {
             order_code: order.order_code,
@@ -79,6 +74,11 @@ export const bulkOrder = async (
           };
         }
 
+        const [mapper, paymentMode] = await Promise.all([
+          skuDetails(order.child_sku),
+          getPaymentModeByCode(order.payment_mode_code),
+        ]);
+      
         if (!mapper) {
           return {
             order_code: order.order_code,
@@ -104,7 +104,7 @@ export const bulkOrder = async (
             if (duplicate) {
               throw new Error("Duplicate order code inside transaction");
             }
-            
+
             const product = await tx.product.findUnique({
               where: { id: mapper.product_id },
               include: { productCategory: true },
