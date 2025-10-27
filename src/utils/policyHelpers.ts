@@ -445,7 +445,7 @@ export async function courierBooking(
         // Email And Sms
         const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
 
-        let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+        let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
         let customerName: string = result.order.customer_name;
         let resultOrderId: string = result.order.order_code;
         let createdDate: string = result.order.create_date;

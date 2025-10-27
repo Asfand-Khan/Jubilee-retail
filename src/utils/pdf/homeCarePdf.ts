@@ -187,7 +187,7 @@ export function homeCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullP
     //
     //
     // Header Start
-    const jubileeImage = policy && policy.takaful_policy ? `${__dirname}../../../../assets/logo/takaful_logo.png` : `${__dirname}../../../../assets/logo/insurance_logo.png`;
+    const jubileeImage = policy && policy.takaful_policy ? `${process.env.BASE_URL}/uploads/logo/takaful_logo.png` : `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
     let productLogo = `${__dirname}../../../../assets/logo/home.png`;
 
     // Append Header
