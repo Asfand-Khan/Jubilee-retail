@@ -2,8 +2,8 @@ import PDFDocument from "pdfkit";
 
 export function addScheduleHeader(
   doc: InstanceType<typeof PDFDocument>,
-  jubileeImage: string | Buffer | undefined,
-  productLogo: string
+  jubileeImage: string | Buffer<any> | null,
+  productLogo: string | Buffer<any> | null
 ) {
   const pageWidth = doc.page.width;
   const margin = 20;
