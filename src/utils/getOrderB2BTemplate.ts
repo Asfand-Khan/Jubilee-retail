@@ -61,6 +61,8 @@ export const getOrderB2BTemplate = (
                         src="${logo}"
                         style="margin-bottom: 10px"
                         border="0"
+                        height="100"
+                        width="100"
                       />
                     </td>
                   </tr>

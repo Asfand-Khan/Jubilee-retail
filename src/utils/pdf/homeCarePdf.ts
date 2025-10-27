@@ -5,6 +5,7 @@ import { createGeneralApiTable1, drawTable, drawTableRow } from "./pdfUtils";
 import { format } from "date-fns/format";
 import { formatDate } from "date-fns/format";
 import { addVerificationAndQR } from "./sections/verification";
+import path from "path";
 
 export type PolicyDetail = FullOrder["Policy"][0]["policyDetails"][0];
 
@@ -187,8 +188,8 @@ export function homeCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullP
     //
     //
     // Header Start
-    const jubileeImage = policy && policy.takaful_policy ? `${process.env.BASE_URL}/uploads/logo/takaful_logo.png` : `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
-    let productLogo = `${__dirname}../../../../assets/logo/home.png`;
+    const jubileeImage = path.join(process.cwd(), "uploads", "logo", policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png");
+    let productLogo = path.join(process.cwd(), "uploads", "logo", "home.png");
 
     // Append Header
     addScheduleHeader(doc, jubileeImage, productLogo);

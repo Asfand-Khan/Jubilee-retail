@@ -361,7 +361,6 @@ export const bulkOrder = async (
           orderId: string,
           createdDate: string;
 
-        logo = process.env.INSURANCE_LOGO as string;
         customerName = txResult.order.customer_name;
         orderId = txResult.order.order_code;
         createdDate = txResult.order.create_date;
@@ -387,9 +386,8 @@ export const bulkOrder = async (
             "logo",
             "takaful_logo.png"
           );
-          const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+          const logoBase64 = fs.readFileSync(logoPath).toString("base64").replace(/\r?\n|\r/g, "");
           logo = `data:image/png;base64,${logoBase64}`;
-          logo = process.env.TAKAFUL_LOGO as string;
           Insurance = "Takaful";
           insurance = "";
           doc = "PMD(s)";
@@ -405,7 +403,7 @@ export const bulkOrder = async (
             "logo",
             "insurance_logo.png"
           );
-          const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+          const logoBase64 = fs.readFileSync(logoPath).toString("base64").replace(/\r?\n|\r/g, "");
           logo = `data:image/png;base64,${logoBase64}`;
           Insurance = "Insurance";
           insurance = "insurance";
