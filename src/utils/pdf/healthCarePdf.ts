@@ -3,6 +3,7 @@ import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
 import { createGeneralApiTable1, creatHealthcareChildDetail, drawTable, drawTableRow } from "./pdfUtils";
 import { format } from "date-fns/format";
+import path from "path";
 
 export type PolicyDetail = FullOrder["Policy"][0]["policyDetails"][0];
 
@@ -1113,31 +1114,33 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     
     // 
     // Header Start
-    const jubileeImage = policy && policy.takaful_policy ? `${__dirname}../../../../uploads/logo/takaful_logo.png` : `${__dirname}../../../../uploads/logo/insurance_logo.png`;
-    let productLogo = `${__dirname}../../../../uploads/logo/family.png`;
+    // const jubileeImage = policy && policy.takaful_policy ? `${process.env.BASE_URL}/uploads/logo/takaful_logo.png` : `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
+    const jubileeImage = path.join(process.cwd(), "uploads", "logo", policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png");
+    let productLogo = path.join(process.cwd(), "uploads", "logo", "family.png");
 
     if (policy.productOption.webappMappers.some(mapper => mapper.child_sku.toLowerCase().includes("personal"))) {
-        productLogo = `${__dirname}../../../../uploads/logo/personal.png`;
+        // productLogo = `${__dirname}../../../../uploads/logo/personal.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "personal.png");
     } else if (productName.includes("lifestyle")) {
-        productLogo = `${__dirname}../../../../uploads/logo/lifestyle.png`;
-    } else if (productName.includes("Parents-Care-Plus")) {
-        productLogo = `${__dirname}../../../../uploads/logo/parent-care-plus-icon.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "lifestyle.png");
+    } else if (productName.includes("parents-care-plus")) {
+        productLogo = path.join(process.cwd(), "uploads", "logo", "parent-care-plus-icon.png");
     }else if (productName.includes("parent")) {
-        productLogo = `${__dirname}../../../../uploads/logo/parent.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "parent.png");
     } else if (productName.includes("hercare")) {
-        productLogo = `${__dirname}../../../../uploads/logo/HC-HerCare.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "HC-HerCare.png");
     } else if (isFaysalBankOrder) {
         if (productName.includes("family")) {
-            productLogo = `${__dirname}../../../../uploads/logo/family.png`; // Change
+            productLogo = path.join(process.cwd(), "uploads", "logo", "family.png"); // Change
         } else if (productName.includes("personal accident")) {
-            productLogo = `${__dirname}../../../../uploads/logo/personal-accident.png`;
+            productLogo = path.join(process.cwd(), "uploads", "logo", "personal-accident.png");
         } else if (productName.includes("female centric health takaful")) {
-            productLogo = `${__dirname}../../../../uploads/logo/female.png`;
-        } else {
-            productLogo = `${__dirname}../../../../uploads/logo/family.png`; // Change
+            productLogo = path.join(process.cwd(), "uploads", "logo", "female.png");
+        } else { 
+            productLogo = path.join(process.cwd(), "uploads", "logo", "family.png"); // Change
         }
     } else if (productName.includes("mib") && productName.includes("family")) {
-        productLogo = `${__dirname}../../../../uploads/logo/family.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "family.png");
     } else if (productName.includes("mib") && productName.includes("personal")) {
         productLogo = jubileeImage;
     } else if (isHBLMFBOrder) {
@@ -1153,7 +1156,7 @@ export function healthCarePdf(doc: InstanceType<typeof PDFDocument>, policy: Ful
     } else if (isMMBLOrder) {
         productLogo = jubileeImage;
     } else {
-        productLogo = `${__dirname}../../../../uploads/logo/family.png`;
+        productLogo = path.join(process.cwd(), "uploads", "logo", "family.png");
     }
 
     // Append Header
