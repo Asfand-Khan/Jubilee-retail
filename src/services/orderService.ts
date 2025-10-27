@@ -37,6 +37,8 @@ import { BulkOrder } from "../validations/bulkOrderValidations";
 import { skuDetails } from "./orderService2";
 import { AuthRequest } from "../types/types";
 import { sendVerificationNotifications } from "../utils/utils";
+import path from "path";
+import fs from "fs";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -77,7 +79,7 @@ export const bulkOrder = async (
         const [mapper, paymentMode] = await Promise.all([
           skuDetails(order.child_sku),
           getPaymentModeByCode(order.payment_mode_code),
-        ])
+        ]);
 
         if (!mapper) {
           return {
@@ -379,6 +381,14 @@ export const bulkOrder = async (
 
         if (txResult.mapper.child_sku.toLowerCase().includes("takaful")) {
           url = process.env.POLICY_VERIFICATION_TAKAFUL as string;
+          const logoPath = path.join(
+            process.cwd(),
+            "uploads",
+            "logo",
+            "takaful_logo.png"
+          );
+          const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+          logo = `data:image/png;base64,${logoBase64}`;
           logo = process.env.TAKAFUL_LOGO as string;
           Insurance = "Takaful";
           insurance = "";
@@ -389,7 +399,14 @@ export const bulkOrder = async (
           smsString = `Dear ${txResult.order.customer_name}, Thank you for choosing Jubilee General ${txResult.product.product_name} .Your PMD # is ${txResult.policy.policy_code}. Click here to view your PMD: ${txResult.policy.qr_doc_url}. For more information please dial our toll free # 0800 03786`;
         } else {
           url = process.env.POLICY_VERIFICATION_INSURANCE as string;
-          logo = process.env.INSURANCE_LOGO as string;
+          const logoPath = path.join(
+            process.cwd(),
+            "uploads",
+            "logo",
+            "insurance_logo.png"
+          );
+          const logoBase64 = fs.readFileSync(logoPath).toString("base64");
+          logo = `data:image/png;base64,${logoBase64}`;
           Insurance = "Insurance";
           insurance = "insurance";
           doc = "policy document(s)";
