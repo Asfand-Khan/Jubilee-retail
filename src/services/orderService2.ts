@@ -673,28 +673,16 @@ export const parentAndChildSkuExists = async (
 };
 
 export const skuDetails = async (child_sku: string, transaction?: any) => {
-  if (transaction) {
-    return await transaction.webappMapper.findFirst({
-      where: {
-        child_sku,
-      },
-      include: {
-        plan: true,
-        product_option: true,
-      },
-    });
-  } else {
-    const mapper = await prisma.webappMapper.findFirst({
-      where: {
-        child_sku,
-      },
-      include: {
-        plan: true,
-        product_option: true,
-      },
-    });
-    return mapper;
-  }
+  const mapper = await prisma.webappMapper.findFirst({
+    where: {
+      child_sku,
+    },
+    include: {
+      plan: true,
+      product_option: true,
+    },
+  });
+  return mapper;
 };
 
 export const getCourier = async (is_takaful: boolean) => {

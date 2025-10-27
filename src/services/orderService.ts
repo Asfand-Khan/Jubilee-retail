@@ -73,8 +73,12 @@ export const bulkOrder = async (
             message: "Order code already exists",
           };
         }
-      
-        const mapper = await skuDetails(order.child_sku);
+
+        const [mapper, paymentMode] = await Promise.all([
+          skuDetails(order.child_sku),
+          getPaymentModeByCode(order.payment_mode_code),
+        ])
+
         if (!mapper) {
           return {
             order_code: order.order_code,
@@ -83,7 +87,6 @@ export const bulkOrder = async (
           };
         }
 
-        const paymentMode = await getPaymentModeByCode(order.payment_mode_code);
         if (!paymentMode) {
           return {
             order_code: order.order_code,
@@ -114,7 +117,6 @@ export const bulkOrder = async (
               throw new Error("Product category not found");
             }
 
-            // lastOrder lookup (if required by domain)
             const lastOrder = (await tx.$queryRawUnsafe(`
             SELECT 
                 pol.policy_code,
@@ -344,7 +346,6 @@ export const bulkOrder = async (
         }
 
         // Email & Sms
-
         let Insurance: string,
           insurance: string,
           doc: string,
@@ -358,7 +359,7 @@ export const bulkOrder = async (
           orderId: string,
           createdDate: string;
 
-        logo = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+        logo = process.env.INSURANCE_LOGO as string;
         customerName = txResult.order.customer_name;
         orderId = txResult.order.order_code;
         createdDate = txResult.order.create_date;
@@ -369,16 +370,16 @@ export const bulkOrder = async (
           txResult.policy.takaful_policy,
           false
         );
-        const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+        const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
         const extraDocs = policyWording.extraUrls.map((url) => ({
           filename: url,
-          path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+          path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
           contentType: "application/pdf",
         }));
 
         if (txResult.mapper.child_sku.toLowerCase().includes("takaful")) {
-          url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
-          logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+          url = process.env.POLICY_VERIFICATION_TAKAFUL as string;
+          logo = process.env.TAKAFUL_LOGO as string;
           Insurance = "Takaful";
           insurance = "";
           doc = "PMD(s)";
@@ -387,9 +388,8 @@ export const bulkOrder = async (
           takaful = true;
           smsString = `Dear ${txResult.order.customer_name}, Thank you for choosing Jubilee General ${txResult.product.product_name} .Your PMD # is ${txResult.policy.policy_code}. Click here to view your PMD: ${txResult.policy.qr_doc_url}. For more information please dial our toll free # 0800 03786`;
         } else {
-          url =
-            "https://jubileegeneral.com.pk/getinsurance/policy-verification";
-          logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+          url = process.env.POLICY_VERIFICATION_INSURANCE as string;
+          logo = process.env.INSURANCE_LOGO as string;
           Insurance = "Insurance";
           insurance = "insurance";
           doc = "policy document(s)";
