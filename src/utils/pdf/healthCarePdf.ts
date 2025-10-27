@@ -1965,71 +1965,55 @@ export async function healthCarePdf(
   //
   //
   // Header Start
-  const jubileeImageUrl =
-    policy && policy.takaful_policy
-      ? `${process.env.BASE_URL}/uploads/logo/takaful_logo.png`
-      : `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
-
-  const jubileeLocalPath = path.join(
-    __dirname,
-    "../../../../uploads/logo",
-    policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png"
-  );
-
-  // ✅ Step 2: Determine productLogo (path or URL)
-  let productLogoPath = path.join(__dirname, "../../../../assets/logo/family.png");
-  let productLogoUrl = `${process.env.BASE_URL}/uploads/logo/family.png`; // fallback remote (optional)
+  const jubileeLogo = policy && policy.takaful_policy ? `${__dirname}../../../../assets/logo/takaful_logo.png` : `${__dirname}../../../../assets/logo/insurance_logo.png`;
+  let productLogo = `${__dirname}../../../../assets/logo/family.png`;
 
   if (
     policy.productOption.webappMappers.some((mapper) =>
       mapper.child_sku.toLowerCase().includes("personal")
     )
   ) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/personal.png`;
+    productLogo = `${__dirname}../../../../assets/logo/personal.png`;
   } else if (productName.includes("lifestyle")) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/lifestyle.png`;
+    productLogo = `${__dirname}../../../../assets/logo/lifestyle.png`;
   } else if (productName.includes("Parents-Care-Plus")) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/parent-care-plus-icon.png`;
+    productLogo = `${__dirname}../../../../assets/logo/parent-care-plus-icon.png`;
   } else if (productName.includes("parent")) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/parent.png`;
+    productLogo = `${__dirname}../../../../assets/logo/parent.png`;
   } else if (productName.includes("hercare")) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/HC-HerCare.png`;
+    productLogo = `${__dirname}../../../../assets/logo/HC-HerCare.png`;
   } else if (isFaysalBankOrder) {
     if (productName.includes("family")) {
-      productLogoPath  = `${__dirname}../../../../assets/logo/family.png`; // Change
+      productLogo = `${__dirname}../../../../assets/logo/family.png`; // Change
     } else if (productName.includes("personal accident")) {
-      productLogoPath  = `${__dirname}../../../../assets/logo/personal-accident.png`;
+      productLogo = `${__dirname}../../../../assets/logo/personal-accident.png`;
     } else if (productName.includes("female centric health takaful")) {
-      productLogoPath  = `${__dirname}../../../../assets/logo/female.png`;
+      productLogo = `${__dirname}../../../../assets/logo/female.png`;
     } else {
-      productLogoPath  = `${__dirname}../../../../assets/logo/family.png`; // Change
+      productLogo = `${__dirname}../../../../assets/logo/family.png`; // Change
     }
   } else if (productName.includes("mib") && productName.includes("family")) {
-    productLogoPath  = `${__dirname}../../../../assets/logo/family.png`;
+    productLogo = `${__dirname}../../../../assets/logo/family.png`;
   } else if (productName.includes("mib") && productName.includes("personal")) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (isHBLMFBOrder) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (productName.includes("hbl")) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (productName.includes("shifa-daily")) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (isSCBOrder) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (isHMBOrder) {
-    productLogoPath  = jubileeLocalPath;
+    productLogo = jubileeLogo;
   } else if (isMMBLOrder) {
-    productLogoPath  = jubileeLocalPath;
-  } else {
-    productLogoPath  = `${__dirname}../../../../assets/logo/family.png`;
+    productLogo = jubileeLogo;
   }
 
-  // ✅ Step 3: Fetch Jubilee image locally or via HTTP
-  const jubileeImageBuffer = await loadImageBuffer(jubileeLocalPath, jubileeImageUrl);
-  const productLogoBuffer = await loadImageBuffer(productLogoPath, productLogoUrl);
-
+  const jubilee = await loadImageBuffer(jubileeLogo);
+  const product = await loadImageBuffer(productLogo);
   // Append Header
-  addScheduleHeader(doc, jubileeImageBuffer, productLogoBuffer);
+  addScheduleHeader(doc, jubilee, product);
   // Header End
 
   // Policy Details Table Start
