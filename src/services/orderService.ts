@@ -386,7 +386,10 @@ export const bulkOrder = async (
             "logo",
             "takaful_logo.png"
           );
-          const logoBase64 = fs.readFileSync(logoPath).toString("base64").replace(/\r?\n|\r/g, "");
+          const logoBase64 = fs
+            .readFileSync(logoPath)
+            .toString("base64")
+            .replace(/\r?\n|\r/g, "");
           logo = `data:image/png;base64,${logoBase64}`;
           Insurance = "Takaful";
           insurance = "";
@@ -403,7 +406,10 @@ export const bulkOrder = async (
             "logo",
             "insurance_logo.png"
           );
-          const logoBase64 = fs.readFileSync(logoPath).toString("base64").replace(/\r?\n|\r/g, "");
+          const logoBase64 = fs
+            .readFileSync(logoPath)
+            .toString("base64")
+            .replace(/\r?\n|\r/g, "");
           logo = `data:image/png;base64,${logoBase64}`;
           Insurance = "Insurance";
           insurance = "insurance";
@@ -1355,7 +1361,8 @@ export const orderList = async (data: ListSchema) => {
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
-	          ord.status AS 'order_status'
+	          ord.status AS 'order_status',
+            pm.payment_code
           FROM
 	          \`Order\` ord
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1381,7 +1388,8 @@ export const orderList = async (data: ListSchema) => {
 	            pm.name AS 'payment_mode',
 	            au.name AS 'api_user_name',
 	            ord.status AS 'order_status',
-	            p.status AS 'policy_status'
+	            p.status AS 'policy_status',
+              pm.payment_code
             FROM
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1414,7 +1422,8 @@ export const orderList = async (data: ListSchema) => {
             ord.pec_coverage AS 'pec_coverage',
             ord.renewal_number AS 'renewal_number',
             ord.status AS 'order_status',
-            p.status AS 'policy_status'
+            p.status AS 'policy_status',
+            pm.payment_code
           FROM
             \`Order\` ord
           LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1441,7 +1450,8 @@ export const orderList = async (data: ListSchema) => {
 	            pm.name AS 'payment_mode',
 	            au.name AS 'api_user_name',
 	            ord.status AS 'order_status',
-	            p.status AS 'policy_status'
+	            p.status AS 'policy_status',
+              pm.payment_code
             FROM
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1467,7 +1477,8 @@ export const orderList = async (data: ListSchema) => {
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
-	          ord.status AS 'order_status'
+	          ord.status AS 'order_status',
+            pm.payment_code
           FROM
 	          \`Order\` ord
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -2002,8 +2013,8 @@ export const generateHIS = async (data: GenerateHISSchema) => {
     ],
     zipFileName
   );
-
-  return zipPath;
+  const splittedPath = zipPath.split("uploads");
+  return splittedPath[1];
 };
 
 export const generatePolicyCode = (policy: any, branch: any): string => {
