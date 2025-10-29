@@ -1352,6 +1352,7 @@ export const orderList = async (data: ListSchema) => {
       query = `
           SELECT
 	          ord.id AS 'id',
+            p.id AS 'policy_id',
 	          ord.order_code AS 'order_code',
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
@@ -1362,7 +1363,8 @@ export const orderList = async (data: ListSchema) => {
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
 	          ord.status AS 'order_status',
-            pm.payment_code
+            pm.payment_code,
+            p.takaful_policy
           FROM
 	          \`Order\` ord
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1374,6 +1376,7 @@ export const orderList = async (data: ListSchema) => {
       query = `
             SELECT
 	            ord.id AS 'id',
+              p.id AS 'policy_id',
 	            ord.order_code AS 'order_code',
 	            p.policy_code AS 'policy_number',
 	            ord.create_date AS 'create_date',
@@ -1389,7 +1392,8 @@ export const orderList = async (data: ListSchema) => {
 	            au.name AS 'api_user_name',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
-              pm.payment_code
+              pm.payment_code,
+              p.takaful_policy
             FROM
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1403,6 +1407,7 @@ export const orderList = async (data: ListSchema) => {
           SELECT
             ord.order_code AS 'order_code',
             ord.id AS 'id',
+            p.id AS 'policy_id',
             ord.create_date AS 'create_date',
             p.policy_code AS 'policy_number',
             p.issue_date AS 'issue_date',
@@ -1423,7 +1428,8 @@ export const orderList = async (data: ListSchema) => {
             ord.renewal_number AS 'renewal_number',
             ord.status AS 'order_status',
             p.status AS 'policy_status',
-            pm.payment_code
+            pm.payment_code,
+            p.takaful_policy
           FROM
             \`Order\` ord
           LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1436,6 +1442,7 @@ export const orderList = async (data: ListSchema) => {
       query = `
             SELECT
 	            ord.id AS 'id',
+              p.id AS 'policy_id',
 	            ord.order_code AS 'order_code',
 	            p.policy_code AS 'policy_number',
 	            ord.create_date AS 'create_date',
@@ -1451,7 +1458,8 @@ export const orderList = async (data: ListSchema) => {
 	            au.name AS 'api_user_name',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
-              pm.payment_code
+              pm.payment_code,
+              p.takaful_policy
             FROM
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
@@ -1468,6 +1476,7 @@ export const orderList = async (data: ListSchema) => {
       query = `
           SELECT
 	          ord.id AS 'id',
+            p.id AS 'policy_id',
 	          ord.order_code AS 'order_code',
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
@@ -1478,7 +1487,8 @@ export const orderList = async (data: ListSchema) => {
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
 	          ord.status AS 'order_status',
-            pm.payment_code
+            pm.payment_code,
+            p.takaful_policy
           FROM
 	          \`Order\` ord
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
