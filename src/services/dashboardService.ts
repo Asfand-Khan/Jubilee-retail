@@ -24,7 +24,7 @@ const serializeBigInt = (rows: any[]) =>
     Object.fromEntries(
       Object.entries(row).map(([key, value]) => [
         key,
-        typeof value === "bigint" ? Number(value) : value,
+        Number(value),
       ])
     )
   );
