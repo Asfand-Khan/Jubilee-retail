@@ -308,7 +308,7 @@ export const validateOrderSchema = z.object({
     .optional()
     .nullable(),
 
-  // prodict details
+  // product details
   product_details: z.object({
     item_name: z
       .string({
@@ -731,6 +731,33 @@ export const validateOrderSchema = z.object({
     })
     .nullable()
     .optional(),
+
+  // qna details
+  qna_details: z
+    .array(
+      z.object({
+        answer: z
+          .string({
+            required_error: "QnA details - Answer is required.",
+            invalid_type_error: "QnA details - Answer must be string.",
+          })
+          .min(1, {
+            message: "QnA details - Answer cannot be empty",
+          }),
+
+        q_id: z
+          .number({
+            required_error: "QnA details - Question ID is required.",
+            invalid_type_error: "QnA details - Question ID must be a number.",
+          })
+          .int({ message: "QnA details - Question ID must be an integer." })
+          .positive({
+            message: "QnA details - Question ID cannot be negative.",
+          }),
+      })
+    )
+    .optional()
+    .nullable(),
 });
 
 export const validateCCTransactionSchema = z.object({

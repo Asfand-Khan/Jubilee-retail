@@ -116,6 +116,11 @@ export const validateUserUpdate = z.object({
   is_active: z.boolean().default(false),
   is_locked: z.boolean().default(false),
   user_type: z.enum(["dashboard_user", "api_user"]),
+  redirection_url: z
+    .string({ invalid_type_error: "Redirection URL is required" })
+    .trim()
+    .optional()
+    .nullable(),
   menu_rights: z
     .array(
       z.object({
@@ -145,7 +150,7 @@ export const validateUserUpdate = z.object({
       }),
       { required_error: "Menu rights are required" }
     )
-    .min(1, { message: "At least one menu right is required" }),
+    .optional(),
 });
 
 export const validateUserLogin = z.object({

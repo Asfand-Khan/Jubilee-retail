@@ -26,7 +26,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
     created_by,
     menu_rights,
     user_type,
-    redirection_url
+    redirection_url,
   } = input;
   try {
     const hashedPassword = await hashPassword(password);
@@ -40,7 +40,7 @@ export const createUser = async (input: UserRegister): Promise<User> => {
       is_active,
       created_by,
       user_type,
-      redirection_url
+      redirection_url,
     };
 
     let imageFileName: string | undefined;
@@ -144,24 +144,26 @@ export const updateUserEntry = async (
         },
       });
 
-      const menuRightsData = menu_rights.map((right) => ({
-        user_id: updatedUser.id,
-        menu_id: right.menu_id,
-        can_view: right.can_view,
-        can_create: right.can_create,
-        can_edit: right.can_edit,
-        can_delete: right.can_delete,
-      }));
-
-      await prisma.userMenuRight.deleteMany({
-        where: {
+      if (menu_rights && menu_rights.length > 0) {
+        const menuRightsData = menu_rights.map((right) => ({
           user_id: updatedUser.id,
-        },
-      });
+          menu_id: right.menu_id,
+          can_view: right.can_view,
+          can_create: right.can_create,
+          can_edit: right.can_edit,
+          can_delete: right.can_delete,
+        }));
 
-      await prisma.userMenuRight.createMany({
-        data: menuRightsData,
-      });
+        await prisma.userMenuRight.deleteMany({
+          where: {
+            user_id: updatedUser.id,
+          },
+        });
+
+        await prisma.userMenuRight.createMany({
+          data: menuRightsData,
+        });
+      }
 
       return updatedUser;
     });
@@ -420,6 +422,14 @@ export const resetLockedUser = async (userId: number) => {
 export const getApiUserById = async (id: number) => {
   return prisma.apiUser.findUnique({
     where: { id },
+  });
+};
+
+export const getApiUserByUserId = async (id: number) => {
+  return prisma.apiUser.findUnique({
+    where: { 
+      user_id: id
+     },
   });
 };
 

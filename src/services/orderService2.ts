@@ -326,6 +326,16 @@ export const createOrder = async (
         });
       }
 
+      if (data.qna_details && data.qna_details.length > 0) {
+        const qnaDetails = data.qna_details.map((record) => ({
+          policy_id: policy.id,
+          question_id: record.q_id,
+          answer: record.answer,
+          created_by: createdBy,
+        }));
+        await tx.policyQna.createMany({data: qnaDetails});
+      }
+
       // Generate policy code
       let code = "";
       if (product.product_type === "health") {

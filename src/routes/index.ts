@@ -30,6 +30,7 @@ import orderRoutes from "./orderRoutes";
 import commonRoutes from "./commonRoutes";
 import communicationLogRoutes from "./communicationRoutes";
 import reportingRoutes from "./reportingRoutes";
+import dashboardRoutes from "./dashboardRoutes";
 
 const router = Router();
 
@@ -65,6 +66,7 @@ router.use("/orders", orderRoutes);
 router.use("/common", commonRoutes);
 router.use("/communication-logs", communicationLogRoutes);
 router.use("/reportings", reportingRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 
 // // Handle 404 errors

@@ -420,7 +420,7 @@ export const loginUser = async (req: Request, res: Response): Promise<any> => {
         });
       }
 
-      return res.status(401).json({
+      return res.status(403).json({
         status: 0,
         message: `Invalid username or password, you have ${
           4 - attempts
