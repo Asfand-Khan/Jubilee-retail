@@ -426,11 +426,18 @@ export const getApiUserById = async (id: number) => {
 };
 
 export const getApiUserByUserId = async (id: number) => {
-  return prisma.apiUser.findUnique({
-    where: { 
-      user_id: id
-     },
-  });
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new Error("User not found");
+
+  if (user.user_type === "api_user") {
+    return prisma.apiUser.findUnique({
+      where: {
+        user_id: id,
+      },
+    });
+  } else {
+    return null;
+  }
 };
 
 export const updateApiUserCredentials = async (

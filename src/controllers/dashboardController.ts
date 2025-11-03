@@ -17,7 +17,7 @@ export const getPolicyStatsHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.policyStatusCardStats(parsed, apiUser!.id);
+    const stats = await services.policyStatusCardStats(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Policy Stats fetched successfully",
@@ -44,7 +44,7 @@ export const getTop5ProductsDetailWiseHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.top5ProductsDetailWise(parsed, apiUser!.id);
+    const stats = await services.top5ProductsDetailWise(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Top 5 products detail wise fetched successfully",
@@ -73,7 +73,7 @@ export const getTop5ProductsByProductAmountHandler = async (
     const apiUser = await getApiUserByUserId(user.id);
     const stats = await services.top5ProductsByProductAmount(
       parsed,
-      apiUser!.id
+      apiUser?.id
     );
     return res.status(200).json({
       status: 1,
@@ -103,7 +103,7 @@ export const getTop5ApiUsersByPolicyAmountHandler = async (
     const apiUser = await getApiUserByUserId(user.id);
     const stats = await services.top5ApiUsersByPolicyAmount(
       parsed,
-      apiUser!.id
+      apiUser?.id
     );
     return res.status(200).json({
       status: 1,
@@ -131,7 +131,7 @@ export const getMonthlyOrdersAndPoliciesHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.monthlyOrdersAndPolicies(parsed, apiUser!.id);
+    const stats = await services.monthlyOrdersAndPolicies(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Monthly orders and policies fetched successfully",
@@ -160,7 +160,7 @@ export const getProductShareOfPolicyAmountByAmountHandler = async (
     const apiUser = await getApiUserByUserId(user.id);
     const stats = await services.productShareOfPolicyAmountByAmount(
       parsed,
-      apiUser!.id
+      apiUser?.id
     );
     return res.status(200).json({
       status: 1,
@@ -190,7 +190,7 @@ export const getPolicyStatusBreakdownValidInvalidHandler = async (
     const apiUser = await getApiUserByUserId(user.id);
     const stats = await services.policyStatusBreakdownValidInvalid(
       parsed,
-      apiUser!.id
+      apiUser?.id
     );
     return res.status(200).json({
       status: 1,
@@ -218,7 +218,7 @@ export const getRecentOrdersHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.recentOrders(parsed, apiUser!.id);
+    const stats = await services.recentOrders(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Recent orders fetched successfully",
@@ -245,7 +245,7 @@ export const getTop5AgentsHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.top5Agents(parsed, apiUser!.id);
+    const stats = await services.top5Agents(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Top 5 agents fetched successfully",
@@ -272,7 +272,7 @@ export const getTop5BranchesHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.top5Branches(parsed, apiUser!.id);
+    const stats = await services.top5Branches(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Top 5 branches fetched successfully",
@@ -299,7 +299,7 @@ export const getCouponUsageHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.couponUsage(parsed, apiUser!.id);
+    const stats = await services.couponUsage(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Coupon Usage fetched successfully",
@@ -326,7 +326,7 @@ export const getPaymentModeHandler = async (
     const user = req.userRecord as User;
     const parsed = validateDashboard.parse(req.body);
     const apiUser = await getApiUserByUserId(user.id);
-    const stats = await services.paymentMode(parsed, apiUser!.id);
+    const stats = await services.paymentMode(parsed, apiUser?.id);
     return res.status(200).json({
       status: 1,
       message: "Payment mode fetched successfully",
