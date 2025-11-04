@@ -19,15 +19,21 @@ const getDateRange = (dateRange?: string | null) => {
   return [start, end];
 };
 
-const serializeBigInt = (rows: any[]) =>
-  rows.map((row) =>
+const serializeBigInt = (rows: any[]): any[] => {
+  return rows.map((row) =>
     Object.fromEntries(
-      Object.entries(row).map(([key, value]) => [
-        key,
-        Number(value),
-      ])
+      Object.entries(row).map(([key, value]) => {
+        if (typeof value === "bigint") {
+          return [key, Number(value)]; // Only BigInt → Number
+        }
+        if (value instanceof Date) {
+          return [key, value.toISOString().split("T")[0]]; // "2024-02-01"
+        }
+        return [key, value]; // Keep strings, booleans, null, etc.
+      })
     )
   );
+};
 
 export const policyStatusCardStats = async (
   data: DashboardType,
@@ -209,7 +215,7 @@ export const monthlyOrdersAndPolicies = async (
   try {
     let query = `
     SELECT
-        DATE (o.created_at) AS sale_date,
+        DATE_FORMAT(o.created_at, '%Y-%m-%d') AS sale_date,
         COUNT(DISTINCT o.id) AS daily_orders,
         COUNT(DISTINCT CASE WHEN p.status NOT IN ('cancelled', 'unverified', 'pending', 'expired') AND p.is_deleted = 0 THEN p.id ELSE NULL END) AS daily_policies
     FROM
