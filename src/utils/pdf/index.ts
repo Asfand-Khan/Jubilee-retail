@@ -64,7 +64,7 @@ export async function generateOrderPDF(res: Response, order: FullOrder, req: Req
                 viaCarePdf(doc, policy, order, qrImageUrl);
             }
         } else if (productType === "health") {
-            healthCarePdf(doc, policy, order);
+            healthCarePdf(doc, policy, order, qrImageUrl);
         } else if (productType === "home") {
             homeCarePdf(doc, policy, order, qrImageUrl);
         }
