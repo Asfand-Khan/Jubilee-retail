@@ -178,6 +178,7 @@ export const bulkOrder = async (
                 received_premium: order.received_premium,
                 type: product.product_type,
                 created_by: createdBy,
+                takaful_policy: product.is_takaful == true ? true : false,
               },
             });
 
@@ -210,9 +211,17 @@ export const bulkOrder = async (
             }
 
             // Generate and set policy code
-            const planName = mapper.plan.name ?? "";
-            const planId = newPlanMapping(product.product_name, planName);
-            const code = `91${planId}${newPolicyCode(policy.id)}`;
+            let code = "";
+            if (
+              newOrder.apiUser?.name.toLowerCase() === "mmbl" &&
+              order.policy_no
+            ) {
+              code = order.policy_no;
+            } else {
+              const planName = mapper.plan.name ?? "";
+              const planId = newPlanMapping(product.product_name, planName);
+              code = `91${planId}${newPolicyCode(policy.id)}`;
+            }
 
             const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${newOrder.order_code}/pdf`;
 
@@ -733,7 +742,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
           sum_insured: data.product_details.sum_insured,
           type: product.product_type,
           product_type: data.product_details.product_type,
-          takaful_policy: data.takaful_policy ?? false,
+          takaful_policy: product.is_takaful == true ? true : false,
           is_renewed: data.is_renewed ?? false,
           refunded: data.refunded,
           quantity: data.quantity ?? 1,
@@ -841,14 +850,14 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
       }
 
       let code = "";
-      if (product.product_type === "health") {
+      if (product.is_cbo) {
         let planId = "000";
         let prefix = "91";
         planId = newPlanMapping(product.product_name, plan.name);
         const policyCode = newPolicyCode(policy.id);
         code = `${prefix}${planId}${policyCode}`;
       } else {
-        const branchCode = data.takaful_policy
+        const branchCode = product.is_takaful
           ? branch.his_code_takaful
           : branch.his_code;
         const productCode = newProductCode(
@@ -869,7 +878,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
           data: { policy_code: code },
         });
         try {
-          const courier = await getCourier(data.takaful_policy ?? false);
+          const courier = await getCourier(product.is_takaful ? true : false);
           if (!courier) {
             console.warn("Courier not found, will allow repush later");
           } else {
@@ -963,7 +972,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
             status: "verified",
           },
         });
-        if (order?.status === "verified" && product.product_type === "health") {
+        if (order?.status === "verified" && product.is_cbo) {
           await tx.policy.update({
             where: { id: policy.id },
             data: { status: "pendingCBO" },
@@ -1040,7 +1049,7 @@ export const ccTransaction = async (
     }
 
     let code: string;
-    if (policy.product.product_type === "health") {
+    if (policy.product.is_cbo) {
       const planId = newPlanMapping(
         policy.product.product_name,
         policy.plan?.name || ""
@@ -1066,10 +1075,7 @@ export const ccTransaction = async (
           where: { id: policy.id },
           data: {
             policy_code: code,
-            status:
-              policy.product.product_type === "health"
-                ? "pendingCBO"
-                : "pendingIGIS",
+            status: policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
           },
         }),
       ]);
@@ -1265,10 +1271,7 @@ export const manuallyVerifyCC = async (
           where: { id: policy.id },
           data: {
             policy_code: policyCode,
-            status:
-              policy.product.product_type === "health"
-                ? "pendingCBO"
-                : "pendingIGIS",
+            status: policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
           },
           include: {
             plan: { select: { name: true } },
@@ -1656,7 +1659,7 @@ export const repushOrder = async (data: OrderCodeSchema) => {
 
     // ⚡ Regenerate policy code to ensure it’s fresh
     let code = "";
-    if (product.product_type === "health") {
+    if (product.is_cbo) {
       const plan = await tx.plan.findUnique({
         where: { id: policy.plan_id },
       });
@@ -2028,7 +2031,7 @@ export const generateHIS = async (data: GenerateHISSchema) => {
 };
 
 export const generatePolicyCode = (policy: any, branch: any): string => {
-  if (policy.product.product_type === "health") {
+  if (policy.product.is_cbo) {
     const planId = newPlanMapping(
       policy.product.product_name,
       policy.plan?.name || ""

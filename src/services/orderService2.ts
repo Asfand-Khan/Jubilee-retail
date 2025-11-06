@@ -224,7 +224,7 @@ export const createOrder = async (
           sum_insured: data.product_details.sum_insured,
           type: product.product_type,
           product_type: data.product_details.product_type,
-          takaful_policy: data.takaful_policy ?? false,
+          takaful_policy: product.is_takaful == true ? true: false,
           is_renewed: data.is_renewed ?? false,
           refunded: data.refunded,
           quantity: data.quantity ?? 1,
@@ -338,7 +338,7 @@ export const createOrder = async (
 
       // Generate policy code
       let code = "";
-      if (product.product_type === "health") {
+      if (product.is_cbo) {
         const planId = newPlanMapping(
           product.product_name,
           (await tx.plan.findUnique({ where: { id: mapper.plan_id } }))?.name ||
@@ -347,7 +347,7 @@ export const createOrder = async (
         const prefix = "91";
         code = `${prefix}${planId}${newPolicyCode(policy.id)}`;
       } else {
-        const branchCode = data.takaful_policy
+        const branchCode = product.is_takaful
           ? branch.his_code_takaful
           : branch.his_code;
         const productCode = newProductCode(
@@ -408,7 +408,7 @@ export const createOrder = async (
       data: {
         qr_doc_url: policyDocumentUrl,
         policy_code: result.code,
-        status: result.productType === "health" ? "pendingCBO" : "pendingIGIS",
+        status: result.product.is_cbo ? "pendingCBO" : "pendingIGIS",
       },
     });
 

@@ -33,6 +33,7 @@ const riderItem = z.object({
 });
 
 export const bulkOrderSchema = z.array(z.object({
+  policy_no: z.string().optional().nullable(),
   api_user_name: z.string().min(1, "API User Name is required"),
   payment_mode_code: z.enum(["B2B"], {
     required_error: "Payment mode code is required.",

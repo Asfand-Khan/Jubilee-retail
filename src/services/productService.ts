@@ -37,6 +37,8 @@ export const createProduct = async (
         product_name: product.product_name,
         product_type: product.product_type,
         product_category_id: product.product_category_id,
+        is_cbo: product.is_cbo,
+        is_takaful: product.is_takaful,
         created_by: createdBy,
       },
     });
@@ -78,6 +80,8 @@ export const updateProductById = async (product: ProductUpdateType) => {
         product_name: product.product_name,
         product_type: product.product_type,
         product_category_id: product.product_category_id,
+        is_cbo: product.is_cbo,
+        is_takaful: product.is_takaful,
       },
     });
     return updatedProduct;

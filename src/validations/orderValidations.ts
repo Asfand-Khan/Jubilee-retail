@@ -287,13 +287,6 @@ export const validateOrderSchema = z.object({
     .string({ required_error: "Issue date is required." })
     .regex(dateRegex, "Issue date must be in YYYY-MM-DD format."),
 
-  takaful_policy: z
-    .boolean({
-      invalid_type_error: "Takaful policy must be a boolean.",
-    })
-    .optional()
-    .nullable(),
-
   is_renewed: z
     .boolean({
       invalid_type_error: "Is renewed must be a boolean.",

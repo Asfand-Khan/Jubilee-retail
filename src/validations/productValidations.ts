@@ -13,6 +13,8 @@ export const validateProductCreate = z.object({
   product_category_id: z
     .number({ invalid_type_error: "Product category ID must be a number" })
     .int({ message: "Product category ID must be an integer" }),
+  is_cbo: z.boolean().default(false),
+  is_takaful: z.boolean().default(false),
 });
 
 export const validateProductUpdate = validateProductCreate.extend({
