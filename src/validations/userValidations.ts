@@ -41,11 +41,6 @@ export const validateUserRegister = z.object({
     .optional()
     .nullable(),
   is_active: z.boolean().default(false),
-  created_by: z
-    .number({
-      required_error: "Created by is required",
-    })
-    .int(),
   menu_rights: z
     .array(
       z.object({

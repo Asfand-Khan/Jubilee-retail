@@ -14,7 +14,7 @@ import {
   saveBase64Image,
 } from "../utils/base64ToImage";
 
-export const createUser = async (input: UserRegister): Promise<User> => {
+export const createUser = async (input: UserRegister, created_by: number): Promise<User> => {
   const {
     username,
     fullname,
@@ -23,7 +23,6 @@ export const createUser = async (input: UserRegister): Promise<User> => {
     password,
     is_active,
     image,
-    created_by,
     menu_rights,
     user_type,
     redirection_url,
@@ -212,8 +211,8 @@ export const updateUserPasswordEntry = async (
   }
 };
 
-export const createApiUser = async (input: User): Promise<ApiUser> => {
-  const { username, email, phone, created_by, id } = input;
+export const createApiUser = async (input: User, created_by: number): Promise<ApiUser> => {
+  const { username, email, phone, id } = input;
   try {
     const apiPassword = generateRandomString(16);
     const apiKey = generateRandomString(64);

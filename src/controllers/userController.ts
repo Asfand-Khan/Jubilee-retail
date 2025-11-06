@@ -45,10 +45,11 @@ import { getOTPEmailTemplate } from "../utils/getOtpTemplate";
 // Endpoint --> /api/v1/users/register
 // Description --> Register a new user
 export const registerUser = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<any> => {
   try {
+    const user = req.userRecord as User;
     const parsedUser = validateUserRegister.parse(req.body);
 
     const existingUserWithEmail = await getUserByEmail(parsedUser.email);
@@ -71,10 +72,10 @@ export const registerUser = async (
       });
     }
 
-    const newUser = await createUser(parsedUser);
+    const newUser = await createUser(parsedUser, user.id);
 
     if (parsedUser.user_type === "api_user") {
-      await createApiUser(newUser);
+      await createApiUser(newUser, user.id);
     }
 
     return res.status(201).json({
@@ -582,6 +583,7 @@ export const verifyOtp = async (req: Request, res: Response): Promise<any> => {
             contact: user.phone,
             isActive: user.is_active,
             image: user.image,
+            redirection_url: user.redirection_url,
           },
           menus,
         },
