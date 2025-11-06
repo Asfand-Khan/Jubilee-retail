@@ -39,11 +39,11 @@ export const toggleStatusCommonHandler = async (
 ): Promise<any> => {
   try {
     const pasredData = validateCommonDelete.parse(req.body);
-    const deleteData = await services.deleteCommon(pasredData);
+    const deleteData = await services.statusCommon(pasredData);
 
     return res.status(200).json({
       status: 1,
-      message: `${pasredData.module} with ID ${pasredData.record_id} marked as deleted.`,
+      message: `${pasredData.module} with ID ${pasredData.record_id} marked as updated.`,
       payload: deleteData,
     });
   } catch (error: any) {
