@@ -41,6 +41,8 @@ export const toggleStatusCommonHandler = async (
     const pasredData = validateCommonDelete.parse(req.body);
     const deleteData = await services.statusCommon(pasredData);
 
+    console.log("Hello Hello");
+
     return res.status(200).json({
       status: 1,
       message: `${pasredData.module} with ID ${pasredData.record_id} marked as updated.`,
