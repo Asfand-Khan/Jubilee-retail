@@ -211,6 +211,7 @@ export const getUserProfile = async (
           isActive: user.is_active,
           isLocked: user.is_locked,
           userType: user.user_type,
+          redirectionUrl: user.redirection_url,
           rights: user.user_menu_rights,
         },
       ],
