@@ -107,7 +107,7 @@ export const getSingleProductHandler = async (
 
     return res.status(200).json({
       status: 1,
-      message: "Fetched single product successfully",
+      message: "Fetched single product successfully!",
       payload: [singleProduct],
     });
   } catch (error: any) {
