@@ -376,7 +376,7 @@ export async function courierBooking(
     const city = await prisma.city.findUnique({
         where: { id: data.customer_city },
     });
-    const courier = await getCourier(data.takaful_policy ?? false);
+    const courier = await getCourier(result.product.is_talaful == true ? true : false);
     if (!courier) return;
 
     const token = Buffer.from(
