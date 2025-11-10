@@ -75,6 +75,14 @@ enum OrderStatus {
   unverified
   verified
   pending
+  Renewal
+  pendingRefund
+  pendingCBO
+  pendingHIS
+  Processing
+  Complete
+  Canceled
+  Closed
 }
 
 enum PolicyStatus {
@@ -474,7 +482,7 @@ model BusinessRegion {
 model IgisMake {
   id             Int     @id @default(autoincrement())
   make_name      String  @db.VarChar(100)
-  igis_make_code String  @db.VarChar(4)
+  igis_make_code String  @db.VarChar(18)
   is_active      Boolean @default(true)
 
   created_by Int?
@@ -496,7 +504,7 @@ model IgisSubMake {
   id                 Int      @id @default(autoincrement())
   make_id            Int
   sub_make_name      String   @db.VarChar(100)
-  igis_sub_make_code String   @db.VarChar(4)
+  igis_sub_make_code String   @db.VarChar(18)
   seating_capacity   Int?
   cubic_capacity     Decimal? @db.Decimal(10, 2)
   coi_type_code      String?  @db.VarChar(50)
