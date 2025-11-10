@@ -1261,7 +1261,7 @@ model PolicyQna {
 
 model Qna {
   id       Int    @id @default(autoincrement())
-  question String @db.VarChar(50)
+  question String @db.Text
 
   is_active  Boolean @default(true)
   is_deleted Boolean @default(false)
