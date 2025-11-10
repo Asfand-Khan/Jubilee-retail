@@ -957,7 +957,7 @@ model Order {
   id                    Int         @id @default(autoincrement())
   order_code            String      @unique @db.VarChar(100)
   create_date           String
-  parent_id             Int?
+  parent_id             String?
   customer_name         String      @db.VarChar(100)
   customer_cnic         String?     @db.VarChar(20)
   customer_dob          String?
@@ -1032,7 +1032,7 @@ model Policy {
   igis_policy_code     String? @db.VarChar(100)
   pmdc_no              String? @db.VarChar(50)
   order_id             Int
-  parent_id            Int?
+  parent_id            String?
   plan_id              Int
   product_id           Int
   product_option_id    Int

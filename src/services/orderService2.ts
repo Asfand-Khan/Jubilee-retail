@@ -6,6 +6,7 @@ import { calculateAge } from "../utils/calculateAge";
 import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import {
   courierBooking,
+  coverageStatusUpdate,
   newPlanMapping,
   newPolicyCode,
   newProductCode,
@@ -158,7 +159,7 @@ export const createOrder = async (
         data: {
           order_code: data.order_code,
           create_date,
-          parent_id: data.parent_id,
+          parent_id: String(data.parent_id),
           customer_name: data.customer_name,
           customer_cnic: data.customer_cnic,
           customer_dob: data.customer_dob,
@@ -210,7 +211,7 @@ export const createOrder = async (
       const policy = await tx.policy.create({
         data: {
           order_id: newOrder.id,
-          parent_id: data.parent_id,
+          parent_id: String(data.parent_id),
           plan_id: mapper.plan_id,
           product_id: mapper.product_id,
           product_option_id: mapper.option_id,
@@ -224,7 +225,7 @@ export const createOrder = async (
           sum_insured: data.product_details.sum_insured,
           type: product.product_type,
           product_type: data.product_details.product_type,
-          takaful_policy: product.is_takaful == true ? true: false,
+          takaful_policy: product.is_takaful == true ? true : false,
           is_renewed: data.is_renewed ?? false,
           refunded: data.refunded,
           quantity: data.quantity ?? 1,
@@ -333,7 +334,7 @@ export const createOrder = async (
           answer: record.answer,
           created_by: createdBy,
         }));
-        await tx.policyQna.createMany({data: qnaDetails});
+        await tx.policyQna.createMany({ data: qnaDetails });
       }
 
       // Generate policy code
@@ -413,7 +414,8 @@ export const createOrder = async (
     });
 
     // Renewal number and pec coverage
-    if (apiUser?.name.toLowerCase() == "coverage") {
+    const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+    if (isCoverage) {
       const split = result.order.order_code.split("-");
       const renewalNumber = split[split.length - 1];
 
@@ -528,7 +530,6 @@ export const createOrder = async (
     }
 
     // Email And Sms
-
     let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
     let customerName: string = result.order.customer_name;
     let orderId: string = result.order.order_code;

@@ -17,6 +17,7 @@ import { isStartBeforeEnd } from "../utils/isStartBeforeEnd";
 import axios from "axios";
 import {
   courierBookingForRepush,
+  coverageStatusUpdate,
   newPlanMapping,
   newPolicyCode,
   newProductCode,
@@ -680,7 +681,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
         data: {
           order_code: data.order_code,
           create_date,
-          parent_id: data.parent_id,
+          parent_id: String(data.parent_id),
           customer_name: data.customer_name,
           customer_cnic: data.customer_cnic,
           customer_dob: data.customer_dob,
@@ -728,7 +729,7 @@ export const createOrder = async (data: OrderSchema, createdBy: number) => {
       const policy = await tx.policy.create({
         data: {
           order_id: newOrder.id,
-          parent_id: data.parent_id,
+          parent_id: String(data.parent_id),
           plan_id: mapper.plan_id,
           product_id: mapper.product_id,
           product_option_id: mapper.option_id,
@@ -1080,11 +1081,34 @@ export const ccTransaction = async (
         }),
       ]);
 
-      // Email And SMS Same (B2B)
+      const apiUser = order.apiUser;
+      const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+
+      if (isCoverage) {
+        const coverageStatusResponse = await coverageStatusUpdate(
+          order.order_code,
+          policy.policy_code || "",
+          policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
+          "",
+          "verified"
+        );
+
+        if (coverageStatusResponse.success) {
+          await prisma.policy.update({
+            where: { id: policy.id },
+            data: {
+              qr_doc_url: `https://dev-coverage.jubileegeneral.com.pk/policydoc?policy_no=${policy.policy_code}`,
+            },
+          });
+
+          return;
+        } else {
+          console.log("Failed:", coverageStatusResponse.error);
+        }
+      }
 
       // Email Start / End
       const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${order.order_code}/pdf`;
-      const apiUser = order.apiUser;
 
       let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
       let customerName: string = order.customer_name;
