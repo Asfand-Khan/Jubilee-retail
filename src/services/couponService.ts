@@ -28,6 +28,9 @@ export const getAllCoupons = async (data: CouponListingSchema) => {
   }
   return await prisma.coupon.findMany({
     where: whereClause,
+    orderBy: {
+      id: "desc",
+    },
   });
 };
 

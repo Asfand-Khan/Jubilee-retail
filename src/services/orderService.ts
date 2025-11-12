@@ -1397,7 +1397,7 @@ export const orderList = async (data: ListSchema) => {
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0 ORDER BY ord.id DESC`;
       break;
     case "policies":
       query = `
@@ -1427,7 +1427,7 @@ export const orderList = async (data: ListSchema) => {
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id
-            WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
+            WHERE ord.is_active = 1 AND ord.is_deleted = 0 ORDER BY ord.id DESC`;
       break;
     case "cbo":
       query = `
@@ -1463,7 +1463,7 @@ export const orderList = async (data: ListSchema) => {
           LEFT JOIN ApiUser au ON ord.api_user_id = au.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL ORDER BY ord.id DESC`;
       break;
     case "renewal":
       query = `
@@ -1496,8 +1496,9 @@ export const orderList = async (data: ListSchema) => {
             WHERE
 	            ord.is_active = 1 
 	            AND ord.is_deleted = 0 
-	            AND MONTHNAME( p.expiry_date ) = 'September' 
-	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO' )`;
+	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO' )
+              AND prod.is_cbo = 1
+            ORDER BY ord.id DESC`;
       break;
     default:
       query = `
@@ -1550,8 +1551,13 @@ export const orderList = async (data: ListSchema) => {
   }
 
   if (data.date && (!data.cnic || !data.contact)) {
-    const [start, end] = data.date.split(" to ");
-    filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
+    if(data.mode === "renewal"){
+      const [start, end] = data.date.split(" to ");
+      filters.push(`DATE(p.expiry_date) BETWEEN '${start}' AND '${end}'`);
+    }else{
+      const [start, end] = data.date.split(" to ");
+      filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
+    }
   }
 
   if (data.product_id && data.product_id.length > 0) {

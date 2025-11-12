@@ -36,6 +36,9 @@ export const getAllLeadInfos = async (data: LeadInfoListingType) => {
 
   const allLeadInfos = await prisma.leadInfo.findMany({
     where: whereClause,
+    orderBy: {
+      id: "desc",
+    },
   });
   return allLeadInfos;
 };

@@ -20,6 +20,9 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
     }
     const allCallUsData = await prisma.callUsData.findMany({
       where: whereClause,
+      orderBy: {
+        id: "desc",
+      },
     });
     return allCallUsData;
   } catch (error: any) {

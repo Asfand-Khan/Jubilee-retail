@@ -36,10 +36,12 @@ export const getAllLeadMotorInfos = async (data: LeadMotorInfoListingType) => {
 
   const allLeadMotorInfos = await prisma.leadMotorInfo.findMany({
     where: whereClause,
+    orderBy: {
+      id: "desc",
+    },
   });
   return allLeadMotorInfos;
 };
-
 
 export const createLeadMotorInfo = async (
   data: LeadMotorInfoType,

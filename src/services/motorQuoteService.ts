@@ -28,6 +28,9 @@ export const getAllMotorQuotes = async (data: MotorQuoteListingType) => {
 
     const allQuotes = await prisma.motorQuote.findMany({
       where: whereClause,
+      orderBy: {
+        id: "desc",
+      },
     });
     return allQuotes;
   } catch (error: any) {
