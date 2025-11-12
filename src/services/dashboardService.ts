@@ -281,7 +281,7 @@ export const productShareOfPolicyAmountByAmount = async (
     query += `
     GROUP BY prod.id, prod.product_name
     HAVING policy_amount > 0
-    ORDER BY policy_amount DESC;
+    ORDER BY policy_amount DESC LIMIT 3;
     `;
 
     const result = (await prisma.$queryRawUnsafe(query)) as any[];
@@ -410,8 +410,9 @@ export const top5Branches = async (
   try {
     let query = `
     SELECT
+        COUNT(*) AS policy_amount,
         b.name AS branch_name,
-        COALESCE(SUM(CASE WHEN p.status NOT IN ('cancelled', 'unverified', 'pending', 'expired') AND p.is_deleted = 0 THEN CAST(p.received_premium AS DECIMAL(15, 2)) ELSE 0 END),0) AS policy_amount
+        COALESCE(SUM(CASE WHEN p.status NOT IN ('cancelled', 'unverified', 'pending', 'expired') AND p.is_deleted = 0 THEN CAST(p.received_premium AS DECIMAL(15, 2)) ELSE 0 END),0) AS ttt
     FROM
         \`Order\` o
         INNER JOIN \`Policy\` p ON o.id = p.order_id

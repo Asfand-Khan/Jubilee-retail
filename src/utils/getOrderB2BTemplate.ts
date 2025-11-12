@@ -19,6 +19,34 @@ export const getOrderB2BTemplate = (
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
 
+  const parentsCarePromo = productName
+    ?.toLowerCase()
+    .includes("parents-care-plus")
+    ? `
+      <table
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        width="650"
+        style="border: 1px solid #eaeaea; font-size: 12px"
+      >
+        <thead>
+          <tr>
+            <th
+              align="left"
+              bgcolor="#EAEAEA"
+              style="font-size: 13px; padding: 3px 9px"
+            >
+              <b>Now that you've secured your loved ones, it's time to protect your vehicle!</b>
+              Use code <b>PARENTSCAREPLUS20</b> for <b>20% off</b> on your motor insurance via My Jubilee App.
+            </th>
+          </tr>
+        </thead>
+      </table>
+      <br/>
+    `
+    : "";
+
   return `<html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=windows-1252" />
@@ -94,7 +122,10 @@ export const getOrderB2BTemplate = (
                         style="font-size: 18px; font-weight: normal; margin: 0"
                       >
                         Your Order # ${orderId}
-                        <small>(placed on ${format(new Date(createdDate), "MMM dd, yyyy HH:mm:ss")})</small>
+                        <small>(placed on ${format(
+                          new Date(createdDate),
+                          "MMM dd, yyyy HH:mm:ss"
+                        )})</small>
                       </h2>
                     </td>
                   </tr>
@@ -143,6 +174,8 @@ export const getOrderB2BTemplate = (
                       </table>
                       <br />
 
+                      ${parentsCarePromo}
+
                       <p style="font-size: 12px; margin: 0 0 10px 0">
                         <br />
                         For any Queries, Complaints, or Claims, please feel free
@@ -187,8 +220,8 @@ export const getOrderB2BTemplate = (
       </table>
     </div>
   </body>
-</html>`}
-
+</html>`;
+};
 
 export const getOrderCODTemplate = (
   logo: string,
@@ -214,6 +247,34 @@ export const getOrderCODTemplate = (
   const premiumHeader = takaful
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
+
+  const parentsCarePromo = productName
+    ?.toLowerCase()
+    .includes("parents-care-plus")
+    ? `
+      <table
+        cellspacing="0"
+        cellpadding="0"
+        border="0"
+        width="650"
+        style="border: 1px solid #eaeaea; font-size: 12px"
+      >
+        <thead>
+          <tr>
+            <th
+              align="left"
+              bgcolor="#EAEAEA"
+              style="font-size: 13px; padding: 3px 9px"
+            >
+              <b>Now that you've secured your loved ones, it's time to protect your vehicle!</b>
+              Use code <b>PARENTSCAREPLUS20</b> for <b>20% off</b> on your motor insurance via My Jubilee App.
+            </th>
+          </tr>
+        </thead>
+      </table>
+      <br/>
+    `
+    : "";
 
   return `<html>
   <head>
@@ -290,7 +351,10 @@ export const getOrderCODTemplate = (
                         style="font-size: 18px; font-weight: normal; margin: 0"
                       >
                         Your Order # ${orderId}
-                        <small>(placed on ${format(new Date(createdDate), "MMM dd, yyyy HH:mm:ss")})</small>
+                        <small>(placed on ${format(
+                          new Date(createdDate),
+                          "MMM dd, yyyy HH:mm:ss"
+                        )})</small>
                       </h2>
                     </td>
                   </tr>
@@ -442,6 +506,9 @@ export const getOrderCODTemplate = (
                       </table>
                       <br />
 
+                      ${parentsCarePromo}
+
+                      </br>
                       <p style="font-size: 12px; margin: 0 0 10px 0">
                         <br />
                         For any Queries, Complaints, or Claims, please feel free
@@ -486,4 +553,5 @@ export const getOrderCODTemplate = (
       </table>
     </div>
   </body>
-</html>`}
+</html>`;
+};
