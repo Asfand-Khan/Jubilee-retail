@@ -21,7 +21,8 @@ import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
 export const createOrder = async (
   data: OrderSchema,
   createdBy: number,
-  req: Request
+  req: Request,
+  apiUserId: number
 ) => {
   const create_date = format(new Date(), "yyyy-MM-dd");
 
@@ -82,7 +83,6 @@ export const createOrder = async (
           (!data.travel_details.travel_from ||
             !data.travel_details.no_of_days ||
             !data.travel_details.destination ||
-            !data.travel_details.tution_fee ||
             !data.travel_details.travel_end_date ||
             !data.travel_details.travel_start_date)
         ) {
@@ -215,7 +215,7 @@ export const createOrder = async (
           plan_id: mapper.plan_id,
           product_id: mapper.product_id,
           product_option_id: mapper.option_id,
-          api_user_id: data.api_user_id,
+          api_user_id: apiUserId,
           issue_date: data.issue_date,
           start_date: data.start_date,
           expiry_date: data.expiry_date,

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types/types";
 import { User } from "@prisma/client";
 import { z } from "zod";
-import { createCity, getAllCities, getCityByCityCode, getCityById, updateCity } from "../services/cityService";
+import { createCity, getAllCities, getAllCitiesThirdParty, getCityByCityCode, getCityById, updateCity } from "../services/cityService";
 import { validateCity, validateCityUpdate } from "../validations/cityValidations";
 
 // Module --> City
@@ -15,6 +15,30 @@ export const getAllCitiesHandler = async (
 ): Promise<any> => {
   try {
     const cities = await getAllCities();
+    return res.status(200).json({
+      status: 1,
+      message: "Cities fetched successfully",
+      payload: cities,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      status: 0,
+      message: error.message,
+      payload: [],
+    });
+  }
+};
+
+// Module --> City
+// Method --> GET (Protected -- API User)
+// Endpoint --> /api/v1/cities/list
+// Description --> Fetch all cities for API User
+export const getAllCitiesThirdPartyHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const cities = await getAllCitiesThirdParty();
     return res.status(200).json({
       status: 1,
       message: "Cities fetched successfully",

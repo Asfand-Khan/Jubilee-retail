@@ -1397,7 +1397,7 @@ export const orderList = async (data: ListSchema) => {
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0 ORDER BY ord.id DESC`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
       break;
     case "policies":
       query = `
@@ -1427,7 +1427,7 @@ export const orderList = async (data: ListSchema) => {
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id
-            WHERE ord.is_active = 1 AND ord.is_deleted = 0 ORDER BY ord.id DESC`;
+            WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
       break;
     case "cbo":
       query = `
@@ -1463,7 +1463,7 @@ export const orderList = async (data: ListSchema) => {
           LEFT JOIN ApiUser au ON ord.api_user_id = au.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL ORDER BY ord.id DESC`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
       break;
     case "renewal":
       query = `
@@ -1497,8 +1497,7 @@ export const orderList = async (data: ListSchema) => {
 	            ord.is_active = 1 
 	            AND ord.is_deleted = 0 
 	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO' )
-              AND prod.is_cbo = 1
-            ORDER BY ord.id DESC`;
+              AND prod.is_cbo = 1`;
       break;
     default:
       query = `
@@ -1587,6 +1586,8 @@ export const orderList = async (data: ListSchema) => {
     query += " AND " + filters.join(" AND ");
   }
 
+  query += ` ORDER BY ord.id DESC`;
+  
   const result = await prisma.$queryRawUnsafe<any[]>(query);
 
   const serialized = result.map((row) =>

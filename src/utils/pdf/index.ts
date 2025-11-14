@@ -67,6 +67,10 @@ export async function generateOrderPDF(
         product?.product_name.toLowerCase().includes("self care")
       ) {
         selfCarePdf(doc, policy, order, qrImageUrl);
+      } else if (
+        product?.product_name.toLowerCase().includes("accident") 
+      ) {
+        selfCarePdf(doc, policy, order, qrImageUrl);
       } else {
         healthCarePdf(doc, policy, order, qrImageUrl);
       }

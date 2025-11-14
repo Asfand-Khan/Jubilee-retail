@@ -22,23 +22,23 @@ export function viaCarePdf(
   let isFranchiseOrder = false;
   let isFaysalBankOrder = false;
 
-  isFaysalBankOrder = apiUser != null && apiUser.name.includes("faysalbank");
-  isFranchiseOrder = paymentMethod.name === "Franchise";
+  isFaysalBankOrder = apiUser != null && apiUser.name.toLowerCase().includes("faysalbank");
+  isFranchiseOrder = paymentMethod.name.toLowerCase() === "franchise";
 
   const spouseData = policy.policyDetails.find(
-    (detail) => detail.type === "Spouse"
+    (detail) => detail.type.toLowerCase() === "spouse"
   );
   const kid1Data = policy.policyDetails.find(
-    (detail) => detail.type === "Kid1"
+    (detail) => detail.type.toLowerCase() === "kid1"
   );
   const kid2Data = policy.policyDetails.find(
-    (detail) => detail.type === "Kid2"
+    (detail) => detail.type.toLowerCase() === "kid2"
   );
   const kid3Data = policy.policyDetails.find(
-    (detail) => detail.type === "Kid3"
+    (detail) => detail.type.toLowerCase() === "kid3"
   );
   const kid4Data = policy.policyDetails.find(
-    (detail) => detail.type === "Kid4"
+    (detail) => detail.type.toLowerCase() === "kid4"
   );
   //
   //

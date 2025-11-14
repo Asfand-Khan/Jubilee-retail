@@ -345,7 +345,7 @@ export function selfCarePdf(
   //
   // Header Start
   const jubileeImage = path.join(process.cwd(), "uploads", "logo", policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png");
-  let productLogo = path.join(process.cwd(), "uploads", "logo", "self.png");
+  let productLogo = productName.toLowerCase().includes("self") ? path.join(process.cwd(), "uploads", "logo", "self.png"):path.join(process.cwd(), "uploads", "logo", "personal-accident.png");
 
   // Append Header
   addScheduleHeader(doc, jubileeImage, productLogo);

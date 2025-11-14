@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types/types";
-import { User } from "@prisma/client";
+import { ApiUser, User } from "@prisma/client";
 import * as service from "../services/orderService";
 import * as service2 from "../services/orderService2";
 import * as validations from "../validations/orderValidations";
@@ -17,7 +17,8 @@ export const createOrderHandler = async (
   res: Response
 ): Promise<any> => {
   try {
-    const user = req.userRecord as User;
+    const user = req.userRecord as ApiUser;
+    console.log(user);
     const parsed = validations.validateOrderSchema.parse(req.body);
 
     if (parsed.coupon_id && parsed.discount_amount === "0.00") {
@@ -73,7 +74,7 @@ export const createOrderHandler = async (
       });
     }
 
-    const newRecord = await service2.createOrder(parsed, user.id, req);
+    const newRecord = await service2.createOrder(parsed, user.user_id, req, user.id);
 
     return res.status(201).json({
       status: 1,

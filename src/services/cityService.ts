@@ -14,6 +14,25 @@ export const getAllCities = async () => {
   }
 };
 
+export const getAllCitiesThirdParty = async () => {
+  try {
+    const allCities = await prisma.city.findMany({
+      select: {
+        id: true,
+        city_name: true,
+        city_code: true,
+      },
+      where: {
+        is_deleted: false,
+        is_active: true,
+      },
+    });
+    return allCities;
+  } catch (error: any) {
+    throw new Error(`Failed to fetch all cities: ${error.message}`);
+  }
+};
+
 export const createCity = async (city: CityType, createdBy: number) => {
   try {
     let data = {

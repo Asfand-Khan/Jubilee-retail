@@ -46,14 +46,14 @@ export const validateOrderSchema = z.object({
     })
     .regex(
       /^03\d{9}$/,
-      "Customrt contact must be a valid Pakistani number (e.g. 03001234567)."
+      "Customrt contact must be a valid number (e.g. 03001234567)."
     ),
 
   customer_address: z
     .string()
     .max(255, { message: "Customer address must not exceed 255 characters." })
     .optional()
-    .nullable(),
+    .nullable(), // add refine to remove special characters
 
   customer_city: z
     .number({
@@ -181,7 +181,7 @@ export const validateOrderSchema = z.object({
     .string()
     .regex(
       /^03\d{9}$/,
-      "Shipping phone must be a valid Pakistani number (e.g. 03001234567)."
+      "Shipping phone must be a valid number (e.g. 03001234567)."
     )
     .optional()
     .nullable(),
@@ -433,10 +433,6 @@ export const validateOrderSchema = z.object({
           invalid_type_error:
             "Customer details - Insurance mobile must be a string.",
         })
-        .regex(
-          /^03\d{9}$/,
-          "Customer details - Insurance mobile must be a valid Pakistani number (e.g. 03001234567)."
-        )
         .optional()
         .nullable(),
 
