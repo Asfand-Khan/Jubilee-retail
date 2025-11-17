@@ -47,11 +47,13 @@ export const authenticateApiUser = async (
   res: Response,
   next: NextFunction
 ): Promise<any> => {
-  const apiKey = req.headers.x_api_key as string;
-  const apiPassword = req.headers.x_api_password;
+   const apiKey = req.headers['x_api_key'] as string;
+  const apiPassword = req.headers['x_api_password'] as string;
 
-  console.log(req.headers);
-  
+  console.log("Headers received:", req.headers);
+  console.log("API Key:", apiKey);
+  console.log("API Password:", apiPassword);
+
   if (!apiKey || !apiPassword) {
     return res.status(401).json({
       status: 0,
