@@ -50,6 +50,9 @@ export const authenticateApiUser = async (
     const apiKey = req.headers['x-api-key'] as string;
   const apiPassword = req.headers['x-api-password'] as string;
 
+  console.log("Headers received:", req.headers);
+  console.log("API Key:", apiKey);
+  console.log("API Password:", apiPassword);
   if (!apiKey || !apiPassword) {
     return res.status(401).json({
       status: 0,
