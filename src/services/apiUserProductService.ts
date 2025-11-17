@@ -242,6 +242,7 @@ export const getExternalSingleApiUserProducts = async (
       ApiUserProduct aup
     LEFT JOIN ApiUser au ON au.id = aup.api_user_id
     LEFT JOIN Product p ON p.id = aup.product_id
+     LEFT JOIN WebappMapper wam ON p.id = wam.product_id
     ${whereClause}
   `);
 
