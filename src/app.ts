@@ -7,7 +7,6 @@ import morgan from "morgan";
 import path from "path";
 
 export default (app: express.Application): void => {
-  app.set("trust proxy", true);
   app.use(express.json());
   app.use(cors());
   app.use(helmet());
