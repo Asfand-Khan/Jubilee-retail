@@ -66,7 +66,7 @@ export const authenticateApiUser = async (
       include: { user: true },
     });
 
-    if (!user || user.api_password !== apiPassword) {
+    if (!user || user.api-password !== apiPassword) {
       throw new Error("Invalid API user credentials");
     }
 
