@@ -47,11 +47,9 @@ export const authenticateApiUser = async (
   res: Response,
   next: NextFunction
 ): Promise<any> => {
-  const apiKey = req.headers.x-api-key as string;
-  const apiPassword = req.headers.x-api-password;
+    const apiKey = req.headers['x-api-key'] as string;
+  const apiPassword = req.headers['x-api-password'] as string;
 
-  console.log(req.headers);
-  
   if (!apiKey || !apiPassword) {
     return res.status(401).json({
       status: 0,
@@ -66,7 +64,7 @@ export const authenticateApiUser = async (
       include: { user: true },
     });
 
-    if (!user || user.api-password !== apiPassword) {
+    if (!user || user.api_password !== apiPassword) {
       throw new Error("Invalid API user credentials");
     }
 
