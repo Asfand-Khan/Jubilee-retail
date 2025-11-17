@@ -199,7 +199,7 @@ export const createOrder = async (
           kiosk_pin: data.kiosk_pin,
           kiosk_last_digit: data.kiosk_last_digit,
           test_book: data.test_book,
-          api_user_id: createdBy,
+          api_user_id: apiUserId,
           created_by: createdBy,
         },
         include: {
