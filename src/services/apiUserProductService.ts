@@ -231,6 +231,8 @@ export const getExternalSingleApiUserProducts = async (
       p.id AS product_id,
       p.product_name,
       p.product_type,
+      wam.parent_sku,
+      wam.child_sku,
       p.product_category_id,
       aup.is_active,
       aup.created_at,
@@ -253,6 +255,8 @@ export const getExternalSingleApiUserProducts = async (
       product_name: current.product_name,
       product_type: current.product_type,
       product_category_id: current.product_category_id,
+       parent_sku: current.parent_sku,
+      child_sku: current.child_sku,
     };
 
     // If the API User is not in the accumulator, create the user object
