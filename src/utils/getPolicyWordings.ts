@@ -28,11 +28,11 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'PurchaseProtectionTakafulWording.pdf';
         } else if (productName.includes('Parents-Care-Plus')) {
             wordingFile = 'Parents-Care-plus-wording-insurance.pdf'; // Note: This is used for both, but check
-        } else if (productName === 'SelfCare') { // Assuming method context
+        } else if (productName.toLowerCase().includes('selfcare')) { // Assuming method context
             wordingFile = 'SelfCareTakafulWordingsFinal.pdf';
-        } else if (productName === 'HomeCare') {
+        } else if (productName.toLowerCase().includes('homecare')) {
             wordingFile = 'HomeCareTakafulWordings.pdf';
-        } else if (productName === 'ViaCare') {
+        } else if (productName.toLowerCase().includes('viacare')) {
             wordingFile = 'ViaCareTravelTakafulDomesticWordingsFinal.pdf';
         } else {
             wordingFile = 'PersonalHealthCareFranchiseTerms.pdf'; // General Takaful fallback
@@ -52,11 +52,11 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'MB-SehatSarmayaHealthCover.pdf';
         } else if (accountNo?.includes('bookme') && productName === 'ViaCare') {
             wordingFile = 'ViaCarePolicyWording_BM.pdf';
-        } else if (productName === 'SelfCare') {
+        } else if (productName.toLowerCase().includes('selfcare')) {
             wordingFile = 'SelfCarePolicyWording.pdf';
-        } else if (productName === 'HomeCare') {
+        } else if (productName.toLowerCase().includes('homecare')) {
             wordingFile = 'HomeCarePolicyWording.pdf';
-        } else if (productName === 'ViaCare') {
+        } else if (productName.toLowerCase().includes('viacare')){
             wordingFile = 'ViaCarePolicyWording.pdf';
         } else {
             wordingFile = 'HealthCarePolicyWording.pdf'; // Default non-Takaful
