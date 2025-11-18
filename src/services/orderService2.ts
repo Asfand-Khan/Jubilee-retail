@@ -623,7 +623,7 @@ export const createOrder = async (
       if (result.policy.takaful_policy) {
         await sendWhatsAppMessage({
           policyType: "takaful_digital",
-          phoneNumber: "03150226944",
+          phoneNumber: result.order.customer_contact || "",
           params: [
             result.order.customer_name,
             result.plan.name,

@@ -480,7 +480,7 @@ export const bulkOrder = async (
           if (txResult.policy.takaful_policy) {
             await sendWhatsAppMessage({
               policyType: "takaful_digital",
-              phoneNumber: "03150226944",
+              phoneNumber: txResult.order.customer_contact || "",
               params: [
                 txResult.order.customer_name,
                 txResult.mapper.plan.name,
@@ -1206,7 +1206,7 @@ export const ccTransaction = async (
         if (policy.takaful_policy) {
           await sendWhatsAppMessage({
             policyType: "takaful_digital",
-            phoneNumber: "03150226944",
+            phoneNumber: order.customer_contact,
             params: [
               order.customer_name,
               policy.plan.name,
