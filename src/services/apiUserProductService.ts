@@ -336,6 +336,7 @@ export const getInternalSingleApiUserProducts = async (
 
     // Structure the product object
     const product = {
+      name: current.name,
       product_id: current.product_id,
       product_name: current.product_name,
       product_type: current.product_type,
