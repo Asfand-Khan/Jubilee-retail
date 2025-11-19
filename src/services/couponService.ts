@@ -56,6 +56,7 @@ export const getCoupon = async (data: GetCouponSchema) => {
 
     if (productIds.length === 0) {
       return {
+        ccouponid: coupon.id,
         code: coupon.code,
         campaign_name: coupon.campaign_name,
         expiry_date: coupon.expiry_date,

@@ -169,3 +169,34 @@ export const singleApiUserProductForExternalUserHandler = async (
     });
   }
 };
+export const singleApiUserProductForInternalUserHandler = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const user = req.userRecord as User;
+    const parsedData = validateExternalSingleApiUserProductSchema.parse(req.body);
+    const apiUserProducts = await getExternalSingleApiUserProducts(parsedData, user.id);
+
+    if (apiUserProducts.length === 0) {
+      return res.status(400).json({
+        status: 0,
+        message: "No API User Products found for the given API User ID",
+        payload: [],
+      })
+    }
+    
+    return res.status(200).json({
+      status: 1,
+      message: "Single API User Product fetched successfully",
+      payload: apiUserProducts,
+    });
+  } catch (error: any) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};

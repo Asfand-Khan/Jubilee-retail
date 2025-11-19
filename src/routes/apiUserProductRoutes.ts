@@ -12,6 +12,8 @@ router.post("/", authenticate, controller.createApiUserProductHandler); // Creat
 router.post("/single", authenticate, controller.singleApiUserProductHandler); // Get Api User Product By Api User Id --> Protected
 router.put("/", authenticate, controller.updateApiUserProductHandler); // Update Api User Product By Api User Id --> Protected
 router.post("/single/external", authenticateApiUser, controller.singleApiUserProductForExternalUserHandler); // Single Api User Products For External User --> Protected
+router.post("/single/internal", authenticate, controller.singleApiUserProductForInternalUserHandler); // Single Api User Products For External User --> Protected
+
 // router.post("/status", authenticate, controller.updateLeadMotorInfoStatusHandler); // Update Lead Info Status --> Protected
 
 export default router;
