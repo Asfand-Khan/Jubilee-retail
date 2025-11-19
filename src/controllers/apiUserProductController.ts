@@ -6,6 +6,7 @@ import {
   createApiUserProduct,
   getAllApiUserProducts,
   getExternalSingleApiUserProducts,
+  getInternalSingleApiUserProducts,
   getSingleApiUserProducts,
   updateApiUserProduct,
 } from "../services/apiUserProductService";
@@ -176,7 +177,7 @@ export const singleApiUserProductForInternalUserHandler = async (
   try {
     const user = req.userRecord as User;
     const parsedData = validateExternalSingleApiUserProductSchema.parse(req.body);
-    const apiUserProducts = await getExternalSingleApiUserProducts(parsedData, user.id);
+    const apiUserProducts = await getInternalSingleApiUserProducts(parsedData, user.id);
 
     if (apiUserProducts.length === 0) {
       return res.status(400).json({
