@@ -224,15 +224,16 @@ export const monthlyOrdersAndPolicies = async (
         AND p.is_deleted = 0
     WHERE
         o.is_deleted = 0
+        AND o.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
     `;
 
     if (apiUserId) {
       query += ` AND o.api_user_id = ${apiUserId}`;
     }
 
-    const [startDate, endDate] = getDateRange(data.date);
+    // const [startDate, endDate] = getDateRange(data.date);
 
-    query += ` AND o.created_at >= '${startDate}' AND o.created_at <= '${endDate}'`;
+    // query += ` AND o.created_at >= '${startDate}' AND o.created_at <= '${endDate}'`;
 
     query += `
     GROUP BY
