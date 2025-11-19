@@ -10,6 +10,7 @@ import { sendSms } from "../utils/sendSms";
 import { sendEmail } from "../utils/sendEmail";
 import { getOrderCODTemplate } from "../utils/getOrderB2BTemplate";
 import { bulkOrderSchema } from "../validations/bulkOrderValidations";
+import { getApiUserByUserId } from "../services/userService";
 
 // CREATE
 export const createOrderHandler = async (
@@ -164,12 +165,14 @@ export const orderPolicyStatusHandler = async (
 };
 
 export const fetchOrderListHandler = async (
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<any> => {
   try {
+    const user = req.userRecord as User;
     const parsed = validations.validateListSchema.parse(req.body);
-    const newRecord = await service.orderList(parsed);
+    const apiUser = await getApiUserByUserId(user.id);
+    const newRecord = await service.orderList(parsed, apiUser?.id);
 
     return res.status(200).json({
       status: 1,

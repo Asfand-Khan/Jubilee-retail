@@ -1370,7 +1370,7 @@ export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
   return updatedPolicy;
 };
 
-export const orderList = async (data: ListSchema) => {
+export const orderList = async (data: ListSchema ,apiUserId: number | null | undefined) => {
   let query = "";
   const filters: string[] = [];
 
@@ -1585,7 +1585,9 @@ export const orderList = async (data: ListSchema) => {
   if (filters.length > 0) {
     query += " AND " + filters.join(" AND ");
   }
-
+ if (apiUserId) {
+      query += ` AND ord.api_user_id = ${apiUserId}`;
+    }
   query += ` ORDER BY ord.id DESC`;
   
   const result = await prisma.$queryRawUnsafe<any[]>(query);
