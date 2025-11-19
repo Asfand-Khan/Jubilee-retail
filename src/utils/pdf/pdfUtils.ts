@@ -384,7 +384,7 @@ export const createGeneralApiTable1 = (
   } else if (productName.includes("sehat sarmaya")) {
     policyTypeValue = "Comprehensive Health Cover";
   } else {
-    policyTypeValue = productName;
+    policyTypeValue = policy.product.product_name;
   }
 
   doc.fontSize(10).text(tableHeading).moveDown(0.5);

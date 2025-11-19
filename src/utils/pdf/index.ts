@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { viaCarePdf } from "./viaCarePdf";
 import { homeCarePdf } from "./homeCarePdf";
 import { selfCarePdf } from "./selfCarePdf";
+import { purchaseProtectionPdf } from "./purchaseProtectionPdf";
 
 export type FullOrder = Prisma.OrderGetPayload<{
   include: {
@@ -67,15 +68,15 @@ export async function generateOrderPDF(
         product?.product_name.toLowerCase().includes("self care")
       ) {
         selfCarePdf(doc, policy, order, qrImageUrl);
-      } else if (
-        product?.product_name.toLowerCase().includes("accident") 
-      ) {
+      } else if (product?.product_name.toLowerCase().includes("accident")) {
         selfCarePdf(doc, policy, order, qrImageUrl);
       } else {
         healthCarePdf(doc, policy, order, qrImageUrl);
       }
     } else if (productType === "home") {
       homeCarePdf(doc, policy, order, qrImageUrl);
+    } else if (productType === "purchase_protection") {
+      purchaseProtectionPdf(doc, policy, order, qrImageUrl);
     }
   });
 

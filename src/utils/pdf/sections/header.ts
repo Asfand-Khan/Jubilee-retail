@@ -3,7 +3,8 @@ import PDFDocument from "pdfkit";
 export function addScheduleHeader(
   doc: InstanceType<typeof PDFDocument>,
   jubileeImage: string | Buffer<any> | null,
-  productLogo: string | Buffer<any> | null
+  productLogo: string | Buffer<any> | null,
+  isPurchaseProtection: boolean = false
 ) {
   const pageWidth = doc.page.width;
   const margin = 20;
@@ -21,7 +22,7 @@ export function addScheduleHeader(
   }
 
   // Product Logo
-  if (productLogo) {
+  if (productLogo && !isPurchaseProtection) {
     doc.image(productLogo, rightLogoX, logoY, {
       width: logoWidth,
     });
@@ -31,7 +32,7 @@ export function addScheduleHeader(
   doc
     .fontSize(12)
     .font("Helvetica-Bold")
-    .text("SCHEDULE", margin, textY, {
+    .text(isPurchaseProtection ? "CERTIFICATE" : "SCHEDULE", margin, textY, {
       width: pageWidth - 2 * margin,
       align: "center",
     });
