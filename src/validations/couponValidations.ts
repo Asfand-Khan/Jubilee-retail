@@ -66,9 +66,7 @@ export const validateCouponSchema = z.object({
 
 export const validateGetCouponSchema = z.object({
   code: z
-    .string({ required_error: "Coupon code is required." })
-    .min(6, "Coupon code must be at least 06 characters.")
-    .max(6, "Coupon code must be at most 06 characters."),
+    .string({ required_error: "Coupon code is required." }),
   cnic: z
     .string({ required_error: "CNIC is required." })
     .regex(/^\d{13}$/, "CNIC must be exactly 13 digits without dashes.")
