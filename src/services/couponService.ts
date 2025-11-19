@@ -78,6 +78,7 @@ export const getCoupon = async (data: GetCouponSchema) => {
     const couponSku = webMappers.map((wm) => wm.child_sku);
 
     return {
+      ccouponid: coupon.id,
       code: coupon.code,
       campaign_name: coupon.campaign_name,
       expiry_date: coupon.expiry_date,
@@ -124,6 +125,7 @@ export const getCoupon = async (data: GetCouponSchema) => {
 
     if (productIds.length === 0) {
       return {
+        ccouponid: coupon.id,
         code: coupon.code,
         campaign_name: coupon.campaign_name,
         expiry_date: coupon.expiry_date,
@@ -145,6 +147,7 @@ export const getCoupon = async (data: GetCouponSchema) => {
     const couponSku = webMappers.map((wm) => wm.child_sku);
 
     return {
+      ccouponid: coupon.id,
       code: coupon.code,
       campaign_name: coupon.campaign_name,
       expiry_date: coupon.expiry_date,
