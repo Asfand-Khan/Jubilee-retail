@@ -256,23 +256,17 @@ export const getExternalSingleApiUserProducts = async (
       product_name: current.product_name,
       product_type: current.product_type,
       product_category_id: current.product_category_id,
-       parent_sku: current.parent_sku,
+      parent_sku: current.parent_sku,
       child_sku: current.child_sku,
     };
 
     // If the API User is not in the accumulator, create the user object
     if (!acc[userId]) {
       acc[userId] = {
-        id: userId,
         name: current.name,
         email: current.email,
         phone: current.phone,
-        api_user_id: userId, // Keeping this for consistency with your desired payload
         products: [],
-        is_active: current.is_active,
-        created_at: current.created_at,
-        updated_at: current.updated_at,
-        deleted_at: current.deleted_at,
       };
 
       // Remove redundant fields from the user object that are specific to the join table
