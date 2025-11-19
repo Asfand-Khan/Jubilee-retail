@@ -369,7 +369,7 @@ export async function courierBooking(
     }
 
     // Email And Sms
-    const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${result.order.order_code}/pdf`;
+    const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${result.order.order_code}/pdf`;
 
     let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
     let customerName: string = result.order.customer_name;
@@ -390,16 +390,16 @@ export async function courierBooking(
       result.policy.takaful_policy,
       false
     );
-    const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+    const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
     const extraDocs = policyWording.extraUrls.map((url) => ({
       filename: url,
-      path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+      path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
       contentType: "application/pdf",
     }));
 
     if (result.policy.takaful_policy) {
-      url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
-      logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+      url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
+      logo = `${process.env.BASE_URL}/uploads/logo/takaful_logo.jpg`;
       Insurance = "Takaful";
       insurance = "";
       doc = "PMD(s)";
@@ -408,8 +408,8 @@ export async function courierBooking(
       takaful = true;
       smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # is ${result.code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
     } else {
-      url = "https://jubileegeneral.com.pk/getinsurance/policy-verification";
-      logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+      url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
+      logo = `${process.env.BASE_URL}/uploads/logo/insurance_logo.jpg`;
       Insurance = "Insurance";
       insurance = "insurance";
       doc = "policy document(s)";

@@ -931,15 +931,13 @@ export function viaCarePdf(
     let yStart = doc.y;
 
     let policyWord = "Policy";
-    let websiteLink =
-      "https://jubileegeneral.com.pk/getinsurance/policy-verification";
+    let websiteLink = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
     let retailBranch = "";
     let takafulWindowText =
       "Digitally signed for & on behalf of\nJUBILEE GENERAL INSURANCE COMPANY LIMITED";
     if (policy.takaful_policy) {
       policyWord = "PMD";
-      websiteLink =
-        "https://jubileegeneral.com.pk/gettakaful/policy-verification";
+      websiteLink = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
       retailBranch = "Takaful";
       takafulWindowText =
         "Digitally signed for & on behalf of\nJUBILEE GENERAL INSURANCE COMPANY\nLIMITED WINDOW TAKAFUL OPERATIONS";

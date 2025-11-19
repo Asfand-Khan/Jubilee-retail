@@ -28,7 +28,7 @@ export async function sendVerificationNotifications(
   order: any,
   req: Request
 ) {
-  const baseUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}`;
+  const baseUrl = `${process.env.BASE_URL}`;
   const policyDocumentUrl = `${baseUrl}/api/v1/orders/${order.order_code}/pdf`;
 
   const apiUser = order.apiUser;
@@ -100,13 +100,13 @@ export async function sendVerificationNotifications(
 }
 
 function buildInsuranceMetadata(order: any, updatedPolicy: any, policyDocumentUrl: string, req: Request) {
-  const baseLogo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo`;
+  const baseLogo = `${process.env.BASE_URL}/uploads/logo`;
   const apiUserName = order.apiUser?.name?.toLowerCase() || "";
   const takaful = updatedPolicy.takaful_policy;
 
   if (takaful) {
     return {
-      url: "https://jubileegeneral.com.pk/gettakaful/policy-verification",
+      url : `${process.env.POLICY_VERIFICATION_TAKAFUL}`,
       logo: `${baseLogo}/takaful_logo.jpg`,
       Insurance: "Takaful",
       insurance: "",
@@ -119,7 +119,7 @@ function buildInsuranceMetadata(order: any, updatedPolicy: any, policyDocumentUr
   }
 
   return {
-    url: "https://jubileegeneral.com.pk/getinsurance/policy-verification",
+    url : `${process.env.POLICY_VERIFICATION_INSURANCE}`,
     logo: `${baseLogo}/insurance_logo.jpg`,
     Insurance: "Insurance",
     insurance: "insurance",

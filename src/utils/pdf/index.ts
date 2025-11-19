@@ -49,7 +49,7 @@ export async function generateOrderPDF(
   const productType = policy ? policy.product.product_type : "general";
 
   let qrImageUrl = "";
-  const qrData = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${order.order_code}/pdf`;
+  const qrData = `${process.env.BASE_URL}/api/v1/orders/${order.order_code}/pdf`;
   try {
     qrImageUrl = await QRCode.toDataURL(qrData, { type: "image/png" });
   } catch (err) {

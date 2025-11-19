@@ -224,7 +224,7 @@ export const bulkOrder = async (
               code = `91${planId}${newPolicyCode(policy.id)}`;
             }
 
-            const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${newOrder.order_code}/pdf`;
+            const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${newOrder.order_code}/pdf`;
 
             await tx.order.update({
               where: { id: newOrder.id },
@@ -1108,7 +1108,7 @@ export const ccTransaction = async (
       }
 
       // Email Start / End
-      const policyDocumentUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/api/v1/orders/${order.order_code}/pdf`;
+      const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${order.order_code}/pdf`;
 
       let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
       let customerName: string = order.customer_name;
@@ -1129,16 +1129,16 @@ export const ccTransaction = async (
         policy.takaful_policy,
         false
       );
-      const policyWordingUrl = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${policyWording.wordingFile}`;
+      const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
       const extraDocs = policyWording.extraUrls.map((url) => ({
         filename: url,
-        path: `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/policy-wordings/${url}`,
+        path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
         contentType: "application/pdf",
       }));
 
       if (policy.takaful_policy) {
-        url = "https://jubileegeneral.com.pk/gettakaful/policy-verification";
-        logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/takaful_logo.jpg`;
+        url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
+        logo = `${process.env.BASE_URL}/uploads/logo/takaful_logo.jpg`;
         Insurance = "Takaful";
         insurance = "";
         doc = "PMD(s)";
@@ -1147,8 +1147,8 @@ export const ccTransaction = async (
         takaful = true;
         smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
       } else {
-        url = "https://jubileegeneral.com.pk/getinsurance/policy-verification";
-        logo = `${req.protocol}://${req.hostname}:${process.env.PORT}/uploads/logo/insurance_logo.jpg`;
+        url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
+        logo = `${process.env.BASE_URL}/uploads/logo/insurance_logo.jpg`;
         Insurance = "Insurance";
         insurance = "insurance";
         doc = "policy document(s)";
