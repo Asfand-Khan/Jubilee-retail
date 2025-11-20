@@ -18,9 +18,7 @@ export const getOrderB2BTemplate = (
   const premiumHeader = takaful
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
-    const headerLogo = takaful
-    ? `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-takaful-white.png`
-    : `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png`;
+
   const parentsCarePromo = productName
     ?.toLowerCase()
     .includes("parents-care-plus")
@@ -89,7 +87,7 @@ export const getOrderB2BTemplate = (
                     <td valign="top">
                        <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png"alt="Jubilee"
+           src="https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -128,7 +126,7 @@ export const getOrderB2BTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd"
+                          "MMM dd, YYYY"
                         )})</small>
                       </h2>
                     </td>
@@ -171,7 +169,10 @@ export const getOrderB2BTemplate = (
                               valign="top"
                               style="padding: 3px 9px"
                             >
-                              <span>PKR ${Number(productPremium).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                              <span>PKR ${Number(productPremium).toLocaleString(
+                                "en-US",
+                                { minimumFractionDigits: 2 }
+                              )}</span>
                             </td>
                           </tr>
                         </tbody>
@@ -251,9 +252,7 @@ export const getOrderCODTemplate = (
   const premiumHeader = takaful
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
- const headerLogo = takaful
-    ? `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-takaful-white.png`
-    : `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png`;
+
   const parentsCarePromo = productName
     ?.toLowerCase()
     .includes("parents-care-plus")
@@ -322,7 +321,7 @@ export const getOrderCODTemplate = (
                     <td valign="top">
                      <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png"alt="Jubilee"
+           src="https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -363,7 +362,7 @@ export const getOrderCODTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd"
+                          "MMM dd, YYYY"
                         )})</small>
                       </h2>
                     </td>
@@ -406,7 +405,10 @@ export const getOrderCODTemplate = (
                               valign="top"
                               style="padding: 3px 9px"
                             >
-                          <span>PKR ${Number(productPremium).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                          <span>PKR ${Number(productPremium).toLocaleString(
+                            "en-US",
+                            { minimumFractionDigits: 2 }
+                          )}</span>
                             </td>
                           </tr>
                         </tbody>
