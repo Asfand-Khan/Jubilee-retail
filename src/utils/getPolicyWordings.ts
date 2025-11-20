@@ -40,6 +40,8 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'policy-wording-personal.pdf';
         }else if (productName.toLowerCase().includes('purchase protection')) {
             wordingFile = 'PurchaseProtectionTakafulWording.pdf';
+        }else {
+            wordingFile = ''; // Default non-Takaful
         }
     } else {
         if (isDaraz) {
@@ -70,6 +72,8 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'policy-wording-personal.pdf';
         }else if (productName.toLowerCase().includes('purchase protection')) {
             wordingFile = 'PurchaseProtectionWording.pdf';
+        }else {
+            wordingFile = ''; // Default non-Takaful
         }
     }
 
