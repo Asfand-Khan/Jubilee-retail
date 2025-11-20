@@ -411,7 +411,7 @@ export async function courierBooking(
       smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # ${result.code} has been confirmed.You PMD will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
     } else {
       url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
-      logo = `${process.env.BASE_URL}/uploads/logo/insurance_logo.jpg`;
+      logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
       Insurance = "Insurance";
       insurance = "insurance";
       doc = "policy document(s)";

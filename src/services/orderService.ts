@@ -1111,7 +1111,7 @@ export const ccTransaction = async (
       const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
       // Email Start / End
 
-      let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
+      let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
       let customerName: string = order.customer_name;
       let orderId: string = order.order_code;
       let createdDate: string = order.create_date;
@@ -1139,7 +1139,7 @@ export const ccTransaction = async (
 
       if (policy.takaful_policy) {
         url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
-        logo = `${process.env.BASE_URL}/uploads/logo/takaful_logo.jpg`;
+        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
         Insurance = "Takaful";
         insurance = "";
         doc = "PMD(s)";
@@ -1149,7 +1149,7 @@ export const ccTransaction = async (
         smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
       } else {
         url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
-        logo = `${process.env.BASE_URL}/uploads/logo/insurance_logo.jpg`;
+        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
         Insurance = "Insurance";
         insurance = "insurance";
         doc = "policy document(s)";
