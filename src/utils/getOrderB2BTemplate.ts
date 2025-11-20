@@ -316,7 +316,7 @@ export const getOrderCODTemplate = (
                     <td valign="top">
                       <img
                         src="${logo}"
-                        style="margin-bottom: 10px"
+                        alt="Jubilee Logo" style="max-width:150px;margin-bottom: 10px"
                         border="0"
                       />
                     </td>
