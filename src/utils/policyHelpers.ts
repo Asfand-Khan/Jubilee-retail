@@ -408,7 +408,7 @@ export async function courierBooking(
       buisness = "Takaful Retail Business Division";
       jubilee = "Jubilee General Takaful";
       takaful = true;
-      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # is ${result.code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # ${result.code} has been confirmed.You PMD will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
     } else {
       url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
       logo = `${process.env.BASE_URL}/uploads/logo/insurance_logo.jpg`;
@@ -422,7 +422,7 @@ export async function courierBooking(
       }
       jubilee = "Jubilee General Insurance";
       takaful = false;
-      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # is ${result.code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
+      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # ${result.code} has been confirmed.Your Policy will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
     }
 
     await sendEmail({
@@ -449,19 +449,19 @@ export async function courierBooking(
         result.order.shipping_contact,
         response.data.cnno
       ),
-      attachments: [
-        {
-          filename: `${result.code}.pdf`,
-          path: policyDocumentUrl,
-          contentType: "application/pdf",
-        },
-        {
-          filename: policyWording.wordingFile,
-          path: policyWordingUrl,
-          contentType: "application/pdf",
-        },
-        ...extraDocs,
-      ],
+      // attachments: [
+      //   {
+      //     filename: `${result.code}.pdf`,
+      //     path: policyDocumentUrl,
+      //     contentType: "application/pdf",
+      //   },
+      //   {
+      //     filename: policyWording.wordingFile,
+      //     path: policyWordingUrl,
+      //     contentType: "application/pdf",
+      //   },
+      //   ...extraDocs,
+      // ],
     });
 
     if (

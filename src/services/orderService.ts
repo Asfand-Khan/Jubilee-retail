@@ -1111,7 +1111,7 @@ export const ccTransaction = async (
       const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
       // Email Start / End
 
-      let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
+      let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
       let customerName: string = order.customer_name;
       let orderId: string = order.order_code;
       let createdDate: string = order.create_date;
