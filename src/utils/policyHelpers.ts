@@ -9,6 +9,7 @@ import { sendEmail } from "./sendEmail";
 import { getOrderCODTemplate } from "./getOrderB2BTemplate";
 import { sendSms } from "./sendSms";
 import { sendWhatsAppMessage } from "./sendWhatsappSms";
+import { encodeOrderCode } from "./base64Url";
 
 interface ApiResponse {
   success: boolean;
@@ -276,14 +277,16 @@ export async function courierBooking(
   const city = await prisma.city.findUnique({
     where: { id: data.customer_city },
   });
+  const ordertoken = encodeOrderCode(result.order.order_code);
+  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${ordertoken}.pdf`;
   const courier = await getCourier(
     result.product.is_takaful == true ? true : false
   );
   if (!courier) return;
 
-  const token = Buffer.from(
-    `${process.env.BLUEEX_USERNAME}:${process.env.BLUEEX_PASSWORD}`
-  ).toString("base64");
+  const token = Buffer.from(`${courier.name}:${courier.password}`).toString(
+    "base64"
+  );
 
   const datatoSend = {
     shipper_name: "Jubilee General Insurance",
@@ -298,7 +301,7 @@ export async function courierBooking(
     customer_address: data.shipping_address,
     customer_city: city ? city.city_code : "KHI",
     customer_country: "PK",
-    customer_comment: "Policy courier dispatch",
+    customer_comment: policyDocumentUrl,
     shipping_charges: "100",
     payment_type: "COD",
     service_code: "BE",
@@ -369,7 +372,6 @@ export async function courierBooking(
     }
 
     // Email And Sms
-    const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${result.order.order_code}/pdf`;
 
     let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
     let customerName: string = result.order.customer_name;
@@ -499,6 +501,7 @@ export async function courierBooking(
 export async function courierBookingForRepush(
   orderId: number,
   policyId: number,
+  orderCode: string,
   code: string,
   options: {
     shipping_name?: string;
@@ -519,7 +522,8 @@ export async function courierBookingForRepush(
         where: { id: options.customer_city_id },
       })
     : null;
-
+  const ordertoken = encodeOrderCode(orderCode);
+  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${ordertoken}.pdf`;
   // Get courier
   const courier = await getCourier(options.takaful_policy ?? false);
   if (!courier) {
@@ -531,9 +535,9 @@ export async function courierBookingForRepush(
   }
 
   // Auth token
-  const token = Buffer.from(
-    `${process.env.BLUEEX_USERNAME}:${process.env.BLUEEX_PASSWORD}`
-  ).toString("base64");
+  const token = Buffer.from(`${courier.name}:${courier.password}`).toString(
+    "base64"
+  );
 
   const datatoSend = {
     shipper_name: "Jubilee General Insurance",
@@ -549,7 +553,7 @@ export async function courierBookingForRepush(
     customer_address: options.shipping_address,
     customer_city: city ? city.city_code : "KHI",
     customer_country: "PK",
-    customer_comment: "Policy courier dispatch",
+    customer_comment: policyDocumentUrl,
 
     shipping_charges: "100",
     payment_type: "COD",

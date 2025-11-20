@@ -8,6 +8,7 @@ import { viaCarePdf } from "./viaCarePdf";
 import { homeCarePdf } from "./homeCarePdf";
 import { selfCarePdf } from "./selfCarePdf";
 import { purchaseProtectionPdf } from "./purchaseProtectionPdf";
+import { encodeOrderCode } from "../base64Url";
 
 export type FullOrder = Prisma.OrderGetPayload<{
   include: {
@@ -49,7 +50,8 @@ export async function generateOrderPDF(
   const productType = policy ? policy.product.product_type : "general";
 
   let qrImageUrl = "";
-  const qrData = `${process.env.BASE_URL}/api/v1/orders/${order.order_code}/pdf`;
+  const token = encodeOrderCode(order.order_code);
+  const qrData = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
   try {
     qrImageUrl = await QRCode.toDataURL(qrData, { type: "image/png" });
   } catch (err) {

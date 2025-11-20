@@ -7,7 +7,7 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
     const isFaysalBank = accountNo?.includes('faysalbank');
     const isMIB = accountNo?.includes('mib');
     const isDaraz = accountNo?.includes('daraz');
-    const hasFBLRider = hasFBLRiders || false; // Assume this is checked somehow
+    const hasFBLRider = hasFBLRiders || false;
 
     if (isTakaful) {
         if (isFaysalBank) {
@@ -26,16 +26,18 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             }
         } else if (accountNo?.includes('telemart')) {
             wordingFile = 'PurchaseProtectionTakafulWording.pdf';
-        } else if (productName.includes('Parents-Care-Plus')) {
-            wordingFile = 'Parents-Care-plus-wording-insurance.pdf'; // Note: This is used for both, but check
+        } else if (productName.includes('Parents-Care-Plus-Takaful')) {
+            wordingFile = 'parents-care-plus-wording-takaful.pdf'; // Note: This is used for both, but check
         } else if (productName.toLowerCase().includes('selfcare')) { // Assuming method context
             wordingFile = 'SelfCareTakafulWordingsFinal.pdf';
         } else if (productName.toLowerCase().includes('homecare')) {
             wordingFile = 'HomeCareTakafulWordings.pdf';
-        } else if (productName.toLowerCase().includes('viacare')) {
+        } else if (productName.toLowerCase().includes('domestic ')) {
             wordingFile = 'ViaCareTravelTakafulDomesticWordingsFinal.pdf';
-        } else {
-            wordingFile = 'PersonalHealthCareFranchiseTerms.pdf'; // General Takaful fallback
+        }else if (productName.toLowerCase().includes('viacare')) {
+            wordingFile = 'policy-wording-travel.pdf';
+        }else if (productName.toLowerCase().includes('personal healthcare')) {
+            wordingFile = 'policy-wording-personal.pdf';
         }
     } else {
         if (isDaraz) {
@@ -58,7 +60,13 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'HomeCarePolicyWording.pdf';
         } else if (productName.toLowerCase().includes('viacare')){
             wordingFile = 'ViaCarePolicyWording.pdf';
-        } else {
+        } else if (productName.toLowerCase().includes('Via Care')){
+            wordingFile = 'ViaCarePolicyWording.pdf';
+        } else if (productName.toLowerCase().includes('family healthcare')) {
+            wordingFile = 'policy-wording-family.pdf';
+        }else if (productName.toLowerCase().includes('personal healthcare')) {
+            wordingFile = 'policy-wording-personal.pdf';
+        }else {
             wordingFile = 'HealthCarePolicyWording.pdf'; // Default non-Takaful
         }
     }

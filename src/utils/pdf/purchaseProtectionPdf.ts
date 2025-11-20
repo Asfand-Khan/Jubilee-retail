@@ -236,7 +236,7 @@ export function purchaseProtectionPdf(
     "logo",
     policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png"
   );
-  let productLogo = path.join(process.cwd(), "uploads", "logo", "home.png");
+  let productLogo = path.join(process.cwd(), "uploads", "logo", "purchase_protection.png");
 
   addScheduleHeader(doc, jubileeImage, productLogo, true);
   

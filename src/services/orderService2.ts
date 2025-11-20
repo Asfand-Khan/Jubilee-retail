@@ -17,6 +17,7 @@ import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
 import { getPolicyWording } from "../utils/getPolicyWordings";
 import { sendSms } from "../utils/sendSms";
 import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
+import { encodeOrderCode } from "../utils/base64Url";
 
 export const createOrder = async (
   data: OrderSchema,
@@ -201,7 +202,6 @@ export const createOrder = async (
           test_book: data.test_book,
           api_user_id: apiUserId,
           created_by: createdBy,
-          
         },
         include: {
           apiUser: true,
@@ -399,7 +399,8 @@ export const createOrder = async (
     ).catch((err) => console.error("Courier booking failed:", err));
   } else if (result.paymentMode === "B2B") {
     const apiUser = result.order.apiUser;
-    const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${result.order.order_code}/pdf`;
+    const token = encodeOrderCode(result.order.order_code);
+    const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
 
     await prisma.order.update({
       where: { id: result.orderId },

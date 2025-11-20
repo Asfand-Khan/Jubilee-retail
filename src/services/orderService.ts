@@ -40,6 +40,7 @@ import { AuthRequest } from "../types/types";
 import { sendVerificationNotifications } from "../utils/utils";
 import path from "path";
 import fs from "fs";
+import { encodeOrderCode } from "../utils/base64Url";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -223,9 +224,8 @@ export const bulkOrder = async (
               const planId = newPlanMapping(product.product_name, planName);
               code = `91${planId}${newPolicyCode(policy.id)}`;
             }
-
-            const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${newOrder.order_code}/pdf`;
-
+            const token = encodeOrderCode(newOrder.order_code);
+            const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
             await tx.order.update({
               where: { id: newOrder.id },
               data: { status: "verified" },
@@ -1107,8 +1107,9 @@ export const ccTransaction = async (
         }
       }
 
+      const token = encodeOrderCode(order.order_code);
+      const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
       // Email Start / End
-      const policyDocumentUrl = `${process.env.BASE_URL}/api/v1/orders/${order.order_code}/pdf`;
 
       let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;
       let customerName: string = order.customer_name;
@@ -1370,7 +1371,10 @@ export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
   return updatedPolicy;
 };
 
-export const orderList = async (data: ListSchema ,apiUserId: number | null | undefined) => {
+export const orderList = async (
+  data: ListSchema,
+  apiUserId: number | null | undefined
+) => {
   let query = "";
   const filters: string[] = [];
 
@@ -1550,10 +1554,10 @@ export const orderList = async (data: ListSchema ,apiUserId: number | null | und
   }
 
   if (data.date && (!data.cnic || !data.contact)) {
-    if(data.mode === "renewal"){
+    if (data.mode === "renewal") {
       const [start, end] = data.date.split(" to ");
       filters.push(`DATE(p.expiry_date) BETWEEN '${start}' AND '${end}'`);
-    }else{
+    } else {
       const [start, end] = data.date.split(" to ");
       filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
     }
@@ -1585,11 +1589,11 @@ export const orderList = async (data: ListSchema ,apiUserId: number | null | und
   if (filters.length > 0) {
     query += " AND " + filters.join(" AND ");
   }
- if (apiUserId) {
-      query += ` AND ord.api_user_id = ${apiUserId}`;
-    }
+  if (apiUserId) {
+    query += ` AND ord.api_user_id = ${apiUserId}`;
+  }
   query += ` ORDER BY ord.id DESC`;
-  
+
   const result = await prisma.$queryRawUnsafe<any[]>(query);
 
   const serialized = result.map((row) =>
@@ -1718,6 +1722,7 @@ export const repushOrder = async (data: OrderCodeSchema) => {
       await courierBookingForRepush(
         order.id,
         policy.id,
+        order.order_code,
         code,
         {
           shipping_name: order.shipping_name ?? undefined,

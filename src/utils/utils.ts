@@ -1,26 +1,30 @@
 // src/utils/utils.ts
 
-import dayjs from 'dayjs';
-import { Request } from 'express';
-import { getPolicyWording } from './getPolicyWordings';
-import { sendEmail } from './sendEmail';
-import { getOrderB2BTemplate } from './getOrderB2BTemplate';
-import { sendSms } from './sendSms';
-import { sendWhatsAppMessage } from './sendWhatsappSms';
+import dayjs from "dayjs";
+import { Request } from "express";
+import { getPolicyWording } from "./getPolicyWordings";
+import { sendEmail } from "./sendEmail";
+import { getOrderB2BTemplate } from "./getOrderB2BTemplate";
+import { sendSms } from "./sendSms";
+import { sendWhatsAppMessage } from "./sendWhatsappSms";
+import { encodeOrderCode } from "./base64Url";
 
 export function calculateAge(dobString: string | null | undefined): number {
-    if (!dobString) return 0;
-    
-    // Attempt to parse various date formats (Java uses Date object, we use string/dayjs)
-    const dob = dayjs(dobString);
-    if (!dob.isValid()) return 0;
+  if (!dobString) return 0;
 
-    return dayjs().diff(dob, 'year');
+  // Attempt to parse various date formats (Java uses Date object, we use string/dayjs)
+  const dob = dayjs(dobString);
+  if (!dob.isValid()) return 0;
+
+  return dayjs().diff(dob, "year");
 }
 
-export function isFBLRiderPresent(isFaysalBankOrder: boolean, policy: any): boolean {
-    // This logic needs external context, mocking based on simple assumption
-    return isFaysalBankOrder && (policy.FblPolicyRider?.length > 0);
+export function isFBLRiderPresent(
+  isFaysalBankOrder: boolean,
+  policy: any
+): boolean {
+  // This logic needs external context, mocking based on simple assumption
+  return isFaysalBankOrder && policy.FblPolicyRider?.length > 0;
 }
 
 export async function sendVerificationNotifications(
@@ -29,7 +33,8 @@ export async function sendVerificationNotifications(
   req: Request
 ) {
   const baseUrl = `${process.env.BASE_URL}`;
-  const policyDocumentUrl = `${baseUrl}/api/v1/orders/${order.order_code}/pdf`;
+  const token = encodeOrderCode(order.order_code);
+  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
 
   const apiUser = order.apiUser;
   const wording = getPolicyWording(
@@ -46,8 +51,17 @@ export async function sendVerificationNotifications(
     contentType: "application/pdf",
   }));
 
-  const { logo, smsString, jubilee, buisness, Insurance, insurance, doc, takaful, url } =
-    buildInsuranceMetadata(order, updatedPolicy, policyDocumentUrl, req);
+  const {
+    logo,
+    smsString,
+    jubilee,
+    buisness,
+    Insurance,
+    insurance,
+    doc,
+    takaful,
+    url,
+  } = buildInsuranceMetadata(order, updatedPolicy, policyDocumentUrl, req);
 
   await sendEmail({
     to: order.customer_email,
@@ -83,7 +97,11 @@ export async function sendVerificationNotifications(
   });
 
   // Send SMS/WhatsApp selectively
-  if (!updatedPolicy.product.product_name.toLowerCase().includes("parents-care-plus")) {
+  if (
+    !updatedPolicy.product.product_name
+      .toLowerCase()
+      .includes("parents-care-plus")
+  ) {
     await sendSms(order.customer_contact, smsString);
   } else {
     await sendWhatsAppMessage({
@@ -99,14 +117,19 @@ export async function sendVerificationNotifications(
   }
 }
 
-function buildInsuranceMetadata(order: any, updatedPolicy: any, policyDocumentUrl: string, req: Request) {
+function buildInsuranceMetadata(
+  order: any,
+  updatedPolicy: any,
+  policyDocumentUrl: string,
+  req: Request
+) {
   const baseLogo = `${process.env.BASE_URL}/uploads/logo`;
   const apiUserName = order.apiUser?.name?.toLowerCase() || "";
   const takaful = updatedPolicy.takaful_policy;
 
   if (takaful) {
     return {
-      url : `${process.env.POLICY_VERIFICATION_TAKAFUL}`,
+      url: `${process.env.POLICY_VERIFICATION_TAKAFUL}`,
       logo: `${baseLogo}/takaful_logo.jpg`,
       Insurance: "Takaful",
       insurance: "",
@@ -119,7 +142,7 @@ function buildInsuranceMetadata(order: any, updatedPolicy: any, policyDocumentUr
   }
 
   return {
-    url : `${process.env.POLICY_VERIFICATION_INSURANCE}`,
+    url: `${process.env.POLICY_VERIFICATION_INSURANCE}`,
     logo: `${baseLogo}/insurance_logo.jpg`,
     Insurance: "Insurance",
     insurance: "insurance",
