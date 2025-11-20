@@ -40,6 +40,8 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'policy-wording-personal.pdf';
         }else if (productName.toLowerCase().includes('purchase protection')) {
             wordingFile = 'PurchaseProtectionTakafulWording.pdf';
+        }else if (productName.toLowerCase().includes('personal accident')) {
+            wordingFile = 'policy-wording-personal-accident-takaful.pdf';
         }else {
             wordingFile = 'HealthCarePolicyWording.pdf'; // Default non-Takaful
         }
@@ -72,6 +74,8 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'policy-wording-personal.pdf';
         }else if (productName.toLowerCase().includes('purchase protection')) {
             wordingFile = 'PurchaseProtectionWording.pdf';
+        }else if (productName.toLowerCase().includes('personal accident')) {
+            wordingFile = 'policy-wording-personal-accident-insurance.pdf';
         }else {
             wordingFile = 'HealthCarePolicyWording.pdf'; // Default non-Takaful
         }

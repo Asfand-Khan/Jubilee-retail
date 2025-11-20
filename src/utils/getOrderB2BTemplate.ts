@@ -87,7 +87,7 @@ export const getOrderB2BTemplate = (
                     <td valign="top">
                        <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png"alt="Jubilee"
+           src="${logo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -321,7 +321,7 @@ export const getOrderCODTemplate = (
                     <td valign="top">
                      <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png"alt="Jubilee"
+           src="${logo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
