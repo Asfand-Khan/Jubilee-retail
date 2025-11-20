@@ -126,7 +126,7 @@ export const getOrderB2BTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd, YYYY"
+                          "MMM dd, yyyy"
                         )})</small>
                       </h2>
                     </td>
@@ -362,7 +362,7 @@ export const getOrderCODTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd, YYYY"
+                          "MMM dd, yyyy"
                         )})</small>
                       </h2>
                     </td>
