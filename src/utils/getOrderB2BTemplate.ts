@@ -19,8 +19,8 @@ export const getOrderB2BTemplate = (
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
     const headerLogo = takaful
-    ? `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`
-    : `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+    ? `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-takaful-white.png`
+    : `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png`;
   const parentsCarePromo = productName
     ?.toLowerCase()
     .includes("parents-care-plus")
@@ -252,8 +252,8 @@ export const getOrderCODTemplate = (
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
  const headerLogo = takaful
-    ? `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`
-    : `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+    ? `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-takaful-white.png`
+    : `https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png`;
   const parentsCarePromo = productName
     ?.toLowerCase()
     .includes("parents-care-plus")
