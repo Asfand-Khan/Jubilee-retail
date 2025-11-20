@@ -46,7 +46,7 @@ export const validateOrderSchema = z.object({
     })
     .regex(
       /^03\d{9}$/,
-      "Customrt contact must be a valid number (e.g. 03001234567)."
+      "Customer contact must be a valid number (e.g. 03001234567)."
     ),
 
   customer_address: z
