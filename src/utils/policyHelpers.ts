@@ -446,7 +446,7 @@ export async function courierBooking(
         result.order.shipping_email,
         result.order.shipping_address,
         result.order.shipping_charges,
-        result.order.shipping_address,
+        result.order.shipping_phone,
         response.data.cnno
       ),
       // attachments: [

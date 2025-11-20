@@ -85,13 +85,12 @@ export const getOrderB2BTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                      <img
-                        src="${logo}"
-                        style="margin-bottom: 10px"
-                        border="0"
-                        height="100"
-                        width="100"
-                      />
+                     <img
+                            src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/insurance_logo.jpg"
+                            alt="Jubilee Logo"
+                            style="max-width:150px;margin-bottom:10px"
+                            border="0"
+                          />
                     </td>
                   </tr>
                   <!-- [ middle starts here] -->
@@ -314,11 +313,12 @@ export const getOrderCODTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                      <img
-                        src="${logo}"
-                        alt="Jubilee Logo" style="max-width:150px;margin-bottom: 10px"
-                        border="0"
-                      />
+                     <img
+                      src="${logo}"
+                      alt="Jubilee Logo"
+                      style="max-width:150px;margin-bottom:10px"
+                      border="0"
+                    />
                     </td>
                   </tr>
                   <!-- [ middle starts here] -->
