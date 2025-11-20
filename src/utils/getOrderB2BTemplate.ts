@@ -85,16 +85,16 @@ export const getOrderB2BTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                     <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
+                       <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-            src="https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png"
-            alt=""
+           src="${logo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
             tabindex="0"
           />
         </div>
+                    </td>
                   </tr>
                   <!-- [ middle starts here] -->
                   <tr>
@@ -126,7 +126,7 @@ export const getOrderB2BTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd, yyyy HH:mm:ss"
+                          "MMM dd"
                         )})</small>
                       </h2>
                     </td>
@@ -169,7 +169,7 @@ export const getOrderB2BTemplate = (
                               valign="top"
                               style="padding: 3px 9px"
                             >
-                              <span>PKR ${productPremium}</span>
+                              <span>PKR ${Number(productPremium).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                             </td>
                           </tr>
                         </tbody>
@@ -316,10 +316,9 @@ export const getOrderCODTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                      <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
+                     <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-            src="https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png"
-            alt=""
+           src="${logo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -360,7 +359,7 @@ export const getOrderCODTemplate = (
                         Your Order # ${orderId}
                         <small>(placed on ${format(
                           new Date(createdDate),
-                          "MMM dd, yyyy HH:mm:ss"
+                          "MMM dd"
                         )})</small>
                       </h2>
                     </td>
@@ -403,7 +402,7 @@ export const getOrderCODTemplate = (
                               valign="top"
                               style="padding: 3px 9px"
                             >
-                              <span>PKR ${productPremium}</span>
+                          <span>PKR ${Number(productPremium).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                             </td>
                           </tr>
                         </tbody>
