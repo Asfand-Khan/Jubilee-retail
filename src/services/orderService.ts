@@ -41,6 +41,7 @@ import { sendVerificationNotifications } from "../utils/utils";
 import path from "path";
 import fs from "fs";
 import { encodeOrderCode } from "../utils/base64Url";
+import { pepScan } from "../utils/pepScanUtil";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -1363,7 +1364,23 @@ export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
           update: orderUpdateData,
         },
       },
+      include: {
+        order: {
+          select: {
+            customer_cnic: true,
+          },
+        },
+      },
     });
+
+    if (updated.status === "IGISposted") {
+      try{
+        const pepScanResponse = await pepScan(updated.order.customer_cnic || "4220115145065");
+        console.log(pepScanResponse);
+      }catch(error){
+        console.log(error);
+      }
+    }
 
     return updated;
   });

@@ -160,7 +160,7 @@ export const createOrder = async (
         data: {
           order_code: data.order_code,
           create_date,
-          parent_id: String(data.parent_id),
+          parent_id: data.parent_id ? String(data.parent_id) : null,
           customer_name: data.customer_name,
           customer_cnic: data.customer_cnic,
           customer_dob: data.customer_dob,

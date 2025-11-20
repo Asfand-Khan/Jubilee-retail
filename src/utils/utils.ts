@@ -155,3 +155,4 @@ function buildInsuranceMetadata(
     smsString: `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${updatedPolicy.product.product_name}. Your Policy # is ${updatedPolicy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`,
   };
 }
+
