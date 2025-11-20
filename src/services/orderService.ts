@@ -1522,7 +1522,8 @@ export const orderList = async (
 	            ord.is_active = 1 
 	            AND ord.is_deleted = 0 
 	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO','unverified' )
-              AND prod.is_cbo = 1`;
+              AND prod.is_cbo = 1
+              AND ord.api_user_id in (1,52)`;
       break;
     default:
       query = `
