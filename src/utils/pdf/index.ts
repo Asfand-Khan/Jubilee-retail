@@ -51,7 +51,7 @@ export async function generateOrderPDF(
 
   let qrImageUrl = "";
   const token = encodeOrderCode(order.order_code);
-  const qrData = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
+  const qrData = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
   try {
     qrImageUrl = await QRCode.toDataURL(qrData, { type: "image/png" });
   } catch (err) {

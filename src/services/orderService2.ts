@@ -400,7 +400,7 @@ export const createOrder = async (
   } else if (result.paymentMode === "B2B") {
     const apiUser = result.order.apiUser;
     const token = encodeOrderCode(result.order.order_code);
-    const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
+    const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
 
     await prisma.order.update({
       where: { id: result.orderId },

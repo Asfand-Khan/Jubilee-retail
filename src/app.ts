@@ -43,7 +43,7 @@ export default (app: express.Application): void => {
       ].join(" ");
     })
   );
-  app.use("/policy_doc", policyDoc);
+  app.use("/policyDoc", policyDoc);
 
   app.use("/api/v1", routes);
 

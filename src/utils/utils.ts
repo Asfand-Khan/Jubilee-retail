@@ -34,7 +34,7 @@ export async function sendVerificationNotifications(
 ) {
   const baseUrl = `${process.env.BASE_URL}`;
   const token = encodeOrderCode(order.order_code);
-  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
+  const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
 
   const apiUser = order.apiUser;
   const wording = getPolicyWording(

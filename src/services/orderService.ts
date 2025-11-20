@@ -225,7 +225,7 @@ export const bulkOrder = async (
               code = `91${planId}${newPolicyCode(policy.id)}`;
             }
             const token = encodeOrderCode(newOrder.order_code);
-            const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
+            const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
             await tx.order.update({
               where: { id: newOrder.id },
               data: { status: "verified" },
@@ -1108,7 +1108,7 @@ export const ccTransaction = async (
       }
 
       const token = encodeOrderCode(order.order_code);
-      const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${token}.pdf`;
+      const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
       // Email Start / End
 
       let logo: string = `${req.protocol}://${req.hostname}/uploads/logo/insurance_logo.png`;

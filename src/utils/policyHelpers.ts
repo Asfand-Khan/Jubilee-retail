@@ -278,7 +278,7 @@ export async function courierBooking(
     where: { id: data.customer_city },
   });
   const ordertoken = encodeOrderCode(result.order.order_code);
-  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${ordertoken}.pdf`;
+  const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${ordertoken}.pdf`;
   const courier = await getCourier(
     result.product.is_takaful == true ? true : false
   );
@@ -523,7 +523,7 @@ export async function courierBookingForRepush(
       })
     : null;
   const ordertoken = encodeOrderCode(orderCode);
-  const policyDocumentUrl = `${process.env.BASE_URL}/policy_doc/${ordertoken}.pdf`;
+  const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${ordertoken}.pdf`;
   // Get courier
   const courier = await getCourier(options.takaful_policy ?? false);
   if (!courier) {
