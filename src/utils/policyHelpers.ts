@@ -373,7 +373,7 @@ export async function courierBooking(
 
     // Email And Sms
 
-    let logo: string = `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
+    let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
     let customerName: string = result.order.customer_name;
     let resultOrderId: string = result.order.order_code;
     let createdDate: string = result.order.create_date;
@@ -401,7 +401,7 @@ export async function courierBooking(
 
     if (result.policy.takaful_policy) {
       url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
-      logo = `${process.env.BASE_URL}/uploads/logo/takaful_logo.jpg`;
+      logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
       Insurance = "Takaful";
       insurance = "";
       doc = "PMD(s)";
