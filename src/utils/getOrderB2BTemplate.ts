@@ -18,6 +18,9 @@ export const getOrderB2BTemplate = (
   const premiumHeader = takaful
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
+  const headerlogo = takaful
+    ? `https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png`
+    : `https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png`;
 
   const parentsCarePromo = productName
     ?.toLowerCase()
@@ -85,9 +88,9 @@ export const getOrderB2BTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                       <div style="text-align: center; margin: 20px 0px; background-color:white">
+                       <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
           <img
-           src="${logo}"alt="Jubilee"
+           src="${headerlogo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -252,6 +255,9 @@ export const getOrderCODTemplate = (
   const premiumHeader = takaful
     ? `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Contribution</th>`
     : `<th align="right" bgcolor="#EAEAEA" style="font-size: 13px; padding: 3px 9px" width="20%">Premium</th>`;
+  const headerlogo = takaful
+    ? `https://www.jubileegeneral.com.pk/takaful/wp-content/uploads/2020/01/logo-takaful-white.png`
+    : `https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png`;
 
   const parentsCarePromo = productName
     ?.toLowerCase()
@@ -319,9 +325,9 @@ export const getOrderCODTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                     <div style="text-align: center; margin: 20px 0px; background-color:white">
+                     <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
           <img
-           src="${logo}"alt="Jubilee"
+           src="${headerlogo}"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
