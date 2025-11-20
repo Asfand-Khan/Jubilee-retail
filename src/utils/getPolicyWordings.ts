@@ -27,8 +27,8 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
         } else if (accountNo?.includes('telemart')) {
             wordingFile = 'PurchaseProtectionTakafulWording.pdf';
         } else if (productName.includes('Parents-Care-Plus-Takaful')) {
-            wordingFile = 'parents-care-plus-wording-takaful.pdf'; // Note: This is used for both, but check
-        } else if (productName.toLowerCase().includes('selfcare')) { // Assuming method context
+            wordingFile = 'parents-care-plus-wording-takaful.pdf';
+        } else if (productName.toLowerCase().includes('selfcare')) { 
             wordingFile = 'SelfCareTakafulWordingsFinal.pdf';
         } else if (productName.toLowerCase().includes('homecare')) {
             wordingFile = 'HomeCareTakafulWordings.pdf';
