@@ -314,7 +314,7 @@ export const getOrderCODTemplate = (
                   <tr>
                     <td valign="top">
                      <img
-                      src="${logo}"
+                      src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/insurance_logo.jpg"
                       alt="Jubilee Logo"
                       style="max-width:150px;margin-bottom:10px"
                       border="0"
