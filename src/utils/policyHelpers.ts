@@ -284,7 +284,7 @@ export async function courierBooking(
   );
   if (!courier) return;
 
-  const token = Buffer.from(`${courier.name}:${courier.password}`).toString(
+  const token = Buffer.from(`${courier.user}:${courier.password}`).toString(
     "base64"
   );
 
@@ -535,7 +535,7 @@ export async function courierBookingForRepush(
   }
 
   // Auth token
-  const token = Buffer.from(`${courier.name}:${courier.password}`).toString(
+  const token = Buffer.from(`${courier.user}:${courier.password}`).toString(
     "base64"
   );
 
