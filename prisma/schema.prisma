@@ -1298,7 +1298,7 @@ model CommunicationLog {
   type            String // "email" | "sms" | "whatsapp"
   recipient       String // email or phone number
   subject         String? // applicable for emails
-  message         String? // SMS/WhatsApp content or email plain text
+  message         String? @db.LongText // SMS/WhatsApp content or email plain text
   htmlContent     String?   @db.LongText // HTML email content
   params          Json? // dynamic parameters (e.g., WhatsApp params, attachments, etc.)
   status          String    @default("pending") // "pending" | "sent" | "failed"

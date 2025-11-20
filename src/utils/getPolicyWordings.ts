@@ -60,7 +60,7 @@ export const getPolicyWording = (apiUserName: string | null | undefined, product
             wordingFile = 'HomeCarePolicyWording.pdf';
         } else if (productName.toLowerCase().includes('viacare')){
             wordingFile = 'ViaCarePolicyWording.pdf';
-        } else if (productName.toLowerCase().includes('Via Care')){
+        } else if (productName.toLowerCase().includes('via care')){
             wordingFile = 'ViaCarePolicyWording.pdf';
         } else if (productName.toLowerCase().includes('family healthcare')) {
             wordingFile = 'policy-wording-family.pdf';
