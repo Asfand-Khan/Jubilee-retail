@@ -85,13 +85,16 @@ export const getOrderB2BTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                     <img
-                            src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/insurance_logo.jpg"
-                            alt="Jubilee Logo"
-                            style="max-width:150px;margin-bottom:10px"
-                            border="0"
-                          />
-                    </td>
+                     <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
+          <img
+            src="https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png"
+            alt=""
+            style="width: 160px"
+            class="CToWUd a6T"
+            data-bit="iit"
+            tabindex="0"
+          />
+        </div>
                   </tr>
                   <!-- [ middle starts here] -->
                   <tr>
@@ -313,12 +316,16 @@ export const getOrderCODTemplate = (
                 <tbody>
                   <tr>
                     <td valign="top">
-                     <img
-                      src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/insurance_logo.jpg"
-                      alt="Jubilee Logo"
-                      style="max-width:150px;margin-bottom:10px"
-                      border="0"
-                    />
+                      <div style="text-align: center; margin: 20px 0px; background-color: #A10022">
+          <img
+            src="https://www.jubileegeneral.com.pk/wp-content/themes/hitmag/landingPage/img/JubileeGLogo.png"
+            alt=""
+            style="width: 160px"
+            class="CToWUd a6T"
+            data-bit="iit"
+            tabindex="0"
+          />
+        </div>
                     </td>
                   </tr>
                   <!-- [ middle starts here] -->
