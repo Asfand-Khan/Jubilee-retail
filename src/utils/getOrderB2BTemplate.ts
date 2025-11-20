@@ -89,7 +89,7 @@ export const getOrderB2BTemplate = (
                     <td valign="top">
                        <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="${headerLogo}"alt="Jubilee"
+           src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
@@ -322,7 +322,7 @@ export const getOrderCODTemplate = (
                     <td valign="top">
                      <div style="text-align: center; margin: 20px 0px; background-color:white">
           <img
-           src="${headerLogo}"alt="Jubilee"
+           src="https://dev-retail.jubileegeneral.com.pk/uploads/logo/jubilee-general-insurance-white.png"alt="Jubilee"
             style="width: 160px"
             class="CToWUd a6T"
             data-bit="iit"
