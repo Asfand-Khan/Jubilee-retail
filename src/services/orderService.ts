@@ -1094,6 +1094,9 @@ export const ccTransaction = async (
           "verified"
         );
 
+        console.log("coverageStatusResponse");
+        console.log(coverageStatusResponse);
+
         if (coverageStatusResponse.success) {
           await prisma.policy.update({
             where: { id: policy.id },

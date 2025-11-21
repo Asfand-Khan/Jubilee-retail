@@ -238,6 +238,9 @@ export async function coverageStatusUpdate(
   data.append("cnno", cnno);
   data.append("order_status", order_status);
 
+  console.log("coverage status");
+  console.log(data);
+
   const config = {
     method: "post" as const,
     maxBodyLength: Infinity,
@@ -251,11 +254,18 @@ export async function coverageStatusUpdate(
 
   try {
     const response = await axios.request(config);
+
+    console.log("response");
+    console.log(response);
+
     return {
       success: true,
       data: response.data,
     };
   } catch (error) {
+    console.log("error");
+    console.log(error);
+
     const err = error as AxiosError;
     return {
       success: false,
