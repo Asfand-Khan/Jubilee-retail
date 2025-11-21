@@ -725,14 +725,9 @@ export const validateOrderSchema = z.object({
   qna_details: z
     .array(
       z.object({
-        answer: z
-          .string({
-            required_error: "QnA details - Answer is required.",
-            invalid_type_error: "QnA details - Answer must be string.",
-          })
-          .min(1, {
-            message: "QnA details - Answer cannot be empty",
-          }),
+        answer: z.enum(["yes", "no"], {
+          message: "Answer can only be yes or no",
+        }),
 
         q_id: z
           .number({

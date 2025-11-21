@@ -249,6 +249,7 @@ export async function coverageStatusUpdate(
       Cookie: "qtrans_front_language=en",
       ...data.getHeaders(),
     },
+    timeout: 50000, // ⏳ 50 seconds timeout
     data,
   };
 
