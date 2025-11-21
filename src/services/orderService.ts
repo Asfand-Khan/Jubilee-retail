@@ -1101,134 +1101,138 @@ export const ccTransaction = async (
               qr_doc_url: `https://dev-coverage.jubileegeneral.com.pk/policydoc?policy_no=${policy.policy_code}`,
             },
           });
-
-          return;
         } else {
           console.log("Failed:", coverageStatusResponse.error);
         }
       }
 
-      const token = encodeOrderCode(order.order_code);
-      const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
-      // Email Start / End
+      if (!isCoverage) {
+        const token = encodeOrderCode(order.order_code);
+        const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
+        // Email Start / End
 
-      let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-      let customerName: string = order.customer_name;
-      let orderId: string = order.order_code;
-      let createdDate: string = order.create_date;
-      let Insurance: string;
-      let insurance: string;
-      let doc: string;
-      let buisness: string;
-      let url: string;
-      let jubilee: string;
-      let takaful: boolean;
-      let smsString: string;
+        let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+        let customerName: string = order.customer_name;
+        let orderId: string = order.order_code;
+        let createdDate: string = order.create_date;
+        let Insurance: string;
+        let insurance: string;
+        let doc: string;
+        let buisness: string;
+        let url: string;
+        let jubilee: string;
+        let takaful: boolean;
+        let smsString: string;
 
-      const policyWording = getPolicyWording(
-        apiUser?.name.toLowerCase(),
-        policy.product.product_name,
-        policy.takaful_policy,
-        false
-      );
-      const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
-      const extraDocs = policyWording.extraUrls.map((url) => ({
-        filename: url,
-        path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
-        contentType: "application/pdf",
-      }));
-
-      if (policy.takaful_policy) {
-        url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
-        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
-        Insurance = "Takaful";
-        insurance = "";
-        doc = "PMD(s)";
-        buisness = "Takaful Retail Business Division";
-        jubilee = "Jubilee General Takaful";
-        takaful = true;
-        smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
-      } else {
-        url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
-        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-        Insurance = "Insurance";
-        insurance = "insurance";
-        doc = "policy document(s)";
-        if (
-          apiUser != null &&
-          apiUser.name.toLowerCase().includes("hblbanca")
-        ) {
-          buisness = "Bancassurance Department";
-        } else {
-          buisness = "Retail Business Division";
-        }
-        jubilee = "Jubilee General Insurance";
-        takaful = false;
-        smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name}. Your Policy # is ${policy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
-      }
-
-      await sendEmail({
-        to: order.customer_email,
-        subject: "Policy Order Successful",
-        html: getOrderB2BTemplate(
-          logo,
-          customerName,
-          Insurance,
-          insurance,
-          doc,
-          orderId,
-          createdDate,
-          buisness,
-          url,
-          jubilee,
-          takaful,
+        const policyWording = getPolicyWording(
+          apiUser?.name.toLowerCase(),
           policy.product.product_name,
-          order.received_premium
-        ),
-        attachments: [
-          {
-            filename: `${policy.policy_code}.pdf`,
-            path: policyDocumentUrl,
-            contentType: "application/pdf",
-          },
-          {
-            filename: policyWording.wordingFile,
-            path: policyWordingUrl,
-            contentType: "application/pdf",
-          },
-          ...extraDocs,
-        ],
-      });
+          policy.takaful_policy,
+          false
+        );
+        const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
+        const extraDocs = policyWording.extraUrls.map((url) => ({
+          filename: url,
+          path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
+          contentType: "application/pdf",
+        }));
 
-      if (
-        !policy.product.product_name.toLowerCase().includes("parents-care-plus")
-      ) {
-        await sendSms(order.customer_contact, smsString);
-      } else {
         if (policy.takaful_policy) {
-          await sendWhatsAppMessage({
-            policyType: "takaful_digital",
-            phoneNumber: order.customer_contact,
-            params: [
-              order.customer_name,
-              policy.plan.name,
-              policy.policy_code,
-              policyDocumentUrl,
-            ],
-          });
+          url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
+          logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
+          Insurance = "Takaful";
+          insurance = "";
+          doc = "PMD(s)";
+          buisness = "Takaful Retail Business Division";
+          jubilee = "Jubilee General Takaful";
+          takaful = true;
+          smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
         } else {
-          await sendWhatsAppMessage({
-            policyType: "conventional_digital",
-            phoneNumber: order.customer_contact,
-            params: [
-              order.customer_name,
-              policy.plan.name,
-              policy.policy_code,
-              policyDocumentUrl,
-            ],
-          });
+          url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
+          logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+          Insurance = "Insurance";
+          insurance = "insurance";
+          doc = "policy document(s)";
+          if (
+            apiUser != null &&
+            apiUser.name.toLowerCase().includes("hblbanca")
+          ) {
+            buisness = "Bancassurance Department";
+          } else {
+            buisness = "Retail Business Division";
+          }
+          jubilee = "Jubilee General Insurance";
+          takaful = false;
+          smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name}. Your Policy # is ${policy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
         }
 
+        await sendEmail({
+          to: order.customer_email,
+          subject: "Policy Order Successful",
+          html: getOrderB2BTemplate(
+            logo,
+            customerName,
+            Insurance,
+            insurance,
+            doc,
+            orderId,
+            createdDate,
+            buisness,
+            url,
+            jubilee,
+            takaful,
+            policy.product.product_name,
+            order.received_premium
+          ),
+          attachments: [
+            {
+              filename: `${policy.policy_code}.pdf`,
+              path: policyDocumentUrl,
+              contentType: "application/pdf",
+            },
+            {
+              filename: policyWording.wordingFile,
+              path: policyWordingUrl,
+              contentType: "application/pdf",
+            },
+            ...extraDocs,
+          ],
+        });
+
+        if (
+          !policy.product.product_name
+            .toLowerCase()
+            .includes("parents-care-plus")
+        ) {
+          await sendSms(order.customer_contact, smsString);
+        } else {
+          if (policy.takaful_policy) {
+            await sendWhatsAppMessage({
+              policyType: "takaful_digital",
+              phoneNumber: order.customer_contact,
+              params: [
+                order.customer_name,
+                policy.plan.name,
+                policy.policy_code,
+                policyDocumentUrl,
+              ],
+            });
+          } else {
+            await sendWhatsAppMessage({
+              policyType: "conventional_digital",
+              phoneNumber: order.customer_contact,
+              params: [
+                order.customer_name,
+                policy.plan.name,
+                policy.policy_code,
+                policyDocumentUrl,
+              ],
+            });
+          }
+
+          return { policy_code: code };
+        }
+      } else {
         return { policy_code: code };
       }
 
@@ -1374,10 +1378,12 @@ export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
     });
 
     if (updated.status === "IGISposted") {
-      try{
-        const pepScanResponse = await pepScan(updated.order.customer_cnic || "4220115145065");
+      try {
+        const pepScanResponse = await pepScan(
+          updated.order.customer_cnic || "4220115145065"
+        );
         console.log(pepScanResponse);
-      }catch(error){
+      } catch (error) {
         console.log(error);
       }
     }

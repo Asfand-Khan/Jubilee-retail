@@ -241,7 +241,7 @@ export async function coverageStatusUpdate(
   const config = {
     method: "post" as const,
     maxBodyLength: Infinity,
-    url: "https://jubileegeneral.com.pk/jgi_admin/api/retailResponse/policyStatusUpdate",
+    url: "https://dev-coverage.jubileegeneral.com.pk/jgi_admin/api/retailResponse/policyStatusUpdate",
     headers: {
       Cookie: "qtrans_front_language=en",
       ...data.getHeaders(),
