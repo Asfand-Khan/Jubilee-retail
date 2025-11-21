@@ -1088,7 +1088,7 @@ export const ccTransaction = async (
       if (isCoverage) {
         const coverageStatusResponse = await coverageStatusUpdate(
           order.order_code,
-          policy.policy_code || "",
+          code || "",
           policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
           "",
           "verified"
