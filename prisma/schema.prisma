@@ -1302,7 +1302,7 @@ model CommunicationLog {
   htmlContent     String?   @db.LongText // HTML email content
   params          Json? // dynamic parameters (e.g., WhatsApp params, attachments, etc.)
   status          String    @default("pending") // "pending" | "sent" | "failed"
-  error_message   String? // error detail if failed
+  error_message   String? @db.LongText // error detail if failed
   response_data   Json? // raw API response (success or failure)
   retried_count   Int       @default(0)
   last_attempt_at DateTime  @default(now())
