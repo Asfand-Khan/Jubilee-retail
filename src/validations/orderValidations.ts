@@ -10,9 +10,8 @@ export const validateOrderSchema = z.object({
     .min(3, "Order code must be atleast 03 characters."),
 
   parent_id: z
-    .number({ invalid_type_error: "Parent ID must be a number." })
-    .int({ message: "Parent ID must be an integer." })
-    .positive({ message: "Parent ID must be a positive number." })
+    .string({ required_error: "Parent ID is required." })
+    .min(3, "Parent ID must be atleast 03 characters.")
     .optional()
     .nullable(),
 
@@ -769,6 +768,12 @@ export const validateCCTransactionSchema = z.object({
   reason_code: z
     .string({
       invalid_type_error: "Reason code must be a string.",
+    })
+    .optional()
+    .nullable(),
+  payment_code: z
+    .string({
+      invalid_type_error: "Payment code must be a string.",
     })
     .optional()
     .nullable(),

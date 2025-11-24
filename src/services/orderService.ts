@@ -1009,6 +1009,43 @@ export const ccTransaction = async (
     throw new Error("Order is already verified");
   }
 
+  let paymentModeId: number | null = null;
+
+  if (data.payment_code) {
+    const paymentMode = await prisma.paymentMode.findUnique({
+      where: {
+        payment_code: data.payment_code,
+      },
+    });
+
+    if (paymentMode) {
+      paymentModeId = paymentMode.id;
+    }
+  }
+
+  const lastOrder = (await prisma.$queryRawUnsafe(` 
+            SELECT 
+                pol.policy_code,
+                pol.issue_date,
+                pol.start_date,
+                ord.renewal_number
+            FROM \`Order\` ord
+            LEFT JOIN Policy pol ON ord.id = pol.order_id
+            WHERE
+                pol.status IS NOT NULL
+                AND ord.customer_cnic = '${order.customer_cnic}'
+                AND pol.product_id = ${order.product_id}
+                AND pol.status IN ( 'IGISposted', 'HISposted' )
+            ORDER BY 
+                ord.id DESC
+            LIMIT 1
+            `)) as {
+    policy_code: string;
+    issue_date: string;
+    start_date: string;
+    renewal_number: string;
+  }[];
+
   const result = await prisma.$transaction(
     async (tx) => {
       const updatedOrder = await tx.order.update({
@@ -1016,6 +1053,7 @@ export const ccTransaction = async (
         data: {
           cc_transaction_id: data.transaction_id,
           cc_approval_code: data.approval_code,
+          ...(paymentModeId !== null && { payment_method_id: paymentModeId }),
         },
       });
 
@@ -1085,6 +1123,122 @@ export const ccTransaction = async (
 
         const apiUser = order.apiUser;
         const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+
+        // Renewal number and pec coverage
+        if (isCoverage) {
+          const split = order.order_code.split("-");
+          const renewalNumber = split[split.length - 1];
+
+          if (renewalNumber.includes("R")) {
+            const pec_coverage =
+              Number(renewalNumber.split("R")[1]) > 3 ? 100 : 0;
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                renewal_number: renewalNumber,
+                pec_coverage: pec_coverage.toString(),
+              },
+            });
+            await prisma.policy.update({
+              where: { id: policy.id },
+              data: {
+                policy_code: `${policy.policy_code}-${renewalNumber}`,
+              },
+            });
+          } else {
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                renewal_number: "R0",
+                pec_coverage: "0",
+              },
+            });
+          }
+        } else {
+          if (lastOrder.length > 0) {
+            const dayDiff =
+              lastOrder[0].start_date && policy.start_date
+                ? Math.abs(
+                    (new Date(policy.start_date).getTime() -
+                      new Date(lastOrder[0].start_date).getTime()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                : 0;
+
+            if (dayDiff <= 405) {
+              const updatedRenewalNumber =
+                Number(lastOrder[0].renewal_number.split("R")[1]) + 1;
+              let pec_coverage = 0;
+
+              if (apiUser?.name.toLowerCase().includes("faysalbank")) {
+                if (
+                  policy.product.product_name
+                    .toLowerCase()
+                    .includes("personal") ||
+                  policy.product.product_name.toLowerCase() ===
+                    "fbl-takaful health cover"
+                ) {
+                  if (updatedRenewalNumber > 2) pec_coverage = 100;
+                } else if (
+                  policy.product.product_name.toLowerCase().includes("family")
+                ) {
+                  if (updatedRenewalNumber === 0) pec_coverage = 20;
+                  else if (updatedRenewalNumber === 1) pec_coverage = 50;
+                  else if (updatedRenewalNumber > 1) pec_coverage = 100;
+                }
+              } else if (apiUser?.name.toLowerCase().includes("mib")) {
+                pec_coverage =
+                  updatedRenewalNumber === 0
+                    ? 10
+                    : updatedRenewalNumber === 1
+                    ? 20
+                    : updatedRenewalNumber === 2
+                    ? 30
+                    : 50;
+              } else if (apiUser?.name.toLowerCase().includes("hmb")) {
+                pec_coverage =
+                  updatedRenewalNumber === 0
+                    ? 20
+                    : updatedRenewalNumber === 1
+                    ? 30
+                    : 50;
+              } else if (updatedRenewalNumber > 2) {
+                pec_coverage = 100;
+              }
+
+              await prisma.order.update({
+                where: { id: order.id },
+                data: {
+                  renewal_number: `R${updatedRenewalNumber}`,
+                  pec_coverage: pec_coverage.toString(),
+                },
+              });
+              await prisma.policy.update({
+                where: { id: policy.id },
+                data: {
+                  policy_code: `${policy.policy_code}-R${updatedRenewalNumber}`,
+                },
+              });
+            } else {
+              await prisma.order.update({
+                where: { id: order.id },
+                data: {
+                  renewal_number: "R0",
+                  pec_coverage: "0",
+                },
+              });
+            }
+          } else {
+            // Perfect
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                renewal_number: "R0",
+                pec_coverage: "0",
+              },
+            });
+          }
+        }
 
         if (isCoverage) {
           const coverageStatusResponse = await coverageStatusUpdate(
@@ -1259,6 +1413,29 @@ export const manuallyVerifyCC = async (
   if (!order) throw new Error("Order not found");
   if (order.status === "verified") throw new Error("Order is already verified");
 
+  const lastOrder = (await prisma.$queryRawUnsafe(` 
+            SELECT 
+                pol.policy_code,
+                pol.issue_date,
+                pol.start_date,
+                ord.renewal_number
+            FROM \`Order\` ord
+            LEFT JOIN Policy pol ON ord.id = pol.order_id
+            WHERE
+                pol.status IS NOT NULL
+                AND ord.customer_cnic = '${order.customer_cnic}'
+                AND pol.product_id = ${order.product_id}
+                AND pol.status IN ( 'IGISposted', 'HISposted' )
+            ORDER BY 
+                ord.id DESC
+            LIMIT 1
+            `)) as {
+    policy_code: string;
+    issue_date: string;
+    start_date: string;
+    renewal_number: string;
+  }[];
+
   const result = await prisma.$transaction(
     async (tx) => {
       const [branch, policy] = await Promise.all([
@@ -1337,6 +1514,123 @@ export const manuallyVerifyCC = async (
   try {
     const apiUser = result.order.apiUser;
     const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+
+    // Renewal number and pec coverage
+    if (isCoverage) {
+      const split = result.order.order_code.split("-");
+      const renewalNumber = split[split.length - 1];
+
+      if (renewalNumber.includes("R")) {
+        const pec_coverage = Number(renewalNumber.split("R")[1]) > 3 ? 100 : 0;
+        await prisma.order.update({
+          where: { id: result.order.id },
+          data: {
+            renewal_number: renewalNumber,
+            pec_coverage: pec_coverage.toString(),
+          },
+        });
+        await prisma.policy.update({
+          where: { id: result.policy.id },
+          data: {
+            policy_code: `${result.policy.policy_code}-${renewalNumber}`,
+          },
+        });
+      } else {
+        await prisma.order.update({
+          where: { id: result.order.id },
+          data: {
+            renewal_number: "R0",
+            pec_coverage: "0",
+          },
+        });
+      }
+    } else {
+      if (lastOrder.length > 0) {
+        const dayDiff =
+          lastOrder[0].start_date && result.policy.start_date
+            ? Math.abs(
+                (new Date(result.policy.start_date).getTime() -
+                  new Date(lastOrder[0].start_date).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : 0;
+
+        if (dayDiff <= 405) {
+          const updatedRenewalNumber =
+            Number(lastOrder[0].renewal_number.split("R")[1]) + 1;
+          let pec_coverage = 0;
+
+          if (apiUser?.name.toLowerCase().includes("faysalbank")) {
+            if (
+              result.policy.product.product_name
+                .toLowerCase()
+                .includes("personal") ||
+              result.policy.product.product_name.toLowerCase() ===
+                "fbl-takaful health cover"
+            ) {
+              if (updatedRenewalNumber > 2) pec_coverage = 100;
+            } else if (
+              result.policy.product.product_name
+                .toLowerCase()
+                .includes("family")
+            ) {
+              if (updatedRenewalNumber === 0) pec_coverage = 20;
+              else if (updatedRenewalNumber === 1) pec_coverage = 50;
+              else if (updatedRenewalNumber > 1) pec_coverage = 100;
+            }
+          } else if (apiUser?.name.toLowerCase().includes("mib")) {
+            pec_coverage =
+              updatedRenewalNumber === 0
+                ? 10
+                : updatedRenewalNumber === 1
+                ? 20
+                : updatedRenewalNumber === 2
+                ? 30
+                : 50;
+          } else if (apiUser?.name.toLowerCase().includes("hmb")) {
+            pec_coverage =
+              updatedRenewalNumber === 0
+                ? 20
+                : updatedRenewalNumber === 1
+                ? 30
+                : 50;
+          } else if (updatedRenewalNumber > 2) {
+            pec_coverage = 100;
+          }
+
+          await prisma.order.update({
+            where: { id: result.order.id },
+            data: {
+              renewal_number: `R${updatedRenewalNumber}`,
+              pec_coverage: pec_coverage.toString(),
+            },
+          });
+          await prisma.policy.update({
+            where: { id: result.policy.id },
+            data: {
+              policy_code: `${result.policy.policy_code}-R${updatedRenewalNumber}`,
+            },
+          });
+        } else {
+          await prisma.order.update({
+            where: { id: result.order.id },
+            data: {
+              renewal_number: "R0",
+              pec_coverage: "0",
+            },
+          });
+        }
+      } else {
+        // Perfect
+        await prisma.order.update({
+          where: { id: result.order.id },
+          data: {
+            renewal_number: "R0",
+            pec_coverage: "0",
+          },
+        });
+      }
+    }
 
     if (isCoverage) {
       const coverageStatusResponse = await coverageStatusUpdate(
@@ -1614,7 +1908,7 @@ export const orderList = async (
     filters.push(`LOWER(MONTHNAME(p.expiry_date)) IN (${months})`);
   }
 
-  if (data.date && (!data.cnic || !data.contact)) {
+  if (data.date && !data.cnic && !data.contact) {
     if (data.mode === "renewal") {
       const [start, end] = data.date.split(" to ");
       filters.push(`DATE(p.expiry_date) BETWEEN '${start}' AND '${end}'`);

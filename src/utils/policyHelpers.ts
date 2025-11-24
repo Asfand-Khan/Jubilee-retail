@@ -249,7 +249,7 @@ export async function coverageStatusUpdate(
       Cookie: "qtrans_front_language=en",
       ...data.getHeaders(),
     },
-    timeout: 50000, // ⏳ 50 seconds timeout
+    timeout: 50000,
     data,
   };
 
@@ -359,6 +359,121 @@ export async function courierBooking(
     const apiUser = result.order.apiUser;
     const isCoverage = apiUser?.name.toLowerCase() == "coverage";
 
+    // Renewal number and pec coverage
+    if (isCoverage) {
+      const split = result.order.order_code.split("-");
+      const renewalNumber = split[split.length - 1];
+
+      if (renewalNumber.includes("R")) {
+        const pec_coverage = Number(renewalNumber.split("R")[1]) > 3 ? 100 : 0;
+        await prisma.order.update({
+          where: { id: result.orderId },
+          data: {
+            renewal_number: renewalNumber,
+            pec_coverage: pec_coverage.toString(),
+          },
+        });
+        await prisma.policy.update({
+          where: { id: result.policyId },
+          data: {
+            policy_code: `${result.code}-${renewalNumber}`,
+          },
+        });
+      } else {
+        await prisma.order.update({
+          where: { id: result.orderId },
+          data: {
+            renewal_number: "R0",
+            pec_coverage: "0",
+          },
+        });
+      }
+    } else {
+      console.log("Last Order: ", result.lastOrder);
+      if (result.lastOrder.length > 0) {
+        const dayDiff =
+          result.lastOrder[0].start_date && result.policy.start_date
+            ? Math.abs(
+                (new Date(result.policy.start_date).getTime() -
+                  new Date(result.lastOrder[0].start_date).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : 0;
+
+        console.log("Day Diff: ", dayDiff);
+        if (dayDiff <= 405) {
+          const updatedRenewalNumber =
+            Number(result.lastOrder[0].renewal_number.split("R")[1]) + 1;
+          let pec_coverage = 0;
+
+          if (apiUser?.name.toLowerCase().includes("faysalbank")) {
+            if (
+              result.product.product_name.toLowerCase().includes("personal") ||
+              result.product.product_name.toLowerCase() ===
+                "fbl-takaful health cover"
+            ) {
+              if (updatedRenewalNumber > 2) pec_coverage = 100;
+            } else if (
+              result.product.product_name.toLowerCase().includes("family")
+            ) {
+              if (updatedRenewalNumber === 0) pec_coverage = 20;
+              else if (updatedRenewalNumber === 1) pec_coverage = 50;
+              else if (updatedRenewalNumber > 1) pec_coverage = 100;
+            }
+          } else if (apiUser?.name.toLowerCase().includes("mib")) {
+            pec_coverage =
+              updatedRenewalNumber === 0
+                ? 10
+                : updatedRenewalNumber === 1
+                ? 20
+                : updatedRenewalNumber === 2
+                ? 30
+                : 50;
+          } else if (apiUser?.name.toLowerCase().includes("hmb")) {
+            pec_coverage =
+              updatedRenewalNumber === 0
+                ? 20
+                : updatedRenewalNumber === 1
+                ? 30
+                : 50;
+          } else if (updatedRenewalNumber > 2) {
+            pec_coverage = 100;
+          }
+
+          await prisma.order.update({
+            where: { id: result.orderId },
+            data: {
+              renewal_number: `R${updatedRenewalNumber}`,
+              pec_coverage: pec_coverage.toString(),
+            },
+          });
+          await prisma.policy.update({
+            where: { id: result.policyId },
+            data: {
+              policy_code: `${result.code}-R${updatedRenewalNumber}`,
+            },
+          });
+        } else {
+          await prisma.order.update({
+            where: { id: result.orderId },
+            data: {
+              renewal_number: "R0",
+              pec_coverage: "0",
+            },
+          });
+        }
+      } else {
+        // Perfect
+        await prisma.order.update({
+          where: { id: result.orderId },
+          data: {
+            renewal_number: "R0",
+            pec_coverage: "0",
+          },
+        });
+      }
+    }
+
     if (isCoverage) {
       const coverageStatusResponse = await coverageStatusUpdate(
         result.order.order_code,
@@ -380,128 +495,131 @@ export async function courierBooking(
       } else {
         console.log("Failed:", coverageStatusResponse.error);
       }
-    }
-
-    // Email And Sms
-
-    let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-    let customerName: string = result.order.customer_name;
-    let resultOrderId: string = result.order.order_code;
-    let createdDate: string = result.order.create_date;
-    let Insurance: string;
-    let insurance: string;
-    let doc: string;
-    let buisness: string;
-    let url: string;
-    let jubilee: string;
-    let takaful: boolean;
-    let smsString: string;
-
-    const policyWording = getPolicyWording(
-      apiUser?.name.toLowerCase(),
-      result.product.product_name,
-      result.policy.takaful_policy,
-      false
-    );
-    const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
-    const extraDocs = policyWording.extraUrls.map((url) => ({
-      filename: url,
-      path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
-      contentType: "application/pdf",
-    }));
-
-    if (result.policy.takaful_policy) {
-      url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
-      logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
-      Insurance = "Takaful";
-      insurance = "";
-      doc = "PMD(s)";
-      buisness = "Takaful Retail Business Division";
-      jubilee = "Jubilee General Takaful";
-      takaful = true;
-      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # ${result.code} has been confirmed.You PMD will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
     } else {
-      url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
-      logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-      Insurance = "Insurance";
-      insurance = "insurance";
-      doc = "policy document(s)";
-      if (apiUser != null && apiUser.name.toLowerCase().includes("hblbanca")) {
-        buisness = "Bancassurance Department";
-      } else {
-        buisness = "Retail Business Division";
-      }
-      jubilee = "Jubilee General Insurance";
-      takaful = false;
-      smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # ${result.code} has been confirmed.Your Policy will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
-    }
+      // Email And Sms
 
-    await sendEmail({
-      to: result.order.customer_email || "",
-      subject: "Policy Order Successful",
-      html: getOrderCODTemplate(
-        logo,
-        customerName,
-        Insurance,
-        insurance,
-        doc,
-        resultOrderId,
-        createdDate,
-        buisness,
-        url,
-        jubilee,
-        takaful,
+      let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+      let customerName: string = result.order.customer_name;
+      let resultOrderId: string = result.order.order_code;
+      let createdDate: string = result.order.create_date;
+      let Insurance: string;
+      let insurance: string;
+      let doc: string;
+      let buisness: string;
+      let url: string;
+      let jubilee: string;
+      let takaful: boolean;
+      let smsString: string;
+
+      const policyWording = getPolicyWording(
+        apiUser?.name.toLowerCase(),
         result.product.product_name,
-        result.order.received_premium,
-        result.order.shipping_name,
-        result.order.shipping_email,
-        result.order.shipping_address,
-        result.order.shipping_charges,
-        result.order.shipping_phone,
-        response.data.cnno
-      ),
-      // attachments: [
-      //   {
-      //     filename: `${result.code}.pdf`,
-      //     path: policyDocumentUrl,
-      //     contentType: "application/pdf",
-      //   },
-      //   {
-      //     filename: policyWording.wordingFile,
-      //     path: policyWordingUrl,
-      //     contentType: "application/pdf",
-      //   },
-      //   ...extraDocs,
-      // ],
-    });
+        result.policy.takaful_policy,
+        false
+      );
+      const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
+      const extraDocs = policyWording.extraUrls.map((url) => ({
+        filename: url,
+        path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
+        contentType: "application/pdf",
+      }));
 
-    if (
-      !result.product.product_name.toLowerCase().includes("parents-care-plus")
-    ) {
-      await sendSms(result.order.customer_contact || "", smsString);
-    } else {
       if (result.policy.takaful_policy) {
-        await sendWhatsAppMessage({
-          policyType: "takaful_digital",
-          phoneNumber: result.order.customer_contact || "",
-          params: [
-            result.order.customer_name,
-            result.plan.name,
-            result.code,
-            policyDocumentUrl,
-          ],
-        });
+        url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
+        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
+        Insurance = "Takaful";
+        insurance = "";
+        doc = "PMD(s)";
+        buisness = "Takaful Retail Business Division";
+        jubilee = "Jubilee General Takaful";
+        takaful = true;
+        smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name} .Your PMD # ${result.code} has been confirmed.You PMD will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
       } else {
-        await sendWhatsAppMessage({
-          policyType: "conventional_digital",
-          phoneNumber: result.order.customer_contact || "",
-          params: [
-            result.order.customer_name,
-            result.plan.name,
-            result.code,
-            policyDocumentUrl,
-          ],
-        });
+        url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
+        logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+        Insurance = "Insurance";
+        insurance = "insurance";
+        doc = "policy document(s)";
+        if (
+          apiUser != null &&
+          apiUser.name.toLowerCase().includes("hblbanca")
+        ) {
+          buisness = "Bancassurance Department";
+        } else {
+          buisness = "Retail Business Division";
+        }
+        jubilee = "Jubilee General Insurance";
+        takaful = false;
+        smsString = `Dear ${result.order.customer_name}, Thank you for choosing Jubilee General ${result.product.product_name}. Your Policy # ${result.code} has been confirmed.Your Policy will be delivered to you within 48 hours. Please call 0800-03786 for details.`;
+      }
+
+      await sendEmail({
+        to: result.order.customer_email || "",
+        subject: "Policy Order Successful",
+        html: getOrderCODTemplate(
+          logo,
+          customerName,
+          Insurance,
+          insurance,
+          doc,
+          resultOrderId,
+          createdDate,
+          buisness,
+          url,
+          jubilee,
+          takaful,
+          result.product.product_name,
+          result.order.received_premium,
+          result.order.shipping_name,
+          result.order.shipping_email,
+          result.order.shipping_address,
+          result.order.shipping_charges,
+          result.order.shipping_phone,
+          response.data.cnno
+        ),
+        // attachments: [
+        //   {
+        //     filename: `${result.code}.pdf`,
+        //     path: policyDocumentUrl,
+        //     contentType: "application/pdf",
+        //   },
+        //   {
+        //     filename: policyWording.wordingFile,
+        //     path: policyWordingUrl,
+        //     contentType: "application/pdf",
+        //   },
+        //   ...extraDocs,
+        // ],
+      });
+
+      if (
+        !result.product.product_name.toLowerCase().includes("parents-care-plus")
+      ) {
+        await sendSms(result.order.customer_contact || "", smsString);
+      } else {
+        if (result.policy.takaful_policy) {
+          await sendWhatsAppMessage({
+            policyType: "takaful_digital",
+            phoneNumber: result.order.customer_contact || "",
+            params: [
+              result.order.customer_name,
+              result.plan.name,
+              result.code,
+              policyDocumentUrl,
+            ],
+          });
+        } else {
+          await sendWhatsAppMessage({
+            policyType: "conventional_digital",
+            phoneNumber: result.order.customer_contact || "",
+            params: [
+              result.order.customer_name,
+              result.plan.name,
+              result.code,
+              policyDocumentUrl,
+            ],
+          });
+        }
       }
     }
   } else {
