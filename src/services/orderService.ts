@@ -1412,7 +1412,7 @@ export const manuallyVerifyCC = async (
   const order = await orderByOrderCode(data.order_code);
   if (!order) throw new Error("Order not found");
   if (order.status === "verified") throw new Error("Order is already verified");
-
+const productId = order.Policy?.[0]?.product_id;
   const lastOrder = (await prisma.$queryRawUnsafe(` 
             SELECT 
                 pol.policy_code,
@@ -1424,7 +1424,7 @@ export const manuallyVerifyCC = async (
             WHERE
                 pol.status IS NOT NULL
                 AND ord.customer_cnic = '${order.customer_cnic}'
-                AND pol.product_id = ${order.product_id}
+                 ${productId ? `AND pol.product_id = ${productId}` : ""}
                 AND pol.status IN ( 'IGISposted', 'HISposted' )
             ORDER BY 
                 ord.id DESC
