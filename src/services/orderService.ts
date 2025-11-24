@@ -2101,6 +2101,22 @@ export const repushOrder = async (data: OrderCodeSchema) => {
   });
 };
 
+// export const orderByOrderCode = async (
+//   order_code: string,
+//   transaction?: any
+// ) => {
+//   if (transaction) {
+//     return await transaction.order.findUnique({
+//       where: { order_code },
+//       include: { apiUser: true },
+//     });
+//   } else {
+//     return await prisma.order.findUnique({
+//       where: { order_code },
+//       include: { apiUser: true },
+//     });
+//   }
+// };
 export const orderByOrderCode = async (
   order_code: string,
   transaction?: any
@@ -2108,15 +2124,30 @@ export const orderByOrderCode = async (
   if (transaction) {
     return await transaction.order.findUnique({
       where: { order_code },
-      include: { apiUser: true },
+      include: {
+        apiUser: true,
+        Policy: {
+          select: {
+            product_id: true,
+          },
+        },
+      },
     });
   } else {
     return await prisma.order.findUnique({
       where: { order_code },
-      include: { apiUser: true },
+      include: {
+        apiUser: true,
+        Policy: {
+          select: {
+            product_id: true,
+          },
+        },
+      },
     });
   }
 };
+
 
 export const getPaymentMode = async (payment_mode_id: number) => {
   const paymentMode = await prisma.paymentMode.findUnique({
