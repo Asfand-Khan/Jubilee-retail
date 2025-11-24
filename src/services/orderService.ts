@@ -1009,239 +1009,244 @@ export const ccTransaction = async (
     throw new Error("Order is already verified");
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const updatedOrder = await tx.order.update({
-      where: { id: order.id },
-      data: {
-        cc_transaction_id: data.transaction_id,
-        cc_approval_code: data.approval_code,
-      },
-    });
+  const result = await prisma.$transaction(
+    async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: order.id },
+        data: {
+          cc_transaction_id: data.transaction_id,
+          cc_approval_code: data.approval_code,
+        },
+      });
 
-    const [branch, policy] = await Promise.all([
-      updatedOrder.branch_id
-        ? tx.branch.findUnique({
-            where: { id: updatedOrder.branch_id },
-            select: { his_code: true, his_code_takaful: true },
-          })
-        : tx.branch.findFirst({
-            where: { name: "Direct" },
-            select: { his_code: true, his_code_takaful: true },
-          }),
-      tx.policy.findFirst({
-        where: { order_id: updatedOrder.id },
-        include: {
-          plan: { select: { name: true } },
-          product: {
-            include: {
-              productCategory: true,
-              webappMappers: {
-                select: {
-                  plan: true,
+      const [branch, policy] = await Promise.all([
+        updatedOrder.branch_id
+          ? tx.branch.findUnique({
+              where: { id: updatedOrder.branch_id },
+              select: { his_code: true, his_code_takaful: true },
+            })
+          : tx.branch.findFirst({
+              where: { name: "Direct" },
+              select: { his_code: true, his_code_takaful: true },
+            }),
+        tx.policy.findFirst({
+          where: { order_id: updatedOrder.id },
+          include: {
+            plan: { select: { name: true } },
+            product: {
+              include: {
+                productCategory: true,
+                webappMappers: {
+                  select: {
+                    plan: true,
+                  },
                 },
               },
             },
           },
-        },
-      }),
-    ]);
-
-    if (!policy) {
-      throw new Error("Policy not found");
-    }
-
-    let code: string;
-    if (policy.product.is_cbo) {
-      const planId = newPlanMapping(
-        policy.product.product_name,
-        policy.plan?.name || ""
-      );
-      code = `91${planId}${newPolicyCode(policy.id)}`;
-    } else {
-      const branchCode = policy.takaful_policy
-        ? branch?.his_code_takaful
-        : branch?.his_code;
-      const productCode = newProductCode(
-        Number(policy.product.productCategory?.product_code || 0)
-      );
-      code = `${branchCode}-${productCode}-${newPolicyCode(policy.id)}`;
-    }
-
-    if (data.reason_code === "100") {
-      await Promise.all([
-        tx.order.update({
-          where: { id: updatedOrder.id },
-          data: { status: "verified" },
-        }),
-        tx.policy.update({
-          where: { id: policy.id },
-          data: {
-            policy_code: code,
-            status: policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
-          },
         }),
       ]);
 
-      const apiUser = order.apiUser;
-      const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+      if (!policy) {
+        throw new Error("Policy not found");
+      }
 
-      if (isCoverage) {
-        const coverageStatusResponse = await coverageStatusUpdate(
-          order.order_code,
-          code || "",
-          policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
-          "",
-          "verified"
+      let code: string;
+      if (policy.product.is_cbo) {
+        const planId = newPlanMapping(
+          policy.product.product_name,
+          policy.plan?.name || ""
         );
+        code = `91${planId}${newPolicyCode(policy.id)}`;
+      } else {
+        const branchCode = policy.takaful_policy
+          ? branch?.his_code_takaful
+          : branch?.his_code;
+        const productCode = newProductCode(
+          Number(policy.product.productCategory?.product_code || 0)
+        );
+        code = `${branchCode}-${productCode}-${newPolicyCode(policy.id)}`;
+      }
 
-        console.log("coverageStatusResponse");
-        console.log(coverageStatusResponse);
-
-        if (coverageStatusResponse.success) {
-          await prisma.policy.update({
+      if (data.reason_code === "100") {
+        await Promise.all([
+          tx.order.update({
+            where: { id: updatedOrder.id },
+            data: { status: "verified" },
+          }),
+          tx.policy.update({
             where: { id: policy.id },
             data: {
-              qr_doc_url: `https://dev-coverage.jubileegeneral.com.pk/policydoc?policy_no=${policy.policy_code}`,
+              policy_code: code,
+              status: policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
             },
-          });
-        } else {
-          console.log("Failed:", coverageStatusResponse.error);
-        }
-      }
+          }),
+        ]);
 
-      if (!isCoverage) {
-        const token = encodeOrderCode(order.order_code);
-        const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
-        // Email Start / End
+        const apiUser = order.apiUser;
+        const isCoverage = apiUser?.name.toLowerCase() == "coverage";
 
-        let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-        let customerName: string = order.customer_name;
-        let orderId: string = order.order_code;
-        let createdDate: string = order.create_date;
-        let Insurance: string;
-        let insurance: string;
-        let doc: string;
-        let buisness: string;
-        let url: string;
-        let jubilee: string;
-        let takaful: boolean;
-        let smsString: string;
+        if (isCoverage) {
+          const coverageStatusResponse = await coverageStatusUpdate(
+            order.order_code,
+            code || "",
+            policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
+            "",
+            "verified"
+          );
 
-        const policyWording = getPolicyWording(
-          apiUser?.name.toLowerCase(),
-          policy.product.product_name,
-          policy.takaful_policy,
-          false
-        );
-        const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
-        const extraDocs = policyWording.extraUrls.map((url) => ({
-          filename: url,
-          path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
-          contentType: "application/pdf",
-        }));
+          console.log("coverageStatusResponse");
+          console.log(coverageStatusResponse);
 
-        if (policy.takaful_policy) {
-          url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
-          logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
-          Insurance = "Takaful";
-          insurance = "";
-          doc = "PMD(s)";
-          buisness = "Takaful Retail Business Division";
-          jubilee = "Jubilee General Takaful";
-          takaful = true;
-          smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
-        } else {
-          url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
-          logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
-          Insurance = "Insurance";
-          insurance = "insurance";
-          doc = "policy document(s)";
-          if (
-            apiUser != null &&
-            apiUser.name.toLowerCase().includes("hblbanca")
-          ) {
-            buisness = "Bancassurance Department";
+          if (coverageStatusResponse.success) {
+            await prisma.policy.update({
+              where: { id: policy.id },
+              data: {
+                qr_doc_url: `https://dev-coverage.jubileegeneral.com.pk/policydoc?policy_no=${policy.policy_code}`,
+              },
+            });
           } else {
-            buisness = "Retail Business Division";
+            console.log("Failed:", coverageStatusResponse.error);
           }
-          jubilee = "Jubilee General Insurance";
-          takaful = false;
-          smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name}. Your Policy # is ${policy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
         }
 
-        await sendEmail({
-          to: order.customer_email,
-          subject: "Policy Order Successful",
-          html: getOrderB2BTemplate(
-            logo,
-            customerName,
-            Insurance,
-            insurance,
-            doc,
-            orderId,
-            createdDate,
-            buisness,
-            url,
-            jubilee,
-            takaful,
+        if (!isCoverage) {
+          const token = encodeOrderCode(order.order_code);
+          const policyDocumentUrl = `${process.env.BASE_URL}/policyDoc/${token}.pdf`;
+          // Email Start / End
+
+          let logo: string = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+          let customerName: string = order.customer_name;
+          let orderId: string = order.order_code;
+          let createdDate: string = order.create_date;
+          let Insurance: string;
+          let insurance: string;
+          let doc: string;
+          let buisness: string;
+          let url: string;
+          let jubilee: string;
+          let takaful: boolean;
+          let smsString: string;
+
+          const policyWording = getPolicyWording(
+            apiUser?.name.toLowerCase(),
             policy.product.product_name,
-            order.received_premium
-          ),
-          attachments: [
-            {
-              filename: `${policy.policy_code}.pdf`,
-              path: policyDocumentUrl,
-              contentType: "application/pdf",
-            },
-            {
-              filename: policyWording.wordingFile,
-              path: policyWordingUrl,
-              contentType: "application/pdf",
-            },
-            ...extraDocs,
-          ],
-        });
+            policy.takaful_policy,
+            false
+          );
+          const policyWordingUrl = `${process.env.BASE_URL}/uploads/policy-wordings/${policyWording.wordingFile}`;
+          const extraDocs = policyWording.extraUrls.map((url) => ({
+            filename: url,
+            path: `${process.env.BASE_URL}/uploads/policy-wordings/${url}`,
+            contentType: "application/pdf",
+          }));
 
-        if (
-          !policy.product.product_name
-            .toLowerCase()
-            .includes("parents-care-plus")
-        ) {
-          await sendSms(order.customer_contact, smsString);
-        } else {
           if (policy.takaful_policy) {
-            await sendWhatsAppMessage({
-              policyType: "takaful_digital",
-              phoneNumber: order.customer_contact,
-              params: [
-                order.customer_name,
-                policy.plan.name,
-                policy.policy_code,
-                policyDocumentUrl,
-              ],
-            });
+            url = `${process.env.POLICY_VERIFICATION_TAKAFUL}`;
+            logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-takaful-white.png`;
+            Insurance = "Takaful";
+            insurance = "";
+            doc = "PMD(s)";
+            buisness = "Takaful Retail Business Division";
+            jubilee = "Jubilee General Takaful";
+            takaful = true;
+            smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name} .Your PMD # is ${policy.policy_code}. Click here to view your PMD: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
           } else {
-            await sendWhatsAppMessage({
-              policyType: "conventional_digital",
-              phoneNumber: order.customer_contact,
-              params: [
-                order.customer_name,
-                policy.plan.name,
-                policy.policy_code,
-                policyDocumentUrl,
-              ],
-            });
+            url = `${process.env.POLICY_VERIFICATION_INSURANCE}`;
+            logo = `${process.env.BASE_URL}/uploads/logo/jubilee-general-insurance-white.png`;
+            Insurance = "Insurance";
+            insurance = "insurance";
+            doc = "policy document(s)";
+            if (
+              apiUser != null &&
+              apiUser.name.toLowerCase().includes("hblbanca")
+            ) {
+              buisness = "Bancassurance Department";
+            } else {
+              buisness = "Retail Business Division";
+            }
+            jubilee = "Jubilee General Insurance";
+            takaful = false;
+            smsString = `Dear ${order.customer_name}, Thank you for choosing Jubilee General ${policy.product.product_name}. Your Policy # is ${policy.policy_code}. Click here to view your Policy: ${policyDocumentUrl}. For more information please dial our toll free # 0800 03786`;
           }
 
+          await sendEmail({
+            to: order.customer_email,
+            subject: "Policy Order Successful",
+            html: getOrderB2BTemplate(
+              logo,
+              customerName,
+              Insurance,
+              insurance,
+              doc,
+              orderId,
+              createdDate,
+              buisness,
+              url,
+              jubilee,
+              takaful,
+              policy.product.product_name,
+              order.received_premium
+            ),
+            attachments: [
+              {
+                filename: `${policy.policy_code}.pdf`,
+                path: policyDocumentUrl,
+                contentType: "application/pdf",
+              },
+              {
+                filename: policyWording.wordingFile,
+                path: policyWordingUrl,
+                contentType: "application/pdf",
+              },
+              ...extraDocs,
+            ],
+          });
+
+          if (
+            !policy.product.product_name
+              .toLowerCase()
+              .includes("parents-care-plus")
+          ) {
+            await sendSms(order.customer_contact, smsString);
+          } else {
+            if (policy.takaful_policy) {
+              await sendWhatsAppMessage({
+                policyType: "takaful_digital",
+                phoneNumber: order.customer_contact,
+                params: [
+                  order.customer_name,
+                  policy.plan.name,
+                  policy.policy_code,
+                  policyDocumentUrl,
+                ],
+              });
+            } else {
+              await sendWhatsAppMessage({
+                policyType: "conventional_digital",
+                phoneNumber: order.customer_contact,
+                params: [
+                  order.customer_name,
+                  policy.plan.name,
+                  policy.policy_code,
+                  policyDocumentUrl,
+                ],
+              });
+            }
+
+            return { policy_code: code };
+          }
+        } else {
           return { policy_code: code };
         }
-      } else {
-        return { policy_code: code };
-      }
 
-      return { policy_code: null };
+        return { policy_code: null };
+      }
+    },
+    {
+      timeout: 60000,
     }
-  });
+  );
 
   return result;
 };
@@ -1330,7 +1335,31 @@ export const manuallyVerifyCC = async (
   );
 
   try {
-    await sendVerificationNotifications(result.policy, result.order, req);
+    const apiUser = result.order.apiUser;
+    const isCoverage = apiUser?.name.toLowerCase() == "coverage";
+
+    if (isCoverage) {
+      const coverageStatusResponse = await coverageStatusUpdate(
+        result.order.order_code,
+        result.policy.policy_code || "",
+        result.policy.product.is_cbo ? "pendingCBO" : "pendingIGIS",
+        "",
+        "verified"
+      );
+
+      if (coverageStatusResponse.success) {
+        await prisma.policy.update({
+          where: { id: result.policy.id },
+          data: {
+            qr_doc_url: `https://dev-coverage.jubileegeneral.com.pk/policydoc?policy_no=${result.policy.policy_code}`,
+          },
+        });
+      } else {
+        console.log("Failed:", coverageStatusResponse.error);
+      }
+    } else {
+      await sendVerificationNotifications(result.policy, result.order, req);
+    }
   } catch (notifyErr) {
     console.error("Notification error:", notifyErr);
   }
