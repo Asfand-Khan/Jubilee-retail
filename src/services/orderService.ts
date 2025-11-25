@@ -1001,6 +1001,7 @@ export const ccTransaction = async (
   req: Request
 ) => {
   const order = await orderByOrderCode(data.order_code);
+  const productId = order.Policy?.[0]?.product_id;
   if (!order) {
     throw new Error("Order not found");
   }
@@ -1034,7 +1035,7 @@ export const ccTransaction = async (
             WHERE
                 pol.status IS NOT NULL
                 AND ord.customer_cnic = '${order.customer_cnic}'
-                AND pol.product_id = ${order.product_id}
+                 ${productId ? `AND pol.product_id = ${productId}` : ""}
                 AND pol.status IN ( 'IGISposted', 'HISposted' )
             ORDER BY 
                 ord.id DESC
