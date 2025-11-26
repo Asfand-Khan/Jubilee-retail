@@ -75,7 +75,12 @@ export const createOrderHandler = async (
       });
     }
 
-    const newRecord = await service2.createOrder(parsed, user.user_id, req, user.id);
+    const newRecord = await service2.createOrder(
+      parsed,
+      user.user_id,
+      req,
+      user.id
+    );
 
     return res.status(201).json({
       status: 1,
@@ -99,7 +104,7 @@ export const ccTransactionHandler = async (
   try {
     const parsed = validations.validateCCTransactionSchema.parse(req.body);
 
-    const newRecord = await service.ccTransaction(parsed, req);
+    const newRecord = await service.ccTransaction(parsed);
 
     return res.status(200).json({
       status: 1,
