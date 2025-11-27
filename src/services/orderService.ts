@@ -1141,7 +1141,7 @@ export const ccTransaction = async (data: CCTransactionSchema) => {
       return { order: updatedOrder, policy, code };
     },
     {
-      timeout: 60000,
+      timeout: 70000,
     }
   );
 

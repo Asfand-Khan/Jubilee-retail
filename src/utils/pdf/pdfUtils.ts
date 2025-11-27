@@ -81,29 +81,64 @@ export function drawTable(
   });
 }
 
+// export function drawTableRow(
+//   doc: InstanceType<typeof PDFDocument>,
+//   y: number,
+//   labels: string[],
+//   values: string[],
+//   widths: number[],
+//   bold: boolean = true
+// ) {
+//   let x = 20;
+//   labels.forEach((label, i) => {
+//     if (values.length == 0) {
+//       doc.font("Helvetica").text(label, x, y, {
+//         align: "center",
+//       });
+//     } else {
+//       bold
+//         ? doc.font("Helvetica-Bold").text(label, x, y)
+//         : doc.font("Helvetica").text(label, x, y);
+//     }
+//     doc.font("Helvetica").text(values[i], x + widths[i] / 2, y);
+//     x += widths[i];
+//   });
+//   // doc.moveTo(50, y + 20).lineTo(550, y + 20).stroke(); // Horizontal line
+// }
+
 export function drawTableRow(
   doc: InstanceType<typeof PDFDocument>,
   y: number,
   labels: string[],
   values: string[],
   widths: number[],
-  bold: boolean = true
+  labelBold: boolean[] = [true, true],   // Default: both labels bold
+  valueBold: boolean[] = []              // Default: all values normal
 ) {
   let x = 20;
+
   labels.forEach((label, i) => {
-    if (values.length == 0) {
-      doc.font("Helvetica").text(label, x, y, {
-        align: "center",
-      });
+    const isLabelBold = labelBold[i] === true;
+    const isValueBold = valueBold[i] === true;
+
+    // Draw label
+    if (values.length === 0) {
+      doc.font("Helvetica").text(label, x, y, { align: "center" });
     } else {
-      bold
+      isLabelBold
         ? doc.font("Helvetica-Bold").text(label, x, y)
         : doc.font("Helvetica").text(label, x, y);
     }
-    doc.font("Helvetica").text(values[i], x + widths[i] / 2, y);
+
+    // Draw value
+    if (values[i] !== undefined) {
+      isValueBold
+        ? doc.font("Helvetica-Bold").text(values[i], x + widths[i] / 2, y)
+        : doc.font("Helvetica").text(values[i], x + widths[i] / 2, y);
+    }
+
     x += widths[i];
   });
-  // doc.moveTo(50, y + 20).lineTo(550, y + 20).stroke(); // Horizontal line
 }
 
 export function drawTableRowWithBorders(
