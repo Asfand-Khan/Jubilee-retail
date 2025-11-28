@@ -1759,8 +1759,15 @@ export const orderList = async (
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
-	          ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-XXXXXXX'
+            ) AS customer_contact,
+            CONCAT(
+                SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                SUBSTRING(ord.customer_cnic, 13, 1)
+            ) AS customer_cnic,
 	          ord.branch_name AS 'branch_name',
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
@@ -1787,8 +1794,15 @@ export const orderList = async (
 	            p.expiry_date AS 'expiry_date',
 	            ord.received_premium AS 'premium',
 	            ord.customer_name AS 'customer_name',
-	            ord.customer_contact AS 'customer_contact',
-              ord.customer_cnic AS 'customer_cnic',
+	            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-XXXXXXX'
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	            ord.branch_name AS 'branch_name',
 	            prod.product_name AS 'product',
 	            ord.tracking_number AS 'cnno',
@@ -1818,8 +1832,15 @@ export const orderList = async (
             p.expiry_date AS 'expiry_date',
             ord.received_premium AS 'premium',
             ord.customer_name AS 'customer_name',
-            ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-XXXXXXX'
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
             (SELECT pd.cnic FROM PolicyDetail pd WHERE pd.policy_id = p.id AND LOWER(pd.type) = 'customer' LIMIT 1 ) AS 'customer_cnic',
             ord.branch_name AS 'branch_name',
             prod.product_name AS 'product',
@@ -1855,8 +1876,15 @@ export const orderList = async (
 	            p.expiry_date AS 'expiry_date',
 	            ord.received_premium AS 'premium',
 	            ord.customer_name AS 'customer_name',
-	            ord.customer_contact AS 'customer_contact',
-              ord.customer_cnic AS 'customer_cnic',
+	            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-XXXXXXX'
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	            ord.branch_name AS 'branch_name',
 	            prod.product_name AS 'product',
 	            ord.tracking_number AS 'cnno',
@@ -1877,6 +1905,7 @@ export const orderList = async (
 	            AND ord.is_deleted = 0 
 	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO','unverified' )
               AND prod.is_cbo = 1
+              AND prod.product_type = 'health'
               AND ord.api_user_id in (1,52)`;
       break;
     default:
@@ -1888,8 +1917,15 @@ export const orderList = async (
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
-	          ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+	          CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-XXXXXXX'
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	          ord.branch_name AS 'branch_name',
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
