@@ -62,6 +62,11 @@ export const bulkOrder = async (
 ) => {
   const successResults: any[] = [];
   const failedResults: any[] = [];
+  const apiUserRecord = await prisma.apiUser.findFirst({
+    where: {
+      user_id: createdBy,
+    },
+  });
 
   const CHUNK_SIZE = 10;
 
@@ -160,6 +165,7 @@ export const bulkOrder = async (
                 payment: order.received_premium,
                 received_premium: order.received_premium,
                 created_by: createdBy,
+                api_user_id: apiUserRecord?.id,
               },
               include: {
                 apiUser: true,
@@ -182,6 +188,7 @@ export const bulkOrder = async (
                 type: product.product_type,
                 created_by: createdBy,
                 takaful_policy: product.is_takaful == true ? true : false,
+                api_user_id: apiUserRecord?.id,
               },
             });
 
