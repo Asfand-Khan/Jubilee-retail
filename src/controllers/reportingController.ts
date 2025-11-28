@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { validateReport } from "../validations/reportValidations";
-import { getReportWithDetails } from "../services/reportingService";
+import {
+  getMISReport,
+  getReportWithDetails,
+} from "../services/reportingService";
 import ExcelJS from "exceljs";
 
 // Module --> Report
@@ -88,6 +91,26 @@ export const getReportHandler = async (
     // Write to buffer and send
     const buffer = await workbook.xlsx.writeBuffer();
     res.send(buffer);
+  } catch (error: any) {
+    return res.status(500).json({
+      status: 0,
+      message: error.message,
+      payload: [],
+    });
+  }
+};
+
+export const getMISReportHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const result = await getMISReport();
+    return res.status(200).json({
+      status: 1,
+      message: "MIS Report fetched successfully",
+      payload: result,
+    });
   } catch (error: any) {
     return res.status(500).json({
       status: 0,

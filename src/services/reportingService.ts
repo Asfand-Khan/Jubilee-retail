@@ -200,9 +200,124 @@ export const getPolicyDetailsByIds = async (policyIds: number[]) => {
     }
     const placeholders = policyIds.map(() => "?").join(", ");
     const query = `SELECT * FROM PolicyDetail pd WHERE pd.policy_id IN (${placeholders}) ORDER BY pd.policy_id DESC`;
-    const result = await prisma.$queryRawUnsafe(query, ...policyIds) as any[];
+    const result = (await prisma.$queryRawUnsafe(query, ...policyIds)) as any[];
     return result;
   } catch (error: any) {
     throw new Error(`Failed to fetch policy details: ${error.message}`);
+  }
+};
+
+export const getMISReport = async () => {
+  try {
+    const confirmedQuery = `
+    SELECT
+      CAST(ac.api_user_name AS CHAR) AS api_user_name,
+      CAST(ac.product_name AS CHAR) AS product_name,
+      CAST(ac.product_type AS CHAR) AS product_type,
+      (CASE WHEN ac.is_takaful = '1' THEN 'Takaful' ELSE 'Insurance' END) AS product_category,
+      CAST(COALESCE(dd.daily_count, 0) AS CHAR) AS daily_count,
+      CAST(COALESCE(dd.daily_amount, 0) AS CHAR) AS daily_amount,
+      CAST(COALESCE(mtd.mtd_count, 0) AS CHAR) AS mtd_count,
+      CAST(COALESCE(mtd.mtd_amount, 0) AS CHAR) AS mtd_amount,
+      CAST(COALESCE(ytd.ytd_count, 0) AS CHAR) AS ytd_count,
+      CAST(COALESCE(ytd.ytd_amount, 0) AS CHAR) AS ytd_amount
+    FROM (
+      SELECT DISTINCT
+        CAST(au.name AS CHAR) AS api_user_name,
+        CAST(p.product_name AS CHAR) AS product_name,
+        CAST(p.product_type AS CHAR) AS product_type,
+        CAST(p.is_takaful AS CHAR) AS is_takaful
+      FROM Policy pol
+        LEFT JOIN Product p ON p.id = pol.product_id
+        LEFT JOIN ApiUser au ON au.id = pol.api_user_id
+      WHERE
+        au.is_active = 1
+        AND au.is_deleted = '0'
+    ) ac
+    LEFT JOIN (
+      SELECT
+        CAST(au.name AS CHAR) AS api_user_name,
+        CAST(p.product_name AS CHAR) AS product_name,
+        CAST(p.product_type AS CHAR) AS product_type,
+        CAST(p.is_takaful AS CHAR) AS is_takaful,
+        CAST(COUNT(pol.id) AS CHAR) AS daily_count,
+        CAST(SUM(CAST(pol.received_premium AS DECIMAL(10,2))) AS CHAR) AS daily_amount
+      FROM Policy pol
+        LEFT JOIN Product p ON p.id = pol.product_id
+        LEFT JOIN ApiUser au ON au.id = pol.api_user_id
+      WHERE
+        DATE(pol.issue_date) = CURDATE() - INTERVAL 1 DAY
+        AND ISNULL(pol.policy_code) = 0
+        AND au.is_active = 1
+        AND au.is_deleted = '0'
+      GROUP BY
+        au.name,
+        p.product_name
+    ) dd ON ac.api_user_name = dd.api_user_name
+        AND ac.product_name = dd.product_name
+    LEFT JOIN (
+      SELECT
+        CAST(au.name AS CHAR) AS api_user_name,
+        CAST(p.product_name AS CHAR) AS product_name,
+        CAST(p.product_type AS CHAR) AS product_type,
+        CAST(p.is_takaful AS CHAR) AS is_takaful,
+        CAST(COUNT(pol.id) AS CHAR) AS mtd_count,
+        CAST(SUM(CAST(pol.received_premium AS DECIMAL(10,2))) AS CHAR) AS mtd_amount
+      FROM Policy pol
+        LEFT JOIN Product p ON p.id = pol.product_id
+        LEFT JOIN ApiUser au ON au.id = pol.api_user_id
+      WHERE
+        YEAR(pol.issue_date) = YEAR(CURDATE() - INTERVAL 1 DAY)
+        AND MONTH(pol.issue_date) = MONTH(CURDATE() - INTERVAL 1 DAY)
+        AND DATE(pol.issue_date) BETWEEN DATE_FORMAT(CURDATE() - INTERVAL 1 DAY, '%Y-%m-01')
+            AND (CURDATE() - INTERVAL 1 DAY)
+        AND ISNULL(pol.policy_code) = 0
+        AND au.is_active = 1
+        AND au.is_deleted = '0'
+      GROUP BY
+        au.name,
+        p.product_name
+    ) mtd ON ac.api_user_name = mtd.api_user_name
+         AND ac.product_name = mtd.product_name
+    LEFT JOIN (
+      SELECT
+        CAST(au.name AS CHAR) AS api_user_name,
+        CAST(p.product_name AS CHAR) AS product_name,
+        CAST(p.product_type AS CHAR) AS product_type,
+        CAST(p.is_takaful AS CHAR) AS is_takaful,
+        CAST(COUNT(pol.id) AS CHAR) AS ytd_count,
+        CAST(SUM(CAST(pol.received_premium AS DECIMAL(10,2))) AS CHAR) AS ytd_amount
+      FROM Policy pol
+        LEFT JOIN Product p ON p.id = pol.product_id
+        LEFT JOIN ApiUser au ON au.id = pol.api_user_id
+      WHERE
+        YEAR(pol.issue_date) = YEAR(CURDATE() - INTERVAL 1 DAY)
+        AND DATE(pol.issue_date) <= (CURDATE() - INTERVAL 1 DAY)
+        AND ISNULL(pol.policy_code) = 0
+        AND au.is_active = 1
+        AND au.is_deleted = '0'
+      GROUP BY
+        au.name,
+        p.product_name
+    ) ytd ON ac.api_user_name = ytd.api_user_name
+         AND ac.product_name = ytd.product_name
+    ORDER BY
+      ac.api_user_name,
+      ac.product_name
+    `;
+
+    const pendingQuery = confirmedQuery; // Your confirmed and pending queries are identical
+
+    const result = await Promise.all([
+      prisma.$queryRawUnsafe(confirmedQuery),
+      prisma.$queryRawUnsafe(pendingQuery),
+    ]);
+
+    return {
+      confirmed: result[0],
+      pending: result[1],
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to fetch MIS details: ${error.message}`);
   }
 };
