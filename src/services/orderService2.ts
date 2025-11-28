@@ -648,7 +648,7 @@ export const createOrder = async (
     }
   }
 
-  return { policy_code: result.code };
+  return { policy_code: result.code, policy: result.policy.qr_doc_url };
 };
 
 export const orderByOrderCode = async (
