@@ -1773,6 +1773,7 @@ export const orderList = async (
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
+            u.fullname AS 'username',
 	          ord.status AS 'order_status',
             pm.payment_code,
             p.takaful_policy
@@ -1781,6 +1782,7 @@ export const orderList = async (
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
       break;
     case "policies":
@@ -1810,6 +1812,7 @@ export const orderList = async (
 	            ord.tracking_number AS 'cnno',
 	            pm.name AS 'payment_mode',
 	            au.name AS 'api_user_name',
+              u.fullname AS 'username',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
               pm.payment_code,
@@ -1818,6 +1821,7 @@ export const orderList = async (
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+            LEFT JOIN User u ON ord.created_by = u.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id
             WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
@@ -1852,6 +1856,7 @@ export const orderList = async (
             ord.tracking_number AS 'cnno',
             pm.name AS 'payment_mode',
             au.name AS 'api_user_name',
+            u.fullname AS 'username',
             ord.renewal_number AS 'policy_category',
             ord.pec_coverage AS 'pec_coverage',
             ord.renewal_number AS 'renewal_number',
@@ -1863,6 +1868,7 @@ export const orderList = async (
             \`Order\` ord
           LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
@@ -1894,6 +1900,7 @@ export const orderList = async (
 	            ord.tracking_number AS 'cnno',
 	            pm.name AS 'payment_mode',
 	            au.name AS 'api_user_name',
+              u.fullname AS 'username',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
               pm.payment_code,
@@ -1902,6 +1909,7 @@ export const orderList = async (
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+            LEFT JOIN User u ON ord.created_by = u.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id 
             WHERE
@@ -1935,6 +1943,7 @@ export const orderList = async (
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
 	          au.name AS 'api_user_name',
+            u.fullname AS 'username',
 	          ord.status AS 'order_status',
             pm.payment_code,
             p.takaful_policy
@@ -1943,6 +1952,7 @@ export const orderList = async (
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
   }
 
