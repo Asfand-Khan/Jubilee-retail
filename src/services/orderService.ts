@@ -1433,8 +1433,11 @@ export const manuallyVerifyCC = async (
 ) => {
   const order = await orderByOrderCode(data.order_code);
   if (!order) throw new Error("Order not found");
+
   if (order.status === "verified") throw new Error("Order is already verified");
+
   const productId = order.Policy?.[0]?.product_id;
+
   const lastOrder = (await prisma.$queryRawUnsafe(` 
             SELECT 
                 pol.policy_code,
