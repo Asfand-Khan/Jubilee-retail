@@ -650,7 +650,7 @@ export const createOrder = async (
     }
   }
 
-  return { policy_code: result.code, policy: docUrl };
+  return { policy_code: result.code, policy_doc_Url: docUrl };
 };
 
 export const orderByOrderCode = async (
