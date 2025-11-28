@@ -1,3 +1,4 @@
+
 import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
@@ -65,7 +66,10 @@ export function selfCarePdf(
       doc,
       currentY,
       ["Name", "CNIC"],
-      [customerData?.name || "", customerData?.cnic || ""],
+      [
+        customerData?.name || "",
+        (customerData?.cnic || "").replace(/^(\d{5})(\d{7})(\d{1})$/, "$1-$2-$3"),
+      ],
       [250, 250]
     );
     currentY += rowHeight;
@@ -83,7 +87,7 @@ export function selfCarePdf(
         doc,
         currentY,
         ["Phone"],
-        [customerData?.contact_number || ""],
+        [(customerData?.contact_number || "").replace(/^(\d{4})(\d{7})$/, "$1-$2")],
         [250]
       );
       currentY += rowHeight;
@@ -100,12 +104,14 @@ export function selfCarePdf(
         currentY,
         ["Date of Birth", "Relationship with Beneficiary"],
         [
-          format(new Date(customerData?.dob || new Date()), "MMM dd, yyyy") ||
-            "",
-          beneficiaryData.relation || "",
+          format(new Date(customerData?.dob || new Date()), "MMM dd, yyyy") || "",
+          beneficiaryData?.relation
+            ? beneficiaryData.relation.charAt(0).toUpperCase() + beneficiaryData.relation.slice(1)
+            : "",
         ],
         [250, 250]
       );
+
       currentY += rowHeight;
       drawTableRow(
         doc,
@@ -113,7 +119,7 @@ export function selfCarePdf(
         ["Age", "Beneficiary's Contact No."],
         [
           customerData?.age?.toString() || "",
-          beneficiaryData.contact_number || "",
+          (beneficiaryData?.contact_number || "").replace(/^(\d{4})(\d{7})$/, "$1-$2"),
         ],
         [250, 250]
       );
@@ -134,7 +140,7 @@ export function selfCarePdf(
         [
           customerData?.age?.toString() || "",
           format(new Date(customerData?.dob || new Date()), "MMM dd, yyyy") ||
-            "",
+          "",
         ],
         [250, 250]
       );
@@ -165,7 +171,7 @@ export function selfCarePdf(
     order: FullOrder
   ) => {
     const x = 20;
-    let netPremium, sumInsured, periodOfInsurance, sumValue;
+    let netPremium, sumInsured, periodOfInsurance, sumValue, peronslaAccidentBenefits, lossOfIdentificationValue, medical, burialRepatriation, peronslaAccidentBenefitsValue, medicalValue, burialRepatriationValue;
     netPremium = "Net Premium";
     sumInsured = "Sum Insured";
     sumValue = Math.round(+policy.sum_insured);
@@ -181,6 +187,58 @@ export function selfCarePdf(
     }
 
     const plan = policy.plan;
+    if (policy.product?.product_name.toLowerCase().includes("accident")) {
+      if (plan.name) {
+        peronslaAccidentBenefits = "Personal Accident Benefits";
+        medical = "Medical";
+        burialRepatriation = "Burial & Repatriation";
+        if (plan.name.toLowerCase().includes("a")) {
+          peronslaAccidentBenefitsValue = "PKR 100,000/-";
+          medicalValue = "PKR 25,000/-";
+          burialRepatriationValue = "PKR 20,000/-";
+          lossOfIdentificationValue = "PKR 5,000/-";
+        }
+        if (plan.name.toLowerCase().includes("b")) {
+          peronslaAccidentBenefitsValue = "PKR 250,000/-";
+          medicalValue = "-";
+          burialRepatriationValue = "-";
+          lossOfIdentificationValue = "-";
+        }
+        if (plan.name.toLowerCase().includes("c")) {
+          peronslaAccidentBenefitsValue = "PKR 150,000/-";
+          medicalValue = "";
+          burialRepatriationValue = "";
+          lossOfIdentificationValue = "-";
+        }
+        if (plan.name.toLowerCase().includes("d")) {
+          peronslaAccidentBenefitsValue = "PKR 50,000/-";
+          medicalValue = "";
+          burialRepatriationValue = "";
+          lossOfIdentificationValue = "-";
+        }
+      }
+    } else {
+      if (plan.name) {
+        peronslaAccidentBenefits = "Personal Accident Benefits";
+        medical = "Medical";
+        burialRepatriation = "Burial & Repatriation";
+        if (plan.name.toLowerCase().includes("a")) {
+          peronslaAccidentBenefitsValue = "PKR 200,000/-";
+          medicalValue = "PKR 20,000/-";
+          burialRepatriationValue = "PKR 20,000/-";
+        }
+        if (plan.name.toLowerCase().includes("b")) {
+          peronslaAccidentBenefitsValue = "PKR 350,000/-";
+          medicalValue = "PKR 35,000/-";
+          burialRepatriationValue = "PKR 35,000/-";
+        }
+        if (plan.name.toLowerCase().includes("c")) {
+          peronslaAccidentBenefitsValue = "PKR 500,000/-";
+          medicalValue = "PKR 50,000/-";
+          burialRepatriationValue = "PKR 50,000/-";
+        }
+      }
+    }
     // --- Print Table Heading ---
     // doc.fontSize(10).font("Helvetica-Bold").text("", x)
     doc.moveDown(2);
@@ -200,27 +258,69 @@ export function selfCarePdf(
     drawTableRow(
       doc,
       currentY,
-      ["Plan Selected", netPremium],
+      ["Plan Selected", "Coverage"],
       [
         plan.name || "",
-        `PKR ${new Intl.NumberFormat().format(+policy.item_price)}/-` || "",
+        "Limits ",
       ],
-      [250, 250]
+      [250, 250],
+      [true, true],
+      [false, true],
     );
     currentY += rowHeight;
     drawTableRow(
       doc,
       currentY,
-      [sumInsured, periodOfInsurance],
+      [netPremium, peronslaAccidentBenefits || "Personal Accident Benefits"],
       [
-        sumValue.toString() || "",
+        `PKR ${new Intl.NumberFormat().format(+policy.item_price)}/-` || "",
+        peronslaAccidentBenefitsValue || "-",
+      ],
+      [250, 250],
+      [true, false]
+    );
+    currentY += rowHeight;
+    drawTableRow(
+      doc,
+      currentY,
+      [sumInsured, medical || "Medical"],
+      [
+        `PKR ${new Intl.NumberFormat().format(+sumValue)}/-` || "",
+        medicalValue || "-",
+      ],
+      [250, 250],
+      [true, false]
+    );
+    currentY += rowHeight;
+    drawTableRow(
+      doc,
+      currentY,
+      [periodOfInsurance, burialRepatriation || "Burial & Repatriation"],
+      [
         `From: ${format(
           new Date(policy.issue_date),
           "MMM dd, yyyy"
         )}\nTo: ${format(new Date(policy.expiry_date), "MMM dd, yyyy")}` || "",
+        burialRepatriationValue || "-",
       ],
-      [250, 250]
+      [250, 250],
+      [true, false]
     );
+    if (policy.product?.product_name.toLowerCase().includes("accident")) {
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        [ '', "Loss of Identification Papers\n& Documents"],
+        [
+         "",
+          lossOfIdentificationValue || "-",
+        ],
+        [250, 250],
+        [true, false]
+      );
+    }
+    // end of standard rows
     currentY += rowHeight;
     currentY += 4;
     if (isFranchiseOrder) {
@@ -326,16 +426,16 @@ export function selfCarePdf(
       .fontSize(6.5)
       .text(
         "For Claims, Complaints or " +
-          "Queries: " +
-          retailBranch +
-          " Retail Business Division, Jubilee General Insurance" +
-          " Company Limited " +
-          Windowtakful +
-          ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
-          numbers +
-          " " +
-          email +
-          " Our Toll Free Number : 0800 03786",
+        "Queries: " +
+        retailBranch +
+        " Retail Business Division, Jubilee General Insurance" +
+        " Company Limited " +
+        Windowtakful +
+        ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
+        numbers +
+        " " +
+        email +
+        " Our Toll Free Number : 0800 03786",
         margin,
         yStart + 2
       )
@@ -345,7 +445,7 @@ export function selfCarePdf(
   //
   // Header Start
   const jubileeImage = path.join(process.cwd(), "uploads", "logo", policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png");
-  let productLogo = productName.toLowerCase().includes("self") ? path.join(process.cwd(), "uploads", "logo", "self.png"):path.join(process.cwd(), "uploads", "logo", "personal-accident.png");
+  let productLogo = productName.toLowerCase().includes("self") ? path.join(process.cwd(), "uploads", "logo", "self.png") : path.join(process.cwd(), "uploads", "logo", "personal-accident.png");
 
   // Append Header
   addScheduleHeader(doc, jubileeImage, productLogo);

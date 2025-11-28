@@ -382,6 +382,7 @@ export const createOrder = async (
     }
   );
 
+  let docUrl = null;
   if (result.paymentMode === "COD") {
     await prisma.policy.update({
       where: { id: result.policyId },
@@ -414,6 +415,7 @@ export const createOrder = async (
         status: result.product.is_cbo ? "pendingCBO" : "pendingIGIS",
       },
     });
+    docUrl = policyDocumentUrl;
 
     // Renewal number and pec coverage
     const isCoverage = apiUser?.name.toLowerCase() == "coverage";
@@ -648,7 +650,7 @@ export const createOrder = async (
     }
   }
 
-  return { policy_code: result.code };
+  return { policy_code: result.code, policy_doc_Url: docUrl };
 };
 
 export const orderByOrderCode = async (

@@ -62,6 +62,11 @@ export const bulkOrder = async (
 ) => {
   const successResults: any[] = [];
   const failedResults: any[] = [];
+  const apiUserRecord = await prisma.apiUser.findFirst({
+    where: {
+      user_id: createdBy,
+    },
+  });
 
   const CHUNK_SIZE = 10;
 
@@ -160,6 +165,7 @@ export const bulkOrder = async (
                 payment: order.received_premium,
                 received_premium: order.received_premium,
                 created_by: createdBy,
+                api_user_id: apiUserRecord?.id,
               },
               include: {
                 apiUser: true,
@@ -182,6 +188,7 @@ export const bulkOrder = async (
                 type: product.product_type,
                 created_by: createdBy,
                 takaful_policy: product.is_takaful == true ? true : false,
+                api_user_id: apiUserRecord?.id,
               },
             });
 
@@ -1141,7 +1148,7 @@ export const ccTransaction = async (data: CCTransactionSchema) => {
       return { order: updatedOrder, policy, code };
     },
     {
-      timeout: 60000,
+      timeout: 70000,
     }
   );
 
@@ -1762,12 +1769,20 @@ export const orderList = async (
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
-	          ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+            CONCAT(
+              LEFT(ord.customer_contact, 4), 
+              '-', 
+              SUBSTRING(ord.customer_contact, 5)
+          ) AS customer_contact,
+            CONCAT(
+                SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                SUBSTRING(ord.customer_cnic, 13, 1)
+            ) AS customer_cnic,
 	          ord.branch_name AS 'branch_name',
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
-	          au.name AS 'api_user_name',
+            u.fullname AS 'api_user_name',
 	          ord.status AS 'order_status',
             pm.payment_code,
             p.takaful_policy
@@ -1776,6 +1791,7 @@ export const orderList = async (
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
       break;
     case "policies":
@@ -1790,13 +1806,21 @@ export const orderList = async (
 	            p.expiry_date AS 'expiry_date',
 	            ord.received_premium AS 'premium',
 	            ord.customer_name AS 'customer_name',
-	            ord.customer_contact AS 'customer_contact',
-              ord.customer_cnic AS 'customer_cnic',
+	            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-', 
+                SUBSTRING(ord.customer_contact, 5)
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	            ord.branch_name AS 'branch_name',
 	            prod.product_name AS 'product',
 	            ord.tracking_number AS 'cnno',
 	            pm.name AS 'payment_mode',
-	            au.name AS 'api_user_name',
+              u.fullname AS 'api_user_name',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
               pm.payment_code,
@@ -1805,6 +1829,7 @@ export const orderList = async (
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+            LEFT JOIN User u ON ord.created_by = u.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id
             WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
@@ -1821,8 +1846,16 @@ export const orderList = async (
             p.expiry_date AS 'expiry_date',
             ord.received_premium AS 'premium',
             ord.customer_name AS 'customer_name',
-            ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+            CONCAT(
+                LEFT(ord.customer_contact, 4), 
+                '-', 
+                SUBSTRING(ord.customer_contact, 5)
+            ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
             (SELECT pd.cnic FROM PolicyDetail pd WHERE pd.policy_id = p.id AND LOWER(pd.type) = 'customer' LIMIT 1 ) AS 'customer_cnic',
             ord.branch_name AS 'branch_name',
             prod.product_name AS 'product',
@@ -1830,7 +1863,7 @@ export const orderList = async (
             (SELECT COUNT(*) FROM PolicyDetail pd WHERE pd.policy_id = p.id ) AS 'no_of_persons_covered',
             ord.tracking_number AS 'cnno',
             pm.name AS 'payment_mode',
-            au.name AS 'api_user_name',
+            u.fullname AS 'api_user_name',
             ord.renewal_number AS 'policy_category',
             ord.pec_coverage AS 'pec_coverage',
             ord.renewal_number AS 'renewal_number',
@@ -1842,6 +1875,7 @@ export const orderList = async (
             \`Order\` ord
           LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
@@ -1858,13 +1892,21 @@ export const orderList = async (
 	            p.expiry_date AS 'expiry_date',
 	            ord.received_premium AS 'premium',
 	            ord.customer_name AS 'customer_name',
-	            ord.customer_contact AS 'customer_contact',
-              ord.customer_cnic AS 'customer_cnic',
+	            CONCAT(
+                  LEFT(ord.customer_contact, 4), 
+                  '-', 
+                  SUBSTRING(ord.customer_contact, 5)
+              ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	            ord.branch_name AS 'branch_name',
 	            prod.product_name AS 'product',
 	            ord.tracking_number AS 'cnno',
 	            pm.name AS 'payment_mode',
-	            au.name AS 'api_user_name',
+              u.fullname AS 'api_user_name',
 	            ord.status AS 'order_status',
 	            p.status AS 'policy_status',
               pm.payment_code,
@@ -1873,6 +1915,7 @@ export const orderList = async (
 	            \`Order\` ord
 	          LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
 	          LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+            LEFT JOIN User u ON ord.created_by = u.id
 	          LEFT JOIN Policy p ON ord.id = p.order_id
 	          LEFT JOIN Product prod ON p.product_id = prod.id 
             WHERE
@@ -1880,6 +1923,7 @@ export const orderList = async (
 	            AND ord.is_deleted = 0 
 	            AND p.status NOT IN ( 'pending', 'pendingIGIS', 'pendingCOD', 'pendingCBO','unverified' )
               AND prod.is_cbo = 1
+              AND prod.product_type = 'health'
               AND ord.api_user_id in (1,52)`;
       break;
     default:
@@ -1891,12 +1935,20 @@ export const orderList = async (
 	          ord.create_date AS 'create_date',
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
-	          ord.customer_contact AS 'customer_contact',
-            ord.customer_cnic AS 'customer_cnic',
+	          CONCAT(
+              LEFT(ord.customer_contact, 4), 
+              '-', 
+              SUBSTRING(ord.customer_contact, 5)
+          ) AS customer_contact,
+              CONCAT(
+                  SUBSTRING(ord.customer_cnic, 1, 5), '-', 
+                  SUBSTRING(ord.customer_cnic, 6, 7), '-', 
+                  SUBSTRING(ord.customer_cnic, 13, 1)
+              ) AS customer_cnic,
 	          ord.branch_name AS 'branch_name',
 	          ord.tracking_number AS 'cnno',
 	          pm.name AS 'payment_mode',
-	          au.name AS 'api_user_name',
+            u.fullname AS 'api_user_name',
 	          ord.status AS 'order_status',
             pm.payment_code,
             p.takaful_policy
@@ -1905,6 +1957,7 @@ export const orderList = async (
 	        LEFT JOIN PaymentMode pm ON ord.payment_method_id = pm.id
           LEFT JOIN Policy p ON ord.id = p.order_id
 	        LEFT JOIN ApiUser au ON ord.api_user_id = au.id
+          LEFT JOIN User u ON ord.created_by = u.id
           WHERE ord.is_active = 1 AND ord.is_deleted = 0`;
   }
 
