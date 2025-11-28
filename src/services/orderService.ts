@@ -1760,9 +1760,10 @@ export const orderList = async (
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
             CONCAT(
-                LEFT(ord.customer_contact, 4), 
-                '-XXXXXXX'
-            ) AS customer_contact,
+              LEFT(ord.customer_contact, 4), 
+              '-', 
+              SUBSTRING(ord.customer_contact, 5)
+          ) AS customer_contact,
             CONCAT(
                 SUBSTRING(ord.customer_cnic, 1, 5), '-', 
                 SUBSTRING(ord.customer_cnic, 6, 7), '-', 
@@ -1796,7 +1797,8 @@ export const orderList = async (
 	            ord.customer_name AS 'customer_name',
 	            CONCAT(
                 LEFT(ord.customer_contact, 4), 
-                '-XXXXXXX'
+                '-', 
+                SUBSTRING(ord.customer_contact, 5)
             ) AS customer_contact,
               CONCAT(
                   SUBSTRING(ord.customer_cnic, 1, 5), '-', 
@@ -1834,7 +1836,8 @@ export const orderList = async (
             ord.customer_name AS 'customer_name',
             CONCAT(
                 LEFT(ord.customer_contact, 4), 
-                '-XXXXXXX'
+                '-', 
+                SUBSTRING(ord.customer_contact, 5)
             ) AS customer_contact,
               CONCAT(
                   SUBSTRING(ord.customer_cnic, 1, 5), '-', 
@@ -1877,9 +1880,10 @@ export const orderList = async (
 	            ord.received_premium AS 'premium',
 	            ord.customer_name AS 'customer_name',
 	            CONCAT(
-                LEFT(ord.customer_contact, 4), 
-                '-XXXXXXX'
-            ) AS customer_contact,
+                  LEFT(ord.customer_contact, 4), 
+                  '-', 
+                  SUBSTRING(ord.customer_contact, 5)
+              ) AS customer_contact,
               CONCAT(
                   SUBSTRING(ord.customer_cnic, 1, 5), '-', 
                   SUBSTRING(ord.customer_cnic, 6, 7), '-', 
@@ -1918,9 +1922,10 @@ export const orderList = async (
 	          ord.received_premium AS 'premium',
 	          ord.customer_name AS 'customer_name',
 	          CONCAT(
-                LEFT(ord.customer_contact, 4), 
-                '-XXXXXXX'
-            ) AS customer_contact,
+              LEFT(ord.customer_contact, 4), 
+              '-', 
+              SUBSTRING(ord.customer_contact, 5)
+          ) AS customer_contact,
               CONCAT(
                   SUBSTRING(ord.customer_cnic, 1, 5), '-', 
                   SUBSTRING(ord.customer_cnic, 6, 7), '-', 
