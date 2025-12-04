@@ -6,8 +6,6 @@ import {
   creatHealthcareChildDetail,
   drawTable,
   drawTableRow,
-  formatCNIC,
-  formatContact,
 } from "./pdfUtils";
 import { format } from "date-fns/format";
 import path from "path";
@@ -143,7 +141,7 @@ export function healthCarePdf(
     doc = doc.fontSize(8);
     const yStart = doc.y;
     const padding = 15;
-    const rowHeight = 17;
+    const rowHeight = 15;
     let currentY = yStart;
 
     // --- 3. Draw Initial Border for main content area ---
@@ -159,7 +157,14 @@ export function healthCarePdf(
       .moveTo(padding, yStart - 5)
       .lineTo(doc.page.width - padding, yStart - 5)
       .stroke(); // Top Horizontal line
-
+    doc
+      .moveTo(padding, yStart - 5)
+      .lineTo(padding, yStart + baseHeight)
+      .stroke(); // Left Vertical line
+    doc
+      .moveTo(doc.page.width - padding, yStart - 5)
+      .lineTo(doc.page.width - padding, yStart + baseHeight)
+      .stroke(); // Right Vertical line
 
     // --- 4. Draw Main Customer Details (8 rows for non-Parents-Care-Plus) ---
 
@@ -168,10 +173,7 @@ export function healthCarePdf(
       doc,
       currentY,
       ["Name", "CNIC"],
-      [
-        customerData?.name || "",
-        formatCNIC(customerData?.cnic) || ""
-      ],
+      [customerData?.name || "", customerData?.cnic || ""],
       [250, 250]
     );
     currentY += rowHeight;
@@ -196,7 +198,7 @@ export function healthCarePdf(
       doc,
       currentY,
       ["Phone", label3b],
-      [formatContact(customerData?.contact_number) || "", value3b],
+      [customerData?.contact_number || "", value3b],
       [250, 250]
     );
     currentY += rowHeight;
@@ -244,7 +246,10 @@ export function healthCarePdf(
 
     // --- 5. Parents-Care-Plus Specific Rows ---
     if (productName.includes("parents-care-plus")) {
+      // The last horizontal line for the base area needs to be drawn *before* this content in the original TS code.
+      // I will rely on the TS version's placement, which draws the bottom line later.
 
+      // Row 8: In Patient Price, Out Patient Price (Java c35-c38)
       drawTableRow(
         doc,
         currentY,
@@ -252,19 +257,7 @@ export function healthCarePdf(
         [`${inPatientAmount}`, `${outPatientAmount}`],
         [250, 250]
       );
-      currentY += rowHeight - 2;
-    }
-    if (productName.includes("hercare")) {
-
-      drawTableRow(
-        doc,
-        currentY,
-        ["Sum Insured"],
-        [policy?.sum_insured ? Number(policy.sum_insured).toLocaleString() : "",],
-        [250, 250]
-      );
       currentY += rowHeight;
-      baseHeight += rowHeight;
     }
 
     // --- 6. Draw Final Border Lines for Base Table ---
@@ -275,8 +268,8 @@ export function healthCarePdf(
       : yStart + 85;
 
     doc
-      .moveTo(padding, currentY)
-      .lineTo(doc.page.width - padding, currentY)
+      .moveTo(padding, finalY)
+      .lineTo(doc.page.width - padding, finalY)
       .stroke(); // Bottom Horizontal line
 
     // --- 8. Conditional Beneficiary Details (Below main box) ---
@@ -323,15 +316,6 @@ export function healthCarePdf(
         .lineTo(doc.page.width - padding, currentY)
         .stroke();
     }
-    baseHeight += rowHeight;
-    doc
-      .moveTo(padding, yStart - 5)
-      .lineTo(padding, yStart + baseHeight)
-      .stroke(); // Left Vertical line
-    doc
-      .moveTo(doc.page.width - padding, yStart - 5)
-      .lineTo(doc.page.width - padding, yStart + baseHeight)
-      .stroke(); // Right Vertical line
   };
 
   const creatHealthcareTable3 = (
@@ -346,7 +330,6 @@ export function healthCarePdf(
     const spouse1Data = policy.policyDetails.find(
       (detail) => detail.type.toLowerCase() == "spouse1"
     );
-    doc.moveDown(1); // add space above
 
     doc
       .fontSize(10)
@@ -357,7 +340,7 @@ export function healthCarePdf(
     doc = doc.fontSize(8);
     const yStart = doc.y;
     const padding = 15;
-    const rowHeight = 10;
+    const rowHeight = 15;
     let currentY = yStart;
 
     // Draw the vertical lines based on calculated height
@@ -369,14 +352,13 @@ export function healthCarePdf(
     drawTableRow(
       doc,
       currentY,
-      ["Name", "CNIC", "Date Of Birth"],
+      ["Name", "CNIC", "Age"],
       [
         spouseData?.name || "",
-        formatCNIC(spouseData?.cnic) || "",
-        spouseData?.dob ? new Date(spouseData.dob).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "",
+        spouseData?.cnic || "",
+        spouseData?.age?.toString() || "",
       ],
-      [200, 166.6, 166.6],
-      [true, true, true]
+      [200, 166.6, 166.6]
     );
     currentY += rowHeight;
     // drawTableRow(doc, currentY, ["Age", ""], [spouseData?.age?.toString() || "", ""], [250, 250]);
@@ -467,147 +449,142 @@ export function healthCarePdf(
       fatherAge = "Father-in-Law's Age";
     }
 
-    if (motherData != undefined || motherInLawData != undefined || bothInLawData != undefined || fatherData != undefined || fatherInLawData != undefined) {
+    doc.fontSize(10).font("Helvetica-Bold").text(tableHeading, x).moveDown(0.5);
 
-      doc.fontSize(10).font("Helvetica-Bold").text(tableHeading, x).moveDown(0.5);
+    doc = doc.fontSize(8);
+    const yStart = doc.y;
+    const padding = 15;
+    const rowHeight = 15;
+    let currentY = yStart;
 
-      doc = doc.fontSize(8);
-      const yStart = doc.y;
-      const padding = 15;
-      const rowHeight = 15;
-      let currentY = yStart;
+    doc
+      .moveTo(padding, yStart - 5)
+      .lineTo(doc.page.width - padding, yStart - 5)
+      .stroke(); // Top Horizontal line
 
-      doc
-        .moveTo(padding, yStart - 5)
-        .lineTo(doc.page.width - padding, yStart - 5)
-        .stroke(); // Top Horizontal line
-
-      if (motherData != null && motherData != undefined) {
-        drawTableRow(
-          doc,
-          currentY,
-          [motherName, motherCNIC],
-          [motherData.name || "", motherData.cnic || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          [motherAge, "Phone"],
-          [motherData.age?.toString() || "", motherData.contact_number || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          ["Address"],
-          [motherData.address || ""],
-          [250]
-        );
-        currentY += rowHeight;
-      }
-      if (fatherData != null && fatherData != undefined) {
-        drawTableRow(
-          doc,
-          currentY,
-          [fatherName, fatherCNIC],
-          [fatherData.name || "", fatherData.cnic || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          [fatherAge, "Phone"],
-          [fatherData.age?.toString() || "", fatherData.contact_number || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          ["Address"],
-          [fatherData.address || ""],
-          [250]
-        );
-        currentY += rowHeight;
-      }
-      if (motherInLawData != null && motherInLawData != undefined) {
-        drawTableRow(
-          doc,
-          currentY,
-          [motherName, motherCNIC],
-          [motherInLawData.name || "", motherInLawData.cnic || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          [motherAge, "Phone"],
-          [
-            motherInLawData.age?.toString() || "",
-            motherInLawData.contact_number || "",
-          ],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          ["Address"],
-          [motherInLawData.address || ""],
-          [250]
-        );
-        currentY += rowHeight;
-      }
-      if (fatherInLawData != null && fatherInLawData != undefined) {
-        drawTableRow(
-          doc,
-          currentY,
-          [fatherName, fatherCNIC],
-          [fatherInLawData.name || "", fatherInLawData.cnic || ""],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          [fatherAge, "Phone"],
-          [
-            fatherInLawData.age?.toString() || "",
-            fatherInLawData.contact_number || "",
-          ],
-          [250, 250]
-        );
-        currentY += rowHeight;
-        drawTableRow(
-          doc,
-          currentY,
-          ["Address"],
-          [fatherInLawData.address || ""],
-          [250]
-        );
-        currentY += rowHeight;
-      }
-      console.log(motherData, fatherData, motherInLawData, fatherInLawData);
-
-      doc
-        .moveTo(padding, yStart - 5)
-        .lineTo(padding, currentY)
-        .stroke(); // Left Vertical line
-      doc
-        .moveTo(doc.page.width - padding, yStart - 5)
-        .lineTo(doc.page.width - padding, currentY)
-        .stroke(); // Right Vertical line
-      doc
-        .moveTo(padding, currentY)
-        .lineTo(doc.page.width - padding, currentY)
-        .stroke();
+    if (motherData != null && motherData != undefined) {
+      drawTableRow(
+        doc,
+        currentY,
+        [motherName, motherCNIC],
+        [motherData.name || "", motherData.cnic || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        [motherAge, "Phone"],
+        [motherData.age?.toString() || "", motherData.contact_number || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        ["Address"],
+        [motherData.address || ""],
+        [250]
+      );
+      currentY += rowHeight;
+    }
+    if (fatherData != null && fatherData != undefined) {
+      drawTableRow(
+        doc,
+        currentY,
+        [fatherName, fatherCNIC],
+        [fatherData.name || "", fatherData.cnic || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        [fatherAge, "Phone"],
+        [fatherData.age?.toString() || "", fatherData.contact_number || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        ["Address"],
+        [fatherData.address || ""],
+        [250]
+      );
+      currentY += rowHeight;
+    }
+    if (motherInLawData != null && motherInLawData != undefined) {
+      drawTableRow(
+        doc,
+        currentY,
+        [motherName, motherCNIC],
+        [motherInLawData.name || "", motherInLawData.cnic || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        [motherAge, "Phone"],
+        [
+          motherInLawData.age?.toString() || "",
+          motherInLawData.contact_number || "",
+        ],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        ["Address"],
+        [motherInLawData.address || ""],
+        [250]
+      );
+      currentY += rowHeight;
+    }
+    if (fatherInLawData != null && fatherInLawData != undefined) {
+      drawTableRow(
+        doc,
+        currentY,
+        [fatherName, fatherCNIC],
+        [fatherInLawData.name || "", fatherInLawData.cnic || ""],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        [fatherAge, "Phone"],
+        [
+          fatherInLawData.age?.toString() || "",
+          fatherInLawData.contact_number || "",
+        ],
+        [250, 250]
+      );
+      currentY += rowHeight;
+      drawTableRow(
+        doc,
+        currentY,
+        ["Address"],
+        [fatherInLawData.address || ""],
+        [250]
+      );
+      currentY += rowHeight;
     }
 
+    doc
+      .moveTo(padding, yStart - 5)
+      .lineTo(padding, currentY)
+      .stroke(); // Left Vertical line
+    doc
+      .moveTo(doc.page.width - padding, yStart - 5)
+      .lineTo(doc.page.width - padding, currentY)
+      .stroke(); // Right Vertical line
+    doc
+      .moveTo(padding, currentY)
+      .lineTo(doc.page.width - padding, currentY)
+      .stroke();
   };
 
   const creatHealthCareRiderTable = (
@@ -680,8 +657,6 @@ export function healthCarePdf(
     const padding = 15;
     const rowHeight = 15;
     let currentY = yStart;
-    let cellHeight = productName.includes("parents-care-plus") ? 10 : 2;
-
 
     if (
       isFaysalBankOrder &&
@@ -839,7 +814,7 @@ export function healthCarePdf(
           ],
           [
             "Day-Care Procedures & Specialized Investigations in outpatient setting including but not limited to:\n" +
-            "Dialysis, Cataract Surgery, MRI, CT Scan, Endoscopy, Thallium Scan, Angiography, and Treatment of Fracture. Emergency dental treatment due to accidental injuries within 48 hours (for pain relief only).",
+              "Dialysis, Cataract Surgery, MRI, CT Scan, Endoscopy, Thallium Scan, Angiography, and Treatment of Fracture. Emergency dental treatment due to accidental injuries within 48 hours (for pain relief only).",
             `${dayCareValue}`,
           ],
           [
@@ -848,12 +823,12 @@ export function healthCarePdf(
           ],
           [
             "International Medical Second Opinion (MSO) Benefit:\n" +
-            " International Medic al Second opinion from MediGuide International from some of the best hospitals across the world.",
+              " International Medic al Second opinion from MediGuide International from some of the best hospitals across the world.",
             `${msoValue}`,
           ],
           [
             "Online Doctor Consultation:\n" +
-            "Online Audio / Video consultation through our Partner",
+              "Online Audio / Video consultation through our Partner",
             `${onlineDoctorValue}`,
           ],
         ],
@@ -864,8 +839,6 @@ export function healthCarePdf(
           headers: [],
         }
       );
-      currentY = doc.y + 10;
-
     } else if (isMMBLOrder) {
       let tableHeading = "COMPREHENSIVE HEALTH COVER";
       if (productName.includes("maternity")) {
@@ -879,7 +852,7 @@ export function healthCarePdf(
         headers: [tableHeading],
       });
 
-      currentY = doc.y + 10;
+      currentY = doc.y + 1.2;
       drawTable(doc, [], {
         x: 15,
         y: currentY,
@@ -887,7 +860,7 @@ export function healthCarePdf(
         headers: ["Product Benefit Table"],
       });
 
-      currentY = doc.y + 10;
+      currentY = doc.y + 1.2;
       drawTable(
         doc,
         [
@@ -896,20 +869,20 @@ export function healthCarePdf(
           [
             "Age Limit",
             "Entry Age: 18-60 years\n" +
-            "Renewal up to 65 years \n" +
-            "Children 02-24 Years\n",
+              "Renewal up to 65 years \n" +
+              "Children 02-24 Years\n",
           ],
           ["In case of Accidental Hospitalization", "Covered"],
           [
             "-Pre-Hospitalization Diagnostic Charges (30 days prior to Hospitalization)\n" +
-            "-Post-Hospitalization Follow-up Charges (30 days after discharge)\n" +
-            "-Physician’s Visit (In-Patient visit) Charges\n" +
-            "-Specialist Consultation (In-Patient visit) Charges \n" +
-            "-Intensive Care Unit (ICU) Charges \n" +
-            "-Miscellaneous Hospital Expenses\n" +
-            "-Surgical Operation Charges \n" +
-            "-Day-care Surgery Charges\n" +
-            "-Hospital Casualty Ward Accident & Emergency Services\n",
+              "-Post-Hospitalization Follow-up Charges (30 days after discharge)\n" +
+              "-Physician’s Visit (In-Patient visit) Charges\n" +
+              "-Specialist Consultation (In-Patient visit) Charges \n" +
+              "-Intensive Care Unit (ICU) Charges \n" +
+              "-Miscellaneous Hospital Expenses\n" +
+              "-Surgical Operation Charges \n" +
+              "-Day-care Surgery Charges\n" +
+              "-Hospital Casualty Ward Accident & Emergency Services\n",
             "Covered",
           ],
           [
@@ -937,9 +910,9 @@ export function healthCarePdf(
           ],
           productName.includes("maternity")
             ? [
-              "Maternity - Normal/C-Section (Waiting period 60 days)",
-              "PKR 100,000/=",
-            ]
+                "Maternity - Normal/C-Section (Waiting period 60 days)",
+                "PKR 100,000/=",
+              ]
             : [],
         ],
         {
@@ -949,7 +922,6 @@ export function healthCarePdf(
           headers: [],
         }
       );
-
     } else {
       const productName = policy.product.product_name.toLowerCase();
       const planName = policy.plan.name.toLowerCase();
@@ -993,7 +965,7 @@ export function healthCarePdf(
         headers: [tableHeading],
       });
 
-      currentY = doc.y + cellHeight;
+      currentY = doc.y + 1.2;
 
       let benefitTableHeading = "Product Benefit Table";
       if (productName.includes("parent")) {
@@ -1078,28 +1050,6 @@ export function healthCarePdf(
             hospitalLimit = "316,250";
           }
         }
-        if (policy?.policy_code?.includes("-R")) {
-          let hospitalPersent = 0;
-
-          if (policy?.policy_code?.includes("-R3")) {
-            hospitalPersent = 15;
-          } else if (policy?.policy_code?.includes("-R4")) {
-            hospitalPersent = 30;
-          } else {
-            for (let i = 5; i < 100; i++) {
-              if (policy?.policy_code?.includes(`-R${i}`)) {
-                hospitalPersent = 45;
-                break;
-              }
-            }
-          }
-          const hospitalPersentLimit = Math.round(
-            Number(policy?.sum_insured) +
-            (Number(policy?.sum_insured) * hospitalPersent) / 100
-          );
-
-          hospitalLimit = hospitalPersentLimit.toLocaleString("en-US");
-        }
       }
       if (productName.includes("personal")) {
         if (planName.includes("diamond")) {
@@ -1159,7 +1109,7 @@ export function healthCarePdf(
         } else if (planName.includes("bronze")) {
           hospitalLimit = "125,000";
           accidentalInjuries = "50,000";
-          room = "General";
+          room = "General Ward";
           hopstalBenifit = "12,000";
           ambulanceExpense = "1,500";
           if (
@@ -1170,29 +1120,6 @@ export function healthCarePdf(
             hospitalLimit = "143,750";
           }
         }
-        if (policy?.policy_code?.includes("-R")) {
-          let hospitalPersent = 0;
-
-          if (policy?.policy_code?.includes("-R3")) {
-            hospitalPersent = 15;
-          } else if (policy?.policy_code?.includes("-R4")) {
-            hospitalPersent = 30;
-          } else {
-            for (let i = 5; i < 100; i++) {
-              if (policy?.policy_code?.includes(`-R${i}`)) {
-                hospitalPersent = 45;
-                break;
-              }
-            }
-          }
-          const hospitalPersentLimit = Math.round(
-            Number(policy?.sum_insured) +
-            (Number(policy?.sum_insured) * hospitalPersent) / 100
-          );
-
-          hospitalLimit = hospitalPersentLimit.toLocaleString("en-US");
-        }
-
       }
       if (isFaysalBankOrder) {
         if (planName.includes("gold")) {
@@ -1478,16 +1405,17 @@ export function healthCarePdf(
             headers: [],
           }
         );
-        currentY = doc.y + cellHeight;
 
-        drawTable(doc, [[{ text: "Sub Limits", bold: true }]], {
+        currentY = doc.y + 1.4;
+
+        drawTable(doc, [["Sub Limits"]], {
           x: 15,
           y: currentY,
           columnWidths: [565],
           headers: [],
         });
 
-        currentY = doc.y + cellHeight;
+        currentY = doc.y + 1.4;
 
         let subLimitRows = [];
         let roomHeading = "Room & Board (Per Day)";
@@ -1625,7 +1553,7 @@ export function healthCarePdf(
             "1st year 20% of annual limit\n 2nd year 30% of annual limit\n 3rd year 50% of annual limit\n",
           ]);
         } else if (!isFranchiseOrder && !productName.includes("mib")) {
-          // subLimitRows.push(["Medical Second Option", "Covered"]);
+          subLimitRows.push(["Medical Second Option", "Covered"]);
         }
 
         if (isParent) {
@@ -1647,24 +1575,24 @@ export function healthCarePdf(
         }
 
         if (!isParent) {
-          // subLimitRows.push([
-          //   "Increase in Hospitalization due to accidental Injuries",
-          //   accidentalInjuries,
-          // ]);
-          // subLimitRows.push([
-          //   "Maternity Expenses",
-          //   "Normal   30,000\nc-section   45,000",
-          // ]);
-          // subLimitRows.push([
-          //   "Day Care procedures and specialized investigation ",
-          //   "Covered",
-          // ]);
-          // subLimitRows.push([
-          //   "Emergency Accidental Outpatient Expenses ",
-          //   "Covered ",
-          // ]);
           subLimitRows.push([
-            "Online Doctor Consultation*:",
+            "Increase in Hospitalization due to accidental Injuries",
+            accidentalInjuries,
+          ]);
+          subLimitRows.push([
+            "Maternity Expenses",
+            "Normal   30,000\nc-section   45,000",
+          ]);
+          subLimitRows.push([
+            "Day Care procedures and specialized investigation ",
+            "Covered",
+          ]);
+          subLimitRows.push([
+            "Emergency Accidental Outpatient Expenses ",
+            "Covered ",
+          ]);
+          subLimitRows.push([
+            "Emergency Accidental Dental Expense ",
             "Covered ",
           ]);
         }
@@ -1677,56 +1605,25 @@ export function healthCarePdf(
         });
       }
 
-      currentY = doc.y + 1.2;
+      currentY = doc.y + 6;
 
-      // if (
-      //   isParent ||
-      //   isEasyInsuranceOrder ||
-      //   isMawazanaOrder ||
-      //   isSmartChoiceOrder ||
-      //   isLetsCompareOrder
-      // ) {
-      //   const wording =
-      //     "* Online Doctor Consultation is being provided by, owned, and operated by a third party “Sehat Kahani”, over which Jubilee General has no control, neither Jubilee assumes any liability arising due to the quality of service being provided by the third-party vendor.";
-      //   // drawTable(doc, [[wording]], {
-      //   //   x: 15,
-      //   //   y: currentY,
-      //   //   columnWidths: [565],
-      //   //   headers: [],
-      //   // });
-      // }
+      if (
+        isParent ||
+        isEasyInsuranceOrder ||
+        isMawazanaOrder ||
+        isSmartChoiceOrder ||
+        isLetsCompareOrder
+      ) {
+        const wording =
+          "* Online Doctor Consultation is being provided by, owned, and operated by a third party “Sehat Kahani”, over which Jubilee General has no control, neither Jubilee assumes any liability arising due to the quality of service being provided by the third-party vendor.";
+        drawTable(doc, [[wording]], {
+          x: 15,
+          y: currentY,
+          columnWidths: [565],
+          headers: [],
+        });
+      }
     }
-
-    if (productName.includes("parents-care-plus")) {
-      doc
-        .fontSize(6.5)
-        .text(
-          "I/we agree and understand that the Online Doctor Consultation service in the selected product is being provided by, owned and operated by a third party 'Sehat Kahani' over which Jubilee General has no control, neither Jubilee General assumes any liability arising due to the quality of service being provided by the third party vendor.",
-          15,
-          currentY + 2,
-          { width: doc.page.width - 30 }
-        );
-      currentY = doc.y + 5;
-      doc
-        .fontSize(6.5)
-        .text(
-          "All Terms, Conditions and Exclusions as per standard Jubilee General CriticalCare Policy wordings and Clauses. The agreement to purchase this insurance coverage is a declaration that I/we have read & understood the terms & conditions stated in the policy wordings & clauses and I/we hereby agree to the terms, conditions & exclusions stated therein. I also declare and affirm that I am in good health. I hereby declare that all information stated in this schedule is true and complete and that I/we have not concealed any material information from Jubilee General Insurance Company Limited.",
-          15,
-          currentY,
-          { width: doc.page.width - 30 }
-        );
-    }
-    else {
-      doc
-        .fontSize(6.5)
-        .text(
-          "* Online Doctor Consultation is being provided by, owned and operated by a third party “Sehat Kahani”, over which Jubilee General has no control, neither Jubilee assumes any liability arising due to the quality of service being provided by the third party vendor",
-          15,
-          currentY + cellHeight
-        )
-        .moveDown();
-    }
-
   };
 
   const addVerificationAndQR = (
@@ -1805,7 +1702,7 @@ export function healthCarePdf(
   ) => {
     const margin = doc.options.margin ? +doc.options.margin : 20;
     const pageHeight = doc.page.height;
-    const footerHeight = productName.includes("parent") ? 30 : 30; // Approximate height based on content
+    const footerHeight = productName.includes("parent") ? 30 : 140; // Approximate height based on content
     let yStart = doc.y;
 
     let retailBranch = "";
@@ -1842,361 +1739,154 @@ export function healthCarePdf(
       .fontSize(6.5)
       .text(
         "For Claims, Complaints or " +
-        "Queries: " +
-        retailBranch +
-        " Retail Business Division, Jubilee General Insurance" +
-        " Company Limited " +
-        Windowtakful +
-        ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
-        numbers +
-        " " +
-        email +
-        " Our Toll Free Number : 0800 03786",
+          "Queries: " +
+          retailBranch +
+          " Retail Business Division, Jubilee General Insurance" +
+          " Company Limited " +
+          Windowtakful +
+          ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
+          numbers +
+          " " +
+          email +
+          " Our Toll Free Number : 0800 03786",
         margin,
         yStart + 2
       )
       .moveDown();
 
-    // if (policy.apiUser?.name.includes("bookme")) {
-    // } else {
-    //   if (!productName.includes("parent")) {
-    //     // Column 1: Claims and Contact Information
-    //     doc
-    //       .fontSize(7)
-    //       .font("Helvetica-Bold")
-    //       .text("For assistance World-wide, contact", margin, yStart + 25, {
-    //         width: doc.page.width / 2,
-    //         align: "left",
-    //       });
-    //     doc
-    //       .fontSize(8)
-    //       .font("Helvetica")
-    //       .text(
-    //         "GLOBAL RESPONSE    Tel: +44 (0)2920 474131",
-    //         margin,
-    //         yStart + 33,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc.text(
-    //       `Cardiff, UK    Email: operations@global-response.co.uk\nCC to: Travel@jubileegeneral.com.pk`,
-    //       margin,
-    //       yStart + 42,
-    //       { width: doc.page.width / 2, align: "left" }
-    //     );
-
-    //     doc
-    //       .fontSize(7)
-    //       .font("Helvetica-Bold")
-    //       .text("For assistance in Africa, contact", margin, yStart + 67, {
-    //         width: doc.page.width / 2,
-    //         align: "left",
-    //       });
-    //     doc
-    //       .fontSize(8)
-    //       .font("Helvetica")
-    //       .text(
-    //         "GLOBAL RESPONSE    Tel: +27 10 100 3045",
-    //         margin,
-    //         yStart + 77,
-    //         {
-    //           width: doc.page.width / 2,
-    //           align: "left",
-    //         }
-    //       );
-    //     doc.text(
-    //       `Johannesburg, Email: operations@global-response.co.uk\nSouth Africa`,
-    //       margin,
-    //       yStart + 86,
-    //       { width: doc.page.width / 2, align: "left" }
-    //     );
-
-    //     doc
-    //       .fontSize(7)
-    //       .font("Helvetica-Bold")
-    //       .text("For assistance in Europe, contact", margin, yStart + 108, {
-    //         width: doc.page.width / 2,
-    //         align: "left",
-    //       });
-    //     doc
-    //       .fontSize(8)
-    //       .font("Helvetica")
-    //       .text(
-    //         "GLOBAL RESPONSE    Tel: +34 919 04 47 15",
-    //         margin,
-    //         yStart + 117,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc.text(
-    //       `Madrid, Spain Email: operations@global-response.co.uk`,
-    //       margin,
-    //       yStart + 126,
-    //       { width: doc.page.width / 2, align: "left" }
-    //     );
-
-    //     // Column 2: Exclusions
-    //     doc
-    //       .fontSize(7)
-    //       .font("Helvetica-Bold")
-    //       .text(
-    //         "For assistance in the Americas, contact",
-    //         margin + doc.page.width / 2 + 20,
-    //         yStart + 25,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc
-    //       .fontSize(8)
-    //       .font("Helvetica")
-    //       .text(
-    //         "GLOBAL RESPONSE    Tel: +1 317 927 6895",
-    //         margin + doc.page.width / 2 + 20,
-    //         yStart + 33,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc.text(
-    //       `Indianapolis, USA Email: operations@global-response.co.uk`,
-    //       margin + doc.page.width / 2 + 20,
-    //       yStart + 42,
-    //       { width: doc.page.width / 2, align: "left" }
-    //     );
-
-    //     doc
-    //       .fontSize(7)
-    //       .font("Helvetica-Bold")
-    //       .text(
-    //         "For assistance in Asia Pacific, contact",
-    //         margin + doc.page.width / 2 + 20,
-    //         yStart + 63,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc
-    //       .fontSize(8)
-    //       .font("Helvetica")
-    //       .text(
-    //         "GLOBAL RESPONSE    Tel: +852 3008 8234",
-    //         margin + doc.page.width / 2 + 20,
-    //         yStart + 74,
-    //         { width: doc.page.width / 2, align: "left" }
-    //       );
-    //     doc.text(
-    //       `Hong Kong Email: operations@global-response.co.uk`,
-    //       margin + doc.page.width / 2 + 20,
-    //       yStart + 83,
-    //       { width: doc.page.width / 2, align: "left" }
-    //     );
-    //   }
-    // }
-  };
-  const creatHealthcareTableDisclamer = (
-    doc: InstanceType<typeof PDFDocument>,
-    policy: FullPolicy,
-    order: FullOrder,
-    isHMBOrder: boolean
-  ) => {
-    let titleDisclamer = policy.takaful_policy ? "PMD" : "Policy";
-    doc = doc.fontSize(8);
-    const padding = 15;
-
-    const rowHeight = 10;
-
-    // Starting Y (top of the table)
-    const yStart = doc.y;
-
-    // Draw ONLY top horizontal line first
-    doc
-      .moveTo(padding, yStart - 5)
-      .lineTo(doc.page.width - padding, yStart - 5)
-      .stroke();
-
-    let currentY = yStart;
-
-    if (productName.includes("hercare")) {
-
-      const conditions = [
-        { label: "I. Critical Conditions", value: "II. Additional Benefits" },
-
-        { label: "a. Breast Cancer", value: "a. Congenital Disability Benefits" },
-        { label: "b. Cervical Cancer", value: "i) Down’s Syndrome" },
-        { label: "c. Burns", value: "ii) Congenital Cyanotic Heart Disease" },
-        { label: "d. Paralysis of Multi-Trauma", value: "iii) Trachea-esophageal Fistula" },
-        { label: "e. Fallopian Tube Cancer", value: "iv) Cleft Palate with/without cleft lip" },
-        { label: "f. Uterine or Endometrial Cancer", value: "v) Spina Bifida" },
-
-        // Remaining rows on right side are empty
-        { label: "g. Vaginal Cancer", value: "" },
-        { label: "h. Ovarian Cancer", value: "" },
-      ];
-
-
-      // currentY += rowHeight;
-      drawTableRow(
-        doc,
-        currentY,
-        [`Covered Conditions:`],
-        [""],
-        [250],
-        [true],
-      );
-      currentY += rowHeight;
-      conditions.forEach((item, index) => {
-        drawTableRow(
-          doc,
-          currentY,
-          ["", item.label, ""],
-          ["", item.value, ""],
-          [90, 300, 90],
-          [index === 0, index === 0, index === 0],
-          [index === 0, index === 0, index === 0],
-          6,
-          6,
-          false
-        );
-        currentY += rowHeight;
-      });
-
-
+    if (policy.apiUser?.name.includes("bookme")) {
     } else {
-      // All table rows here (only labels shown)
-      const rows = [
-        "1- Pre-existing Conditionse",
-        "2- Maternity Benefits",
-        "3- Supply of an eye glasses or contact lenses, dentures, hearing aid",
-        "4- Dental examinations extractions or filing",
-        "5- Charges for guest meals, telephone, laundry and similar services",
-        "6- Mental illness due to any cause / drug addiction",
-        "7- Congenital anomalies and cosmetic treatment",
-        "8- Take home medication",
-        "9- COVID-19 related covered expenses excluded for non-vaccinated (age 18+)"
-      ];
-
-      // Header row
-      drawTableRow(
-        doc,
-        currentY,
-        [`Some of the benefits not covered in the ${titleDisclamer}`],
-        [""],
-        [500], // full width
-        [true],
-
-      );
-      currentY += rowHeight;
-
-      // Loop in pairs
-      for (let i = 0; i < rows.length; i += 2) {
-        const label1 = rows[i];
-        const label2 = rows[i + 1] || ""; // handle odd number of labels
-        drawTableRow(
-          doc,
-          currentY,
-          [label1, label2],
-          ["", ""],
-          [250, 250],
-          [false, false],
-          [false, false],
-          6,
+      if (!productName.includes("parent")) {
+        // Column 1: Claims and Contact Information
+        doc
+          .fontSize(7)
+          .font("Helvetica-Bold")
+          .text("For assistance World-wide, contact", margin, yStart + 25, {
+            width: doc.page.width / 2,
+            align: "left",
+          });
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text(
+            "GLOBAL RESPONSE    Tel: +44 (0)2920 474131",
+            margin,
+            yStart + 33,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc.text(
+          `Cardiff, UK    Email: operations@global-response.co.uk\nCC to: Travel@jubileegeneral.com.pk`,
+          margin,
+          yStart + 42,
+          { width: doc.page.width / 2, align: "left" }
         );
-        currentY += rowHeight;
+
+        doc
+          .fontSize(7)
+          .font("Helvetica-Bold")
+          .text("For assistance in Africa, contact", margin, yStart + 67, {
+            width: doc.page.width / 2,
+            align: "left",
+          });
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text(
+            "GLOBAL RESPONSE    Tel: +27 10 100 3045",
+            margin,
+            yStart + 77,
+            {
+              width: doc.page.width / 2,
+              align: "left",
+            }
+          );
+        doc.text(
+          `Johannesburg, Email: operations@global-response.co.uk\nSouth Africa`,
+          margin,
+          yStart + 86,
+          { width: doc.page.width / 2, align: "left" }
+        );
+
+        doc
+          .fontSize(7)
+          .font("Helvetica-Bold")
+          .text("For assistance in Europe, contact", margin, yStart + 108, {
+            width: doc.page.width / 2,
+            align: "left",
+          });
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text(
+            "GLOBAL RESPONSE    Tel: +34 919 04 47 15",
+            margin,
+            yStart + 117,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc.text(
+          `Madrid, Spain Email: operations@global-response.co.uk`,
+          margin,
+          yStart + 126,
+          { width: doc.page.width / 2, align: "left" }
+        );
+
+        // Column 2: Exclusions
+        doc
+          .fontSize(7)
+          .font("Helvetica-Bold")
+          .text(
+            "For assistance in the Americas, contact",
+            margin + doc.page.width / 2 + 20,
+            yStart + 25,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text(
+            "GLOBAL RESPONSE    Tel: +1 317 927 6895",
+            margin + doc.page.width / 2 + 20,
+            yStart + 33,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc.text(
+          `Indianapolis, USA Email: operations@global-response.co.uk`,
+          margin + doc.page.width / 2 + 20,
+          yStart + 42,
+          { width: doc.page.width / 2, align: "left" }
+        );
+
+        doc
+          .fontSize(7)
+          .font("Helvetica-Bold")
+          .text(
+            "For assistance in Asia Pacific, contact",
+            margin + doc.page.width / 2 + 20,
+            yStart + 63,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc
+          .fontSize(8)
+          .font("Helvetica")
+          .text(
+            "GLOBAL RESPONSE    Tel: +852 3008 8234",
+            margin + doc.page.width / 2 + 20,
+            yStart + 74,
+            { width: doc.page.width / 2, align: "left" }
+          );
+        doc.text(
+          `Hong Kong Email: operations@global-response.co.uk`,
+          margin + doc.page.width / 2 + 20,
+          yStart + 83,
+          { width: doc.page.width / 2, align: "left" }
+        );
       }
-
     }
-
-
-    // Draw BOTTOM horizontal line
-    doc
-      .moveTo(padding, currentY)
-      .lineTo(doc.page.width - padding, currentY)
-      .stroke();
-
-    // ✅ Draw dynamic LEFT vertical line
-    doc
-      .moveTo(padding, yStart - 5)
-      .lineTo(padding, currentY)
-      .stroke();
-
-    // ✅ Draw dynamic RIGHT vertical line
-    doc
-      .moveTo(doc.page.width - padding, yStart - 5)
-      .lineTo(doc.page.width - padding, currentY)
-      .stroke();
-    // First disclaimer paragraph
-    doc
-      .fontSize(6.5)
-      .text(
-        "I/we agree and understand that the Online Doctor Consultation service in the selected product is being provided by, owned and operated by a third party 'Sehat Kahani' over which Jubilee General has no control, neither Jubilee General assumes any liability arising due to the quality of service being provided by the third party vendor.",
-        15,
-        currentY + 2,
-        { width: doc.page.width - 30 }
-      );
-    currentY = doc.y + 5;
-    doc
-      .fontSize(6.5)
-      .text(
-        "All Terms, Conditions and Exclusions as per standard Jubilee General CriticalCare Policy wordings and Clauses. The agreement to purchase this insurance coverage is a declaration that I/we have read & understood the terms & conditions stated in the policy wordings & clauses and I/we hereby agree to the terms, conditions & exclusions stated therein. I also declare and affirm that I am in good health. I hereby declare that all information stated in this schedule is true and complete and that I/we have not concealed any material information from Jubilee General Insurance Company Limited.",
-        15,
-        currentY,
-        { width: doc.page.width - 30 }
-      );
-
   };
-
-  const creatHealthcareTableBene = (
-    doc: InstanceType<typeof PDFDocument>,
-    policy: FullPolicy,
-    order: FullOrder
-  ) => {
-    const x = 20;
-    const beneficiaryData = policy.policyDetails.find(
-      (detail) => detail.type.toLowerCase() === "beneficiary"
-    );
-    doc
-      .fontSize(10)
-      .font("Helvetica-Bold")
-      .text("Beneficiary Details", x)
-      .moveDown(0.5);
-
-    doc = doc.fontSize(8);
-    const yStart = doc.y;
-    const padding = 15;
-    const rowHeight = 10;
-    let currentY = yStart;
-
-    // Draw the vertical lines based on calculated height
-    doc
-      .moveTo(padding, yStart - 5)
-      .lineTo(doc.page.width - padding, yStart - 5)
-      .stroke();
-    drawTableRow(
-      doc,
-      currentY,
-      ["Name", "Phone", "Relation"],
-      [
-        beneficiaryData?.name || "",
-        formatContact(beneficiaryData?.contact_number) || "",
-        (beneficiaryData?.relation ? beneficiaryData.relation.charAt(0).toUpperCase() + beneficiaryData.relation.slice(1).toLowerCase() : "")
-      ],
-      [200, 166.6, 166.6],
-      [true, true, true]
-    );
-    currentY += rowHeight;
-    doc
-      .moveTo(padding, yStart - 5)
-      .lineTo(padding, currentY)
-      .stroke(); // Left Vertical line
-    doc
-      .moveTo(doc.page.width - padding, yStart - 5)
-      .lineTo(doc.page.width - padding, currentY)
-      .stroke(); // Right Vertical line
-    doc
-      .moveTo(padding, currentY)
-      .lineTo(doc.page.width - padding, currentY)
-      .stroke(); // Bottom Horizontal line
-  };
-
-
-
 
   //
   // Header Start
-  // const jubileeImage = policy && policy.takaful_policy ? `${ process.env.BASE_URL } / uploads / logo / takaful_logo.png` : `${ process.env.BASE_URL } / uploads / logo / insurance_logo.png`;
+  // const jubileeImage = policy && policy.takaful_policy ? `${process.env.BASE_URL}/uploads/logo/takaful_logo.png` : `${process.env.BASE_URL}/uploads/logo/insurance_logo.png`;
   const jubileeImage = path.join(
     process.cwd(),
     "uploads",
@@ -2210,7 +1900,7 @@ export function healthCarePdf(
       mapper.child_sku.toLowerCase().includes("personal")
     )
   ) {
-    // productLogo = `${ __dirname }../../../../ uploads / logo / personal.png`;
+    // productLogo = `${__dirname}../../../../uploads/logo/personal.png`;
     productLogo = path.join(process.cwd(), "uploads", "logo", "personal.png");
   } else if (productName.includes("lifestyle")) {
     productLogo = path.join(process.cwd(), "uploads", "logo", "lifestyle.png");
@@ -2259,7 +1949,7 @@ export function healthCarePdf(
   } else {
     productLogo = path.join(process.cwd(), "uploads", "logo", "family.png");
   }
-  console.log("productName", productName);
+
   // Append Header
   addScheduleHeader(doc, jubileeImage, productLogo);
   // Header End
@@ -2302,13 +1992,7 @@ export function healthCarePdf(
     }
 
     doc.moveDown(0.5);
-    if (productName.includes("hercare")) {
-      creatHealthcareTableBene(doc, policy, order);
-      doc.moveDown(1.5);
-    } else {
-      creatHealthcareTable4(doc, policy, order);
-
-    }
+    creatHealthcareTable4(doc, policy, order);
 
     if (
       productName.includes("family") ||
@@ -2319,16 +2003,11 @@ export function healthCarePdf(
     } else if (!productName.includes("parents-care-plus")) {
       // creatHealthcareTable5(document, ffont, f1, policy);
     }
-    if (!productName.includes("parents-care-plus")) {
-      // creatHealthcareTable5(document, ffont, f1, policy);
-      creatHealthcareTableDisclamer(doc, policy, order, isHMBOrder);
-    }
-    // doc.moveDown(1);
 
-    // doc.moveDown(1);
+    doc.moveDown(1.5);
     addVerificationAndQR(doc, policy, order, qrImageUrl, isFranchiseOrder);
 
-    // doc.moveDown(0.5);
+    doc.moveDown(0.5);
     addFooter(doc, policy, order);
   }
 }

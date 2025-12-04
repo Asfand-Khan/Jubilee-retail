@@ -532,8 +532,8 @@ model MotorQuote {
   name            String  @db.VarChar(50)
   mobile          String? @db.VarChar(50)
   email           String? @db.VarChar(50)
-  premium_value   Int?
-  rate            Int?
+  premium_value    String? @db.VarChar(50)
+  rate             String? @db.VarChar(50)
   vehicle_make    String? @db.VarChar(50)
   vehicle_submake String? @db.VarChar(50)
   vehicle_model   String? @db.VarChar(50)

@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
-import { createGeneralApiTable1, drawTableRow, formatCNIC, formatContact, formatPrice } from "./pdfUtils";
+import { createGeneralApiTable1, drawTableRow } from "./pdfUtils";
 import { addVerificationAndQR } from "./sections/verification";
 import path from "path";
 
@@ -72,7 +72,7 @@ export function purchaseProtectionPdf(
       doc,
       currentY,
       ["CNIC", "Phone"],
-      [formatCNIC(customerData?.cnic) || "", formatContact(customerData?.contact_number) || ""],
+      [customerData?.cnic || "", customerData?.contact_number || ""],
       [250, 250]
     );
     currentY += rowHeight;
@@ -125,40 +125,36 @@ export function purchaseProtectionPdf(
     drawTableRow(
       doc,
       currentY,
-      ["Name", "", "Serial Number"],
-      [protectionData.name, "", protectionData.serial_number || "N/A"],
-      [166, 166, 166],
-      [true, false, true]
+      ["Name", "Serial Number"],
+      [protectionData.name, protectionData.serial_number || "N/A"],
+      [250, 250]
     );
     currentY += rowHeight;
     drawTableRow(
       doc,
       currentY,
-      ["IMEI", "Total Price", "Sum Insured"],
-      [protectionData.imei || "N/A", formatPrice(protectionData.total_price), formatPrice(protectionData.sum_insured) || "N/A"],
-      [166, 166, 166],
-      [true, true, true]
+      ["IMEI", "Sum Insured"],
+      [protectionData.imei || "N/A", protectionData.sum_insured || "N/A"],
+      [250, 250]
     );
-    // currentY += rowHeight;
-    // drawTableRow(
-    //   doc,
-    //   currentY,
-    //   ["Total Price", "Item Price"],
-    //   [protectionData.total_price || "N/A", protectionData.item_price || "N/A"],
-    //   [166, 166]
-    // );
     currentY += rowHeight;
     drawTableRow(
       doc,
       currentY,
-      ["Recived Premium", "Item Price", "Duration"],
+      ["Total Price", "Item Price"],
+      [protectionData.total_price || "N/A", protectionData.item_price || "N/A"],
+      [250, 250]
+    );
+    currentY += rowHeight;
+    drawTableRow(
+      doc,
+      currentY,
+      ["Recived Premium", "Duration"],
       [
-        formatPrice(protectionData.received_premium) || "N/A",
-        formatPrice(protectionData.item_price) || "N/A",
+        protectionData.received_premium || "N/A",
         `${protectionData.duration} (${protectionData.duration_type})` || "N/A",
       ],
-      [166, 166, 166],
-      [true, true, true]
+      [250, 250]
     );
     currentY += rowHeight;
 
@@ -218,16 +214,16 @@ export function purchaseProtectionPdf(
       .fontSize(6.5)
       .text(
         "For Claims, Complaints or " +
-        "Queries: " +
-        retailBranch +
-        " Retail Business Division, Jubilee General Insurance" +
-        " Company Limited " +
-        Windowtakful +
-        ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
-        numbers +
-        " " +
-        email +
-        " Our Toll Free Number : 0800 03786",
+          "Queries: " +
+          retailBranch +
+          " Retail Business Division, Jubilee General Insurance" +
+          " Company Limited " +
+          Windowtakful +
+          ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
+          numbers +
+          " " +
+          email +
+          " Our Toll Free Number : 0800 03786",
         margin,
         yStart + 2
       )
@@ -241,9 +237,9 @@ export function purchaseProtectionPdf(
     policy && policy.takaful_policy ? "takaful_logo.png" : "insurance_logo.png"
   );
   let productLogo = path.join(process.cwd(), "uploads", "logo", "purchase_protection.png");
-  console.log("productLogo", productLogo);
-  addScheduleHeader(doc, jubileeImage, productLogo, true);
 
+  addScheduleHeader(doc, jubileeImage, productLogo, true);
+  
   createGeneralApiTable1(doc, policy, order);
   doc.moveDown();
 
@@ -262,7 +258,7 @@ export function purchaseProtectionPdf(
   }
 
   let paragraph = `All Terms, Conditions and Exclusions as per standard Jubilee General ${productName} wordings and Clauses.\nThe agreement to purchase this ${policyTypeText} coverage is a declaration that I/we have read & understood the terms & conditions stated in the policy wordings & clauses and I/we hereby agree to the terms, conditions & exclusions stated therein. I also declare and affirm that I am in good health I hereby declare that all information stated in this schedule is true and complete and that I/we have not concealed any material confirmation from Jubilee General Insurance Company Limited ${windowText}`;
-
+  
   doc.fontSize(6).font("Helvetica").text(paragraph, 15, doc.y + 5);
 
   addVerificationAndQR(doc, policy, order, qrImageUrl, isFranchiseOrder);

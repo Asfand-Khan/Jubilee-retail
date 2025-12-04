@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
-import { createGeneralApiTable1, drawTable, drawTableRow, formatCNIC, formatContact, capitalizeWords, formatPrice } from "./pdfUtils";
+import { createGeneralApiTable1, drawTable, drawTableRow } from "./pdfUtils";
 import { format } from "date-fns/format";
 import path from "path";
 
@@ -18,7 +18,7 @@ export function viaCarePdf(
   const apiUser = policy.apiUser;
   const paymentMethod = order.payemntMethod;
   const productName = policy.product.product_name;
-  console.log(policy);
+
   let isFranchiseOrder = false;
   let isFaysalBankOrder = false;
 
@@ -88,7 +88,7 @@ export function viaCarePdf(
       doc,
       currentY,
       ["Name", "CNIC"],
-      [customerData?.name || "", formatCNIC(customerData?.cnic) || ""],
+      [customerData?.name || "", customerData?.cnic || ""],
       [250, 250]
     );
     currentY += rowHeight;
@@ -108,7 +108,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["Phone", "Passport No"],
-        [formatContact(customerData?.contact_number) || "", customerData?.passport_no || ""],
+        [customerData?.contact_number || "", customerData?.passport_no || ""],
         [250, 250]
       );
     } else {
@@ -116,7 +116,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["Phone"],
-        [formatContact(customerData?.contact_number) || ""],
+        [customerData?.contact_number || ""],
         [500]
       );
     }
@@ -159,7 +159,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["Date of Birth", "Relationship with Beneficiary"],
-        [dobStr, capitalizeWords(benefRelation)],
+        [dobStr, benefRelation],
         [250, 250]
       );
       currentY += rowHeight;
@@ -167,7 +167,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["Age", "Beneficiary's Contact No"],
-        [age?.toString() || "", formatContact(benefContact)],
+        [age?.toString() || "", benefContact],
         [250, 250]
       );
       currentY += rowHeight;
@@ -175,7 +175,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["", "Beneficiary's CNIC"],
-        ["", formatCNIC(benefCnic)],
+        ["", benefCnic],
         [250, 250]
       );
       currentY += rowHeight;
@@ -221,11 +221,7 @@ export function viaCarePdf(
     const spouse1Data = policy.policyDetails.find(
       (detail) => detail.type.toLowerCase() == "spouse1"
     );
-    let DATE_FORMAT = "MMM dd, yyyy";
-    const dobDate = new Date(spouseData?.dob || Date.now());
 
-
-    let spouseDob = format(dobDate, DATE_FORMAT)
     doc
       .fontSize(10)
       .font("Helvetica-Bold")
@@ -237,6 +233,7 @@ export function viaCarePdf(
     const padding = 15;
     const rowHeight = 15;
     let currentY = yStart;
+
     // Draw the vertical lines based on calculated height
     doc
       .moveTo(padding, yStart - 5)
@@ -246,10 +243,9 @@ export function viaCarePdf(
     drawTableRow(
       doc,
       currentY,
-      ["Name", "CNIC", "Date Of Birth"],
-      [spouseData?.name || "", formatCNIC(spouseData?.cnic) || "", spouseDob || ""],
-      [166, 166, 166],
-      [true, true, true]
+      ["Name", "CNIC"],
+      [spouseData?.name || "", spouseData?.cnic || ""],
+      [250, 250]
     );
     currentY += rowHeight;
     drawTableRow(
@@ -266,7 +262,7 @@ export function viaCarePdf(
         doc,
         currentY,
         ["Name", "CNIC"],
-        [spouse1Data?.name || "", formatCNIC(spouse1Data?.cnic) || ""],
+        [spouse1Data?.name || "", spouse1Data?.cnic || ""],
         [250, 250]
       );
       currentY += rowHeight;
@@ -345,11 +341,8 @@ export function viaCarePdf(
     } else {
       condLabel = "Tenure";
       let noOfDays = travelData.no_of_days || "";
-      if (!noOfDays.includes("months") && !noOfDays.includes("days") && !travelData.travel_purpose?.toLowerCase().includes("studies")) {
+      if (!noOfDays.includes("months") && !noOfDays.includes("days")) {
         noOfDays += " Days";
-      }
-      if (travelData.travel_purpose?.toLowerCase().includes("studies")) {
-        noOfDays += " Months";
       }
       condValue = noOfDays;
       purposeLabel = "Purpose of travel";
@@ -370,16 +363,13 @@ export function viaCarePdf(
     let stayValue = travelData.no_of_days || "";
     if (stayValue.includes("months")) {
       stayValue = "Upto " + stayValue;
-    } else if (travelData.travel_purpose?.toLowerCase().includes("studies")) {
-      stayValue = "Upto " + stayValue + " Months";
-    }
-    else {
+    } else {
       stayValue = "Upto " + stayValue + " Days";
     }
 
     // Premium logic (simplified, no filer/non-filer)
     const premium = isTakaful ? "Contribution" : "Premium";
-    const netPremium = formatPrice(order.payment);
+    const netPremium = order.payment;
     const netPremiumStr = "PKR " + netPremium + "/-";
 
     // Build rows as {ll, lv, rl, rv}
@@ -411,7 +401,7 @@ export function viaCarePdf(
 
     // Last row: Travel From and optional right pair
     let lastRl = purposeLabel;
-    let lastRv = capitalizeWords(purposeValue);
+    let lastRv = purposeValue;
     if (isFranchiseOrder) {
       lastRl = "Travel By";
       lastRv = travelData.travel_type || "";
@@ -856,7 +846,7 @@ export function viaCarePdf(
       doc,
       currentY,
       ["Sponsor", "Sponsor's Contact No"],
-      [travelData.sponsor || "", formatContact(travelData.sponsor_contact) || ""],
+      [travelData.sponsor || "", travelData.sponsor_contact || ""],
       [250, 250]
     );
     currentY += rowHeight;
@@ -902,40 +892,20 @@ export function viaCarePdf(
     const padding = 15;
     const rowHeight = 15;
     let currentY = yStart;
-    // Set limits based on plan
-    let accidentalLimit = "--";
-    let hospitalizationLimit = "--";
-    let burialLimit = "--";
-    let baggageLimit = "--";
-    let cashLimit = "--";
-    let cnicLimit = "--";
-
-    if (plan.name.toLowerCase().includes("a")) {
-      accidentalLimit = "300,000";
-      hospitalizationLimit = "75,000";
-      burialLimit = "50,000";
-      baggageLimit = "20,000";
-      cashLimit = "10,000";
-    }
-    if (plan.name.toLowerCase().includes("b")) {
-      accidentalLimit = "500,000";
-      hospitalizationLimit = "150,000";
-      burialLimit = "100,000";
-      baggageLimit = "40,000";
-      cashLimit = "20,000";
-    }
-
 
     drawTable(
       doc,
       [
         ["Product Plan", plan.name],
-        ["Accidental Death and Permanent Total Disability", `PKR ${accidentalLimit}`],
-        ["Accidental Death and Permanent Total Disability due to act of Terrorism", `PKR ${accidentalLimit}`],
-        ["Hospitalization", `PKR ${hospitalizationLimit}`],
-        ["Burial & Repatriation", `PKR ${burialLimit}`],
-        ["Loss of Checked in Baggage", `PKR ${baggageLimit}`],
-        ["Loss of Cash", `PKR ${cashLimit}`],
+        ["Accidental Death and Permanent Total Disability", "PKR 300,000"],
+        [
+          "Accidental Death and Permanent Total Disability due to act of Terrorism",
+          "PKR 300,000",
+        ],
+        ["Hospitalization", "PKR 75,000"],
+        ["Burial & Repatriation", "50,000"],
+        ["Loss of Checked in Baggage", "20,000"],
+        ["Loss of Cash", "10,000"],
       ],
       {
         x: 15,
@@ -944,71 +914,6 @@ export function viaCarePdf(
         headers: [],
       }
     );
-    currentY = doc.y + 1.2;
-  };
-  const createDomisticCoverageDetails = (
-    doc: InstanceType<typeof PDFDocument>,
-    policy: FullPolicy,
-    order: FullOrder
-  ) => {
-    const x = 20;
-    const plan = policy.plan;
-    const lower = plan.name.toLowerCase();
-
-    // Initialize all fields with empty defaults (avoids TS errors)
-    let death = "";
-    let reimbursement = "";
-    let evacuation = "";
-    let mortals = "";
-    let baggage = "";
-    let lossCnic = "";
-
-    if (lower.includes("gold")) {
-      death = "500,000";
-      reimbursement = "25,000";
-      evacuation = "15,000";
-      mortals = "15,000";
-      baggage = "3,500";
-      lossCnic = "1,500";
-    }
-
-    if (lower.includes("platinum")) {
-      death = "1,000,000";
-      reimbursement = "50,000";
-      evacuation = "30,000";
-      mortals = "15,000";
-      baggage = "7,500";
-      lossCnic = "2,000";
-    }
-
-    doc.fontSize(10)
-      .font("Helvetica-Bold")
-      .text("Coverage Detail", x)
-      .moveDown(0.5);
-
-    doc = doc.fontSize(8);
-
-    const yStart = doc.y - 5;
-    let currentY = yStart;
-
-    drawTable(doc,
-      [
-        ["Product Plan", plan.name],
-        ["Accidental Death and Permanent Total Disability", death],
-        ["Accidental medical reimbursement", reimbursement],
-        ["Emergency Medical Evacuation", evacuation],
-        ["Repatriation of mortal remains", mortals],
-        ["Loss of Baggage", baggage],
-        ["Loss of C.N.I.C", lossCnic],
-      ],
-      {
-        x: 15,
-        y: currentY,
-        columnWidths: [400, 165],
-        headers: [],
-      }
-    );
-
     currentY = doc.y + 1.2;
   };
 
@@ -1125,16 +1030,16 @@ export function viaCarePdf(
       .fontSize(6.5)
       .text(
         "For Claims, Complaints or " +
-        "Queries: " +
-        retailBranch +
-        " Retail Business Division, Jubilee General Insurance" +
-        " Company Limited " +
-        Windowtakful +
-        ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
-        numbers +
-        " " +
-        email +
-        " Our Toll Free Number : 0800 03786",
+          "Queries: " +
+          retailBranch +
+          " Retail Business Division, Jubilee General Insurance" +
+          " Company Limited " +
+          Windowtakful +
+          ", 2nd floor, I. I. Chundrigar Road, Karachi, Pakistan." +
+          numbers +
+          " " +
+          email +
+          " Our Toll Free Number : 0800 03786",
         margin,
         yStart + 2
       )
@@ -1324,10 +1229,6 @@ export function viaCarePdf(
     doc.moveDown(1.5);
     createZiaratCoverageDetails(doc, policy, order);
   }
-  if (productName.includes("Domestic")) {
-    doc.moveDown(1.5);
-    createDomisticCoverageDetails(doc, policy, order);
-  }
 
   let paragraph =
     "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat.All Terms, Conditions and Exclusions as per standard Jubilee General ViaCare Policy wordings and Clauses\n" +
@@ -1346,7 +1247,7 @@ export function viaCarePdf(
     productName.toLowerCase().includes("viacare schengen travel insurance")
   ) {
     paragraph =
-      "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat.\n" +
+      "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat.This Policy covers Hospitalization and Medical Expense for USD 50,000 limit, being higher than the requirement of EU30,000.\n" +
       "All Terms, Conditions and Exclusions as per standard Jubilee General ViaCare Policy wordings and Clauses\n" +
       "The agreement to purchase this insurance coverage is a declaration that I/we have read & understood the terms & conditions stated in the policy wordings & " +
       "clauses and I/we hereby agree to the terms, conditions & exclusions stated therein. I also declare and affirm that I am in good health I hereby declare that all " +
@@ -1378,16 +1279,12 @@ export function viaCarePdf(
 
   if (productName.toLowerCase().includes("student")) {
     paragraph =
-      "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat.This Policy covers Hospitalization and Medical Expense for USD 50,000 limit, being higher than the requirement of EU30,000\n" +
+      "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat.\n" +
       "All Terms, Conditions and Exclusions as per standard Jubilee General ViaCare Policy wordings and Clauses\n" +
       "The agreement to purchase this insurance coverage is a declaration that I/we have read & understood the terms & conditions stated in the policy wordings and I/we hereby agree to the terms & conditions stated therein. I also " +
       "declare and affirm that I/we am/are in good health and fit to travel. I/we have not been advised against traveling by my/our doctor. I hereby declare that all information stated in this schedule is true and complete and that I/we " +
       "have not concealed any material confirmation from Jubilee General Insurance Company Limited.\n" +
-      "";
-  }
-  if (productName.toLowerCase().includes("hajj") || productName.toLowerCase().includes("domestic")) {
-    paragraph =
-      "Your Insurance does not cover any claim in any way caused by or resulting from Corona Virus itself and/ or from its fear or threat";
+      "This policy includes coverage for emergency medical expense and hospitalization for a limit up to USD 50,000. Terms and conditions applicable as per the relevant policy wording document.";
   }
 
   // drawTableRow(doc, doc.y, [], [paragraph], [250]);

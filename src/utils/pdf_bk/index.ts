@@ -7,7 +7,6 @@ import { Prisma } from "@prisma/client";
 import { viaCarePdf } from "./viaCarePdf";
 import { homeCarePdf } from "./homeCarePdf";
 import { selfCarePdf } from "./selfCarePdf";
-import { lifestylePdf } from "./lifestylePdf";
 import { purchaseProtectionPdf } from "./purchaseProtectionPdf";
 import { encodeOrderCode } from "../base64Url";
 
@@ -61,6 +60,7 @@ export async function generateOrderPDF(
   }
 
   const doc = createPDF(res, `${order.order_code}`);
+
   order.Policy.forEach((policy) => {
     if (productType === "travel") {
       viaCarePdf(doc, policy, order, qrImageUrl);
@@ -72,11 +72,7 @@ export async function generateOrderPDF(
         selfCarePdf(doc, policy, order, qrImageUrl);
       } else if (product?.product_name.toLowerCase().includes("accident")) {
         selfCarePdf(doc, policy, order, qrImageUrl);
-      } else if (product?.product_name.toLowerCase().includes("lifestyle")) {
-        lifestylePdf(doc, policy, order, qrImageUrl);
       } else {
-        console.log(policy);
-        console.log(order);
         healthCarePdf(doc, policy, order, qrImageUrl);
       }
     } else if (productType === "home") {

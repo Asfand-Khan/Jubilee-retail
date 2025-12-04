@@ -14,38 +14,6 @@ interface TableOptions {
   headers?: string[];
   rowHeight?: number;
 }
-export function formatCNIC(cnic: string | number | null | undefined): string {
-  if (!cnic) return "";
-
-  // Convert to string & remove any non-digit characters
-  const digits = cnic.toString().replace(/\D/g, "");
-
-  // Ensure it has at least 13 digits
-  if (digits.length !== 13) return cnic.toString(); // return original if length invalid
-
-  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
-}
-export function formatContact(contact: string | number | null | undefined): string {
-  if (!contact) return "";
-
-  const digits = contact.toString().replace(/\D/g, "");
-
-  // Pakistani numbers are usually 11 digits (03XX-XXXXXXX)
-  if (digits.length !== 11) return contact.toString();
-
-  return `${digits.slice(0, 4)}-${digits.slice(4)}`;
-}
-export function capitalizeWords(text: string) {
-  return text.replace(/\b\w/g, char => char.toUpperCase());
-}
-export function formatPrice(amount: any) {
-  amount = Number(amount);
-  if (isNaN(amount)) return amount;
-
-  return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-
 
 export function drawTable(
   doc: InstanceType<typeof PDFDocument>,
@@ -113,45 +81,47 @@ export function drawTable(
   });
 }
 
+// export function drawTableRow(
+//   doc: InstanceType<typeof PDFDocument>,
+//   y: number,
+//   labels: string[],
+//   values: string[],
+//   widths: number[],
+//   bold: boolean = true
+// ) {
+//   let x = 20;
+//   labels.forEach((label, i) => {
+//     if (values.length == 0) {
+//       doc.font("Helvetica").text(label, x, y, {
+//         align: "center",
+//       });
+//     } else {
+//       bold
+//         ? doc.font("Helvetica-Bold").text(label, x, y)
+//         : doc.font("Helvetica").text(label, x, y);
+//     }
+//     doc.font("Helvetica").text(values[i], x + widths[i] / 2, y);
+//     x += widths[i];
+//   });
+//   // doc.moveTo(50, y + 20).lineTo(550, y + 20).stroke(); // Horizontal line
+// }
+
 export function drawTableRow(
   doc: InstanceType<typeof PDFDocument>,
   y: number,
   labels: string[],
   values: string[],
   widths: number[],
-  labelBold: boolean[] = [true, true],
-  valueBold: boolean[] = [],
-  labelFontSize: number = 7,
-  valueFontSize: number = 7,
-  centerOnlyWhen: boolean = false   // <-- NEW FLAG
+  labelBold: boolean[] = [true, true],   // Default: both labels bold
+  valueBold: boolean[] = []              // Default: all values normal
 ) {
   let x = 20;
 
-  // ==== CENTER MODE ONLY WHEN USER PASSES TRUE ====
-  if (centerOnlyWhen) {
-    const totalWidth = widths.reduce((a, b) => a + b, 0);
-    const label = labels[0] || "";
-    const value = values[0] || "";
-
-    const text = value ? `${label}: ${value}` : label;
-
-    doc.fontSize(labelFontSize);
-    doc.font(labelBold[0] ? "Helvetica-Bold" : "Helvetica");
-
-    doc.text(text, x, y, {
-      width: totalWidth,
-      align: "center",    // center inside full table width
-    });
-
-    return;
-  }
-  // ==== DEFAULT BEHAVIOR (UNTOUCHED) ====
   labels.forEach((label, i) => {
     const isLabelBold = labelBold[i] === true;
     const isValueBold = valueBold[i] === true;
 
-    doc.fontSize(labelFontSize);
-
+    // Draw label
     if (values.length === 0) {
       doc.font("Helvetica").text(label, x, y, { align: "center" });
     } else {
@@ -160,8 +130,8 @@ export function drawTableRow(
         : doc.font("Helvetica").text(label, x, y);
     }
 
+    // Draw value
     if (values[i] !== undefined) {
-      doc.fontSize(valueFontSize);
       isValueBold
         ? doc.font("Helvetica-Bold").text(values[i], x + widths[i] / 2, y)
         : doc.font("Helvetica").text(values[i], x + widths[i] / 2, y);
@@ -375,7 +345,6 @@ export const createGeneralApiTable1 = (
   // if (productName.includes("sehat sarmaya")) {
   //     policyTypeValue = "Comprehensive Health Cover";
   // }
-  console.log("product name in general api table 1:", productName);
 
   if (productName.includes("selfcare")) {
     policyTypeValue = "Self Care";
@@ -386,9 +355,9 @@ export const createGeneralApiTable1 = (
   } else if (productName.includes("hercare")) {
     policyTypeValue = "HerCare";
   } else if (productName.includes("healthcare")) {
-    policyTypeValue = "Family Health Care";
+    policyTypeValue = "HealthCare";
   } else if (productName.includes("personal healthcare")) {
-    policyTypeValue = "Personal Health Care";
+    policyTypeValue = "Personal HealthCare";
   } else if (productName.includes("critical")) {
     policyTypeValue = "Critical Illness";
   } else if (productName.includes("parent")) {
@@ -396,7 +365,7 @@ export const createGeneralApiTable1 = (
       policy.product.product_type == null
         ? "HealthCare"
         : policy.product.product_type.charAt(0).toUpperCase() +
-        policy.product.product_type.slice(1);
+          policy.product.product_type.slice(1);
   } else if (
     productName.includes("viacare") ||
     productName.includes("travel") ||
@@ -416,26 +385,11 @@ export const createGeneralApiTable1 = (
       productName.trim().includes("via care rest of the world travel insurance")
     ) {
       policyTypeValue = "Multi-Purpose";
-    } else if (productName.toLocaleLowerCase().includes("student")) {
-      policyTypeValue = "Student Travel";
-    }
-    else if (productName.trim().toLocaleLowerCase().includes("home trip")) {
-      policyTypeValue = "Home Trip";
-    }
-    else if (productName.trim().toLocaleLowerCase().includes("hajj ")) {
-      policyTypeValue = "Hajj & Umrah Travel";
-    }
-    else if (productName.trim().toLocaleLowerCase().includes("ziarat")) {
-      policyTypeValue = "Ziarat Travel";
-    }
-    else if (productName.trim().toLocaleLowerCase().includes("domestic")) {
-      policyTypeValue = "Domestic Travel";
-    }
-    else {
+    } else {
       policyTypeValue = "Viacare";
     }
 
-    if (policy.schengen || policy?.plan.name?.toLowerCase().includes("schengen")) {
+    if (policy.schengen) {
       policyTypeValue = "Schengen Compliant";
     }
   } else if (productName.includes("family")) {
@@ -467,9 +421,7 @@ export const createGeneralApiTable1 = (
   } else {
     policyTypeValue = policy.product.product_name;
   }
-  if (productName.includes("parents-care-plus-insurance")) {
-    policyTypeValue = "Parents Care Plus";
-  }
+
   doc.fontSize(10).text(tableHeading).moveDown(0.5);
   doc = doc.fontSize(8);
   const yStart = doc.y;
@@ -514,35 +466,172 @@ export const creatHealthcareChildDetail = (
   order: FullOrder
 ) => {
   const x = 20;
-  const children = policy.policyDetails
-    .filter((detail) => detail.type.toLowerCase().startsWith("kid"))
-    .sort((a, b) => a.type.localeCompare(b.type)); // Keep kid1, kid2 order
-  doc.fontSize(10).font("Helvetica-Bold").text("Children's Details", x).moveDown(0.5);
+  const kid1Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid1"
+  );
+  const kid2Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid2"
+  );
+  const kid3Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid3"
+  );
+  const kid4Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid4"
+  );
+  const kid5Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid5"
+  );
+  const kid6Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid6"
+  );
+  const kid7Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid7"
+  );
+  const kid8Data = policy.policyDetails.find(
+    (detail) => detail.type.toLowerCase() == "kid8"
+  );
+
+  doc
+    .fontSize(10)
+    .font("Helvetica-Bold")
+    .text("Children's Details", x)
+    .moveDown(0.5);
+
   doc = doc.fontSize(8);
   const yStart = doc.y;
   const padding = 15;
   const rowHeight = 15;
   let currentY = yStart;
-  doc.moveTo(padding, yStart - 5).lineTo(doc.page.width - padding, yStart - 5).stroke();
-  children.forEach((kid) => {
+
+  // Draw the vertical lines based on calculated height
+  doc
+    .moveTo(padding, yStart - 5)
+    .lineTo(doc.page.width - padding, yStart - 5)
+    .stroke(); // Top Horizontal line
+
+  if (kid1Data != null && kid1Data != undefined) {
     drawTableRow(
       doc,
       currentY,
-      ["Name", "Relation", "Date Of Birth"],
+      ["Name", "Relation", "Age"],
       [
-        kid.name || "",
-        kid.relation ? kid.relation.charAt(0).toUpperCase() + kid.relation.slice(1) : "",
-        kid.dob ? format(new Date(kid.dob), "MMM dd, yyyy") : "",
+        kid1Data.name || "",
+        kid1Data.relation || "",
+        kid1Data.age?.toString() || "",
       ],
-      [200, 166.6, 166.6],
-      [true, true, true],
+      [200, 166.6, 166.6]
     );
     currentY += rowHeight;
-  });
-  doc.moveTo(padding, yStart - 5).lineTo(padding, currentY).stroke();
+  }
+  if (kid2Data != null && kid2Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid2Data.name || "",
+        kid2Data.relation || "",
+        kid2Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid3Data != null && kid3Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid3Data.name || "",
+        kid3Data.relation || "",
+        kid3Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid4Data != null && kid4Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid4Data.name || "",
+        kid4Data.relation || "",
+        kid4Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid5Data != null && kid5Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid5Data.name || "",
+        kid5Data.relation || "",
+        kid5Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid6Data != null && kid6Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid6Data.name || "",
+        kid6Data.relation || "",
+        kid6Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid7Data != null && kid7Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid7Data.name || "",
+        kid7Data.relation || "",
+        kid7Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+  if (kid8Data != null && kid8Data != undefined) {
+    drawTableRow(
+      doc,
+      currentY,
+      ["Name", "Relation", "Age"],
+      [
+        kid8Data.name || "",
+        kid8Data.relation || "",
+        kid8Data.age?.toString() || "",
+      ],
+      [200, 166.6, 166.6]
+    );
+    currentY += rowHeight;
+  }
+
+  doc
+    .moveTo(padding, yStart - 5)
+    .lineTo(padding, currentY)
+    .stroke(); // Left Vertical line
   doc
     .moveTo(doc.page.width - padding, yStart - 5)
     .lineTo(doc.page.width - padding, currentY)
-    .stroke();
-  doc.moveTo(padding, currentY).lineTo(doc.page.width - padding, currentY).stroke();
+    .stroke(); // Right Vertical line
+  doc
+    .moveTo(padding, currentY)
+    .lineTo(doc.page.width - padding, currentY)
+    .stroke(); // Bottom Horizontal line
 };

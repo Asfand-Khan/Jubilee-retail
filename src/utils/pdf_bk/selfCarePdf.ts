@@ -1,3 +1,4 @@
+
 import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
@@ -186,7 +187,7 @@ export function selfCarePdf(
     }
 
     const plan = policy.plan;
-    if (!policy.product?.product_name.toLowerCase().includes("selfcare")) {
+    if (policy.product?.product_name.toLowerCase().includes("accident")) {
       if (plan.name) {
         peronslaAccidentBenefits = "Personal Accident Benefits";
         medical = "Medical";

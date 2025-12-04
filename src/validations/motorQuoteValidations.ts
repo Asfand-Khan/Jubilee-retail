@@ -17,8 +17,9 @@ export const validateMotorQuote = z.object({
   mobile: z.string().max(15).nullable().optional(),
   email: z.string().email().max(50).nullable().optional(),
 
-  premium_value: z.number().int().nullable().optional(),
-  rate: z.number().int().nullable().optional(),
+
+  premium_value: z.string().max(50).nullable().optional(),
+  rate: z.string().max(50).nullable().optional(),
 
   vehicle_make: z.string().max(50).nullable().optional(),
   vehicle_submake: z.string().max(50).nullable().optional(),

@@ -1,7 +1,7 @@
 import PDFDocument from "pdfkit";
 import { FullOrder, FullPolicy } from ".";
 import { addScheduleHeader } from "./sections/header";
-import { createGeneralApiTable1, drawTable, drawTableRow, formatCNIC, formatContact, formatPrice, capitalizeWords } from "./pdfUtils";
+import { createGeneralApiTable1, drawTable, drawTableRow } from "./pdfUtils";
 import { format } from "date-fns/format";
 import { formatDate } from "date-fns/format";
 import { addVerificationAndQR } from "./sections/verification";
@@ -10,6 +10,7 @@ import path from "path";
 export type PolicyDetail = FullOrder["Policy"][0]["policyDetails"][0];
 
 export function homeCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullPolicy, order: FullOrder, qrImageUrl: string) {
+    console.log("Creating policy home care document");
 
     const apiUser = policy.apiUser;
     const paymentMethod = order.payemntMethod;
@@ -44,13 +45,13 @@ export function homeCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullP
         // Draw the vertical lines based on calculated height
         doc.moveTo(padding, yStart - 5).lineTo(doc.page.width - padding, yStart - 5).stroke(); // Top Horizontal line
 
-        drawTableRow(doc, currentY, ["Name"], [capitalizeWords(customerData?.name ?? "") || ""], [250]);
+        drawTableRow(doc, currentY, ["Name"], [customerData?.name || ""], [250]);
         currentY += rowHeight;
         drawTableRow(doc, currentY, ["Address"], [customerData?.address || ""], [250]);
         currentY += rowHeight;
-        drawTableRow(doc, currentY, ["CNIC"], [formatCNIC(customerData?.cnic) || ""], [250]);
+        drawTableRow(doc, currentY, ["CNIC"], [customerData?.cnic || ""], [250]);
         currentY += rowHeight;
-        drawTableRow(doc, currentY, ["Phone"], [formatContact(customerData?.contact_number) || ""], [250]);
+        drawTableRow(doc, currentY, ["Phone"], [customerData?.contact_number || ""], [250]);
         currentY += rowHeight;
         drawTableRow(doc, currentY, ["Email"], [customerData?.email || ""], [250]);
         currentY += rowHeight;
@@ -97,12 +98,12 @@ export function homeCarePdf(doc: InstanceType<typeof PDFDocument>, policy: FullP
         const rentValue = homeCareData.rent;
         const homeContentValue = homeCareData.content;
         const jewelryValue = homeCareData.jewelry;
-        console.log(policy);
+
         // Draw the vertical lines based on calculated height
         doc.moveTo(padding, yStart - 5).lineTo(doc.page.width - padding, yStart - 5).stroke(); // Top Horizontal line
 
         if (!isFranchiseOrder) {
-            drawTableRow(doc, currentY, ["Ownership Status", "Structure Type"], [capitalizeWords(homeCareData?.ownership_status) || "", capitalizeWords(homeCareData?.structure_type) || ""], [250, 250]);
+            drawTableRow(doc, currentY, ["Ownership Status", "Structure Type"], [homeCareData?.ownership_status || "", homeCareData?.structure_type || ""], [250, 250]);
             currentY += rowHeight;
             drawTableRow(doc, currentY, ["Covered Area", "Period of Insurance"], ["Sq yd " + homeCareData.plot_area || "", `From: ${format(new Date(policy.issue_date), "MMM dd, yyyy")}\nTo: ${format(new Date(policy.expiry_date), "MMM dd, yyyy")}` || ""], [250, 250]);
             currentY += rowHeight;

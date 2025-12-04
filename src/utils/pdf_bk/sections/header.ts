@@ -27,11 +27,6 @@ export function addScheduleHeader(
       width: logoWidth,
     });
   }
-  if (productLogo && isPurchaseProtection) {
-    doc.image(productLogo, rightLogoX, logoY, {
-      width: logoWidth,
-    });
-  }
 
   const textY = logoY + 10;
   doc
