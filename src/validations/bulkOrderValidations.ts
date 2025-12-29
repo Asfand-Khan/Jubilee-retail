@@ -25,6 +25,9 @@ const policyDetailItem = z.object({
     .optional()
     .nullable(),
   gender: z.string().toLowerCase().optional().nullable(),
+  email: z.string().email("Invalid email format").optional().nullable(),
+  mobile: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
 });
 
 const riderItem = z.object({

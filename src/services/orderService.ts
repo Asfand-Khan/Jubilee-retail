@@ -42,6 +42,7 @@ import path from "path";
 import fs from "fs";
 import { encodeOrderCode } from "../utils/base64Url";
 import { pepScan } from "../utils/pepScanUtil";
+import { igisInsert } from "../utils/igisInsertUtil";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -205,6 +206,9 @@ export const bulkOrder = async (
                 cnic_issue_date: c.cnic_issue_date ?? null,
                 type: c.type ?? null,
                 created_by: createdBy,
+                address: c.address ?? null,
+                contact_number: c.mobile ?? null,
+                email: c.email ?? null,
               }));
               await tx.policyDetail.createMany({ data: policyDetails });
             }
@@ -1700,54 +1704,77 @@ export const orderPolicyStatus = async (data: OrderPolicyStatusSchema) => {
     throw new Error("Agent, Branch, and Client are required");
   }
 
-  const updatedPolicy = await prisma.$transaction(async (tx) => {
-    const policy = await tx.policy.findUnique({
-      where: { id: policy_id },
-      include: { order: true },
-    });
+  const updatedPolicy = await prisma.$transaction(
+    async (tx) => {
+      const policy = await tx.policy.findUnique({
+        where: { id: policy_id },
+        include: { order: true },
+      });
 
-    if (!policy) throw new Error("Policy not found");
+      if (!policy) throw new Error("Policy not found");
 
-    const orderUpdateData: any = {
-      agent_id,
-      branch_id,
-      client_id,
-    };
+      const orderUpdateData: any = {
+        agent_id,
+        branch_id,
+        client_id,
+      };
 
-    if (status === "cancelled") {
-      orderUpdateData.status = "cancelled";
-    }
+      if (status === "cancelled") {
+        orderUpdateData.status = "cancelled";
+      }
 
-    const updated = await tx.policy.update({
-      where: { id: policy_id },
-      data: {
-        status,
-        order: {
-          update: orderUpdateData,
-        },
-      },
-      include: {
-        order: {
-          select: {
-            customer_cnic: true,
+      const updated = await tx.policy.update({
+        where: { id: policy_id },
+        data: {
+          status,
+          order: {
+            update: orderUpdateData,
           },
         },
-      },
-    });
+        include: {
+          order: {
+            include: {
+              branch: true,
+            },
+          },
+          policyDetails: true,
+          plan: true,
+          product: {
+            include: {
+              productCategory: true,
+            },
+          },
+          PolicyTravel: true,
+        },
+      });
 
-    if (updated.status === "IGISposted") {
-      try {
-        const pepScanResponse = await pepScan(
-          updated.order.customer_cnic || "4220115145065"
-        );
-        console.log(pepScanResponse);
-      } catch (error) {
-        console.log(error);
-      }
+      return updated;
+    },
+    {
+      timeout: 10000,
     }
+  );
 
-    return updated;
-  });
+  if (updatedPolicy.status === "IGISposted") {
+    try {
+      const pepScanResponse = await pepScan(
+        updatedPolicy.order.customer_cnic || "4220115145065"
+      );
+      console.log(pepScanResponse);
+      if (pepScanResponse.success) {
+        const responseStatus: string = Array.isArray(pepScanResponse.details)
+          ? pepScanResponse.details[1].ResponseStatus.toLowerCase()
+          : pepScanResponse.details.ResponseStatus.toLowerCase();
+        const igisInsertResponse = await igisInsert(
+          updatedPolicy,
+          responseStatus
+        );
+        console.log(igisInsertResponse);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return updatedPolicy;
 };

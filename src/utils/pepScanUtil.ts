@@ -14,7 +14,12 @@ export const pepScan = async (cnic: string) => {
       maxBodyLength: Infinity,
     });
 
-    return response.data;
+    return {
+      success: true,
+      error: false,
+      message: "PEP Scan API called successfully",
+      details: response.data.Data,
+    };
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("PEP Scan Axios Error:", {
