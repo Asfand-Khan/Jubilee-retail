@@ -1905,7 +1905,7 @@ export const orderList = async (
           LEFT JOIN User u ON ord.created_by = u.id
           LEFT JOIN Policy p ON ord.id = p.order_id
           LEFT JOIN Product prod ON p.product_id = prod.id
-          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL`;
+          WHERE ord.is_active = 1 AND ord.is_deleted = 0 AND p.policy_code IS NOT NULL AND prod.is_cbo = '1'`;
       break;
     case "renewal":
       query = `
