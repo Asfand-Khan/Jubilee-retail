@@ -106,6 +106,75 @@ export const getMISReportHandler = async (
 ): Promise<any> => {
   try {
     const result = await getMISReport();
+
+    // Create workbook and worksheets
+    const workbook = new ExcelJS.Workbook();
+    // Sheet 1: MIS Report - Confirmed
+    const confirmedSheet = workbook.addWorksheet("MIS Report - Confirmed");
+    // Define columns from your SELECT (exact header names)
+    confirmedSheet.columns = [
+      { header: "NAME", key: "api_user_name" },
+      { header: "PRODUCT NAME", key: "product_name" },
+      { header: "PRODUCT TYPE", key: "product_type" },
+      { header: "PRODUCT CATEGORY", key: "product_category" },
+      { header: "DAILY COUNT", key: "daily_count" },
+      { header: "DAILY AMOUNT", key: "daily_amount" },
+      { header: "MTD COUNT", key: "mtd_count" },
+      { header: "MTD AMOUNT", key: "mtd_amount" },
+      { header: "YTD COUNT", key: "ytd_count" },
+      { header: "YTD AMOUNT", key: "ytd_amount" },
+    ];
+
+    // Add rows
+    confirmedSheet.addRows(result.confirmed as any[]);
+
+    // Sheet 2: MIS Report - Pending
+    const pendingSheet = workbook.addWorksheet("MIS Report - Pending");
+    // Define columns from your SELECT (exact header names)
+    pendingSheet.columns = [
+      { header: "NAME", key: "api_user_name" },
+      { header: "PRODUCT NAME", key: "product_name" },
+      { header: "PRODUCT TYPE", key: "product_type" },
+      { header: "PRODUCT CATEGORY", key: "product_category" },
+      { header: "DAILY COUNT", key: "daily_count" },
+      { header: "DAILY AMOUNT", key: "daily_amount" },
+      { header: "MTD COUNT", key: "mtd_count" },
+      { header: "MTD AMOUNT", key: "mtd_amount" },
+      { header: "YTD COUNT", key: "ytd_count" },
+      { header: "YTD AMOUNT", key: "ytd_amount" },
+    ];
+
+    // Add rows
+    pendingSheet.addRows(result.pending as any[]);
+
+    // Set response headers
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      "attachment; filename=MIS_Report.xlsx"
+    );
+
+    // Write to buffer and send
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.send(buffer);
+  } catch (error: any) {
+    return res.status(500).json({
+      status: 0,
+      message: error.message,
+      payload: [],
+    });
+  }
+};
+
+export const getMISReportJSONHandler = async (
+  req: Request,
+  res: Response
+): Promise<any> => {
+  try {
+    const result = await getMISReport();
     return res.status(200).json({
       status: 1,
       message: "MIS Report fetched successfully",
