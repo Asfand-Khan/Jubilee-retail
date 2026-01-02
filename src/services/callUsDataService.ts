@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import prisma from "../config/db";
 import {
   CallUsDataListingType,
@@ -12,21 +13,17 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
     } as any;
 
     console.log(data);
-    if (data.date) {
-      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+   if (data.date) {
+  const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
 
-      const startDate = new Date(startStr);
-      startDate.setHours(startDate.getHours() - 5);
+  const startDate = dayjs(startStr).startOf("day").toDate();
+  const endDate = dayjs(endStr).endOf("day").toDate();
 
-      const endDate = new Date(endStr);
-      endDate.setHours(23, 59, 59, 999);
-      endDate.setHours(endDate.getHours() - 5);
-
-      whereClause.created_at = {
-        gte: startDate,
-        lte: endDate,
-      };
-    }
+  whereClause.created_at = {
+    gte: startDate,
+    lte: endDate,
+  };
+}
     console.log("Query where clause:", whereClause);
     const allCallUsData = await prisma.callUsData.findMany({
       where: whereClause,
