@@ -23,6 +23,7 @@ export const getAllCallUsDataHandler = async (
   res: Response
 ): Promise<any> => {
   try {
+    console.log(req.body);
     const parsed = validateCallUsDataListing.parse(req.body);
     const callUsData = await getAllCallUsData(parsed);
     return res.status(200).json({
