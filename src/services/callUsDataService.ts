@@ -12,10 +12,18 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = new Date(startStr);
+      startDate.setHours(startDate.getHours() - 5);
+
+      const endDate = new Date(endStr);
+      endDate.setHours(23, 59, 59, 999);
+      endDate.setHours(endDate.getHours() - 5);
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
     const allCallUsData = await prisma.callUsData.findMany({
