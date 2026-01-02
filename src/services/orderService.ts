@@ -2019,7 +2019,9 @@ export const orderList = async (
       filters.push(`DATE(p.expiry_date) BETWEEN '${start}' AND '${end}'`);
     } else {
       const [start, end] = data.date.split(" to ");
-      filters.push(`DATE(ord.create_date) BETWEEN '${start}' AND '${end}'`);
+      filters.push(
+        `DATE(DATE_ADD(ord.created_at, INTERVAL 5 HOUR)) BETWEEN '${start}' AND '${end}'`
+      );
     }
   }
 
