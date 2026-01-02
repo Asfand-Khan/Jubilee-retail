@@ -27,6 +27,7 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
         lte: endDate,
       };
     }
+    console.log("Query where clause:", whereClause);
     const allCallUsData = await prisma.callUsData.findMany({
       where: whereClause,
       orderBy: {
