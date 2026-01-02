@@ -11,6 +11,7 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
       is_deleted: false,
     } as any;
 
+    console.log(data);
     if (data.date) {
       const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
 
