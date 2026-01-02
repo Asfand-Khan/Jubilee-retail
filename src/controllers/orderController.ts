@@ -97,6 +97,30 @@ export const createOrderHandler = async (
   }
 };
 
+// UPDATE
+export const updateOrderHandler = async (
+  req: AuthRequest,
+  res: Response
+): Promise<any> => {
+  try {
+    const parsed = validations.validateOrderUpdateSchema.parse(req.body);
+    const newRecord = await service2.updateOrder(parsed);
+
+    return res.status(200).json({
+      status: 1,
+      message: "Order updated successfully",
+      payload: [newRecord],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
+
 export const ccTransactionHandler = async (
   req: Request,
   res: Response

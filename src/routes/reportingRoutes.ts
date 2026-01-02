@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { authenticate } from "../middleware/authMiddleware";
+import {
+  authenticate,
+  authenticateApiUser,
+} from "../middleware/authMiddleware";
 import {
   getMISReportHandler,
   getMISReportJSONHandler,
@@ -9,7 +12,8 @@ import {
 const router = Router();
 
 router.post("/", authenticate, getReportHandler); // Get report --> Protected
-router.post("/mis", authenticate, getMISReportHandler); // Get MIS report --> Protected
+router.post("/mis-internal", authenticate, getMISReportHandler); // Get MIS report --> Protected - EXCEL
+router.post("/mis-external", authenticateApiUser, getMISReportHandler); // Get MIS report --> Protected - EXCEL
 router.post("/mis-json", authenticate, getMISReportJSONHandler); // Get MIS report --> Protected
 
 export default router;

@@ -1,5 +1,8 @@
 import prisma from "../config/db";
-import { OrderSchema } from "../validations/orderValidations";
+import {
+  OrderSchema,
+  OrderUpdateSchema,
+} from "../validations/orderValidations";
 import { format } from "date-fns";
 import { DurationType, Gender } from "@prisma/client";
 import { calculateAge } from "../utils/calculateAge";
@@ -651,6 +654,237 @@ export const createOrder = async (
   }
 
   return { policy_code: result.code, policy_doc_Url: docUrl };
+};
+
+export const updateOrder = async (data: OrderUpdateSchema) => {
+  const result = await prisma.$transaction(
+    async (tx) => {
+      // Run independent lookups in parallel
+      let city: any;
+      if (data.customer_city) {
+        city = await tx.city.findUnique({ where: { id: data.customer_city } });
+      }
+
+      // Create order
+      const newOrder = await tx.order.update({
+        where: { id: data.order_id },
+        data: {
+          ...(data.customer_name && { customer_name: data.customer_name }),
+          ...(data.customer_cnic && { customer_cnic: data.customer_cnic }),
+          ...(data.customer_dob && { customer_dob: data.customer_dob }),
+          ...(data.customer_email && { customer_email: data.customer_email }),
+          ...(data.customer_contact && {
+            customer_contact: data.customer_contact,
+          }),
+          ...(data.customer_address && {
+            customer_address: data.customer_address,
+          }),
+          ...(data.customer_city && { customer_city: city.city_code }),
+          ...(data.customer_occupation && {
+            customer_occupation: data.customer_occupation,
+          }),
+          ...(data.received_premium && { payment: data.received_premium }),
+          ...(data.discount_amount && {
+            discount_amount: data.discount_amount,
+          }),
+          ...(data.received_premium && {
+            received_premium: data.received_premium,
+          }),
+          ...(data.branch_name && { branch_name: data.branch_name }),
+          ...(data.agent_name && { agent_name: data.agent_name }),
+          ...(data.referred_by && { referred_by: data.referred_by }),
+        },
+      });
+
+      // Create policy
+      const policy = await tx.policy.update({
+        where: {
+          id: data.policy_id,
+        },
+        data: {
+          ...(data.start_date && { start_date: data.start_date }),
+          ...(data.expiry_date && { expiry_date: data.expiry_date }),
+          ...(data.received_premium && {
+            received_premium: data.received_premium,
+          }),
+          ...(data.discount_amount && {
+            discount_amount: data.discount_amount,
+          }),
+        },
+        include: {
+          policyDetails: true,
+        },
+      });
+
+      // Policy details
+      if (data.customer_details && data.customer_details.length > 0) {
+        for (const c of data.customer_details) {
+          if (c.type) {
+            const existingDetail = policy.policyDetails.find(
+              (pd) => pd.type.toLowerCase() === c.type!.toLowerCase()
+            );
+
+            if (existingDetail) {
+              await tx.policyDetail.update({
+                where: { id: existingDetail.id },
+                data: {
+                  ...(c.insurance_name && { name: c.insurance_name }),
+                  ...(c.insurance_dob && { dob: c.insurance_dob }),
+                  ...(c.insurance_cnic && { cnic: c.insurance_cnic }),
+                  ...(c.insurance_mobile && {
+                    contact_number: c.insurance_mobile,
+                  }),
+                  ...(c.insurance_email && { email: c.insurance_email }),
+                  ...(c.insurance_gender && { gender: c.insurance_gender }),
+                  ...(c.insurance_dob && {
+                    age: calculateAge(c.insurance_dob),
+                  }),
+                  ...(c.insurance_relationship && {
+                    relation: c.insurance_relationship,
+                  }),
+                  ...(c.insurance_passport_no && {
+                    passport_no: c.insurance_passport_no,
+                  }),
+                  ...(c.insurance_poc && { poc: c.insurance_poc }),
+                  ...(c.insurance_nicop && { nicop: c.insurance_nicop }),
+                  ...(c.insurance_cnic_issue_date && {
+                    cnic_issue_date: c.insurance_cnic_issue_date,
+                  }),
+                },
+              });
+            }
+          }
+        }
+      }
+
+      if (data.travel_details) {
+        const existingTravel = await tx.policyTravel.findFirst({
+          where: { policy_id: policy.id },
+        });
+
+        if (existingTravel) {
+          await tx.policyTravel.update({
+            where: { id: existingTravel.id },
+            data: {
+              ...(data.travel_details.travel_from && {
+                travel_from: data.travel_details.travel_from,
+              }),
+              ...(data.travel_details.no_of_days && {
+                no_of_days: data.travel_details.no_of_days,
+              }),
+              ...(data.travel_details.destination && {
+                destination: data.travel_details.destination,
+              }),
+              ...(data.travel_details.travel_end_date && {
+                travel_end_date: data.travel_details.travel_end_date,
+              }),
+              ...(data.travel_details.travel_start_date && {
+                travel_start_date: data.travel_details.travel_start_date,
+              }),
+              ...(data.travel_details.sponsor && {
+                sponsor: data.travel_details.sponsor,
+              }),
+              ...(data.travel_details.sponsor_address && {
+                sponsor_address: data.travel_details.sponsor_address,
+              }),
+              ...(data.travel_details.sponsor_contact && {
+                sponsor_contact: data.travel_details.sponsor_contact,
+              }),
+              ...(data.travel_details.institute && {
+                institute: data.travel_details.institute,
+              }),
+              ...(data.travel_details.travel_start_date &&
+                data.travel_details.travel_end_date && {
+                  travelling_dates: `${data.travel_details.travel_start_date} to ${data.travel_details.travel_end_date}`,
+                }),
+              ...(data.travel_details.program && {
+                program: data.travel_details.program,
+              }),
+              ...(data.travel_details.offer_letter_ref_no && {
+                offer_letter_ref_no: data.travel_details.offer_letter_ref_no,
+              }),
+              ...(data.travel_details.travel_purpose && {
+                travel_purpose: data.travel_details.travel_purpose,
+              }),
+              ...(data.travel_details.type && {
+                type: data.travel_details.type,
+              }),
+              ...(data.travel_details.program_duration && {
+                program_duration: data.travel_details.program_duration,
+              }),
+              ...(data.travel_details.travel_type && {
+                travel_type: data.travel_details.travel_type,
+              }),
+            },
+          });
+        }
+      } else if (data.homecare_details && data.homecare_details.length > 0) {
+        for (const record of data.homecare_details) {
+          if (record.id) {
+            await tx.policyHomecare.update({
+              where: { id: record.id },
+              data: {
+                ...(record.ownership_status && {
+                  ownership_status: record.ownership_status,
+                }),
+                ...(record.structure_type && {
+                  structure_type: record.structure_type,
+                }),
+                ...(record.plot_area && { plot_area: record.plot_area }),
+                ...(record.address && { address: record.address }),
+                ...(record.city && { city: record.city }),
+              },
+            });
+          }
+        }
+      } else if (data.purchase_protection) {
+        const existingProtection = await tx.policyPurchaseProtection.findFirst({
+          where: { policy_id: policy.id },
+        });
+
+        if (existingProtection) {
+          await tx.policyPurchaseProtection.update({
+            where: { id: existingProtection.id },
+            data: {
+              ...(data.purchase_protection.name && {
+                name: data.purchase_protection.name,
+              }),
+              ...(data.purchase_protection.imei && {
+                imei: data.purchase_protection.imei,
+              }),
+              ...(data.purchase_protection.serial_number && {
+                serial_number: data.purchase_protection.serial_number,
+              }),
+              ...(data.purchase_protection.retailer_sku && {
+                retailer_sku: data.purchase_protection.retailer_sku,
+              }),
+              ...(data.purchase_protection.total_price && {
+                total_price: data.purchase_protection.total_price,
+              }),
+              ...(data.received_premium && {
+                received_premium: data.received_premium,
+              }),
+              ...(data.purchase_protection.duration && {
+                duration: data.purchase_protection.duration,
+              }),
+              ...(data.purchase_protection.duration_type && {
+                duration_type: data.purchase_protection
+                  .duration_type as DurationType,
+              }),
+            },
+          });
+        }
+      }
+      return {
+        code: policy.policy_code,
+      };
+    },
+    {
+      timeout: 30000,
+    }
+  );
+
+  return { policy_code: result.code };
 };
 
 export const orderByOrderCode = async (

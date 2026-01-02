@@ -743,6 +743,464 @@ export const validateOrderSchema = z.object({
     .nullable(),
 });
 
+export const validateOrderUpdateSchema = z.object({
+  order_id: z
+    .number({ required_error: "Order ID is required." })
+    .min(1, "Order ID must be atleast 01 characters."),
+
+  policy_id: z
+    .number({ required_error: "Policy ID is required." })
+    .min(1, "Policy ID must be atleast 01 characters."),
+
+  order_code: z
+    .string({ required_error: "Order code is required." })
+    .min(3, "Order code must be atleast 03 characters."),
+
+  customer_name: z.string().optional().nullable(),
+
+  customer_cnic: z
+    .string()
+    .regex(/^\d{13}$/, "CNIC must be 13 digits without dashes.")
+    .optional()
+    .nullable(),
+
+  customer_dob: z
+    .string()
+    .regex(dateRegex, "Customer DOB must be in YYYY-MM-DD format.")
+    .optional()
+    .nullable(),
+
+  customer_email: z
+    .string()
+    .email("Invalid email format.")
+    .max(150, { message: "Customer email must not exceed 150 characters." })
+    .optional()
+    .nullable(),
+
+  customer_contact: z
+    .string()
+    .regex(
+      /^03\d{9}$/,
+      "Customer contact must be a valid number (e.g. 03001234567)."
+    )
+    .optional()
+    .nullable(),
+
+  customer_address: z
+    .string()
+    .max(255, { message: "Customer address must not exceed 255 characters." })
+    .optional()
+    .nullable(), // add refine to remove special characters
+
+  customer_city: z
+    .number()
+    .int({ message: "Customer city must be an integer." })
+    .positive({ message: "Customer city cannot be negative." })
+    .optional()
+    .nullable(),
+
+  customer_occupation: z
+    .string()
+    .max(100, {
+      message: "Customer occupation must not exceed 100 characters.",
+    })
+    .optional()
+    .nullable(),
+
+  discount_amount: z
+    .string()
+    .regex(decimalRegex, "Discount amount must be a valid decimal.")
+    .optional()
+    .nullable(),
+
+  received_premium: z
+    .string()
+    .regex(decimalRegex, "Received premium must be a valid decimal.")
+    .optional()
+    .nullable(),
+
+  branch_name: z
+    .string()
+    .max(150, { message: "Branch name must not exceed 150 characters." })
+    .optional()
+    .nullable(),
+
+  agent_name: z
+    .string()
+    .max(150, { message: "Agent name must not exceed 150 characters." })
+    .optional()
+    .nullable(),
+
+  referred_by: z
+    .string()
+    .max(100, { message: "Referred by must not exceed 100 characters." })
+    .optional()
+    .nullable(),
+
+  start_date: z
+    .string()
+    .regex(dateRegex, "Start date must be in YYYY-MM-DD format.")
+    .optional()
+    .nullable(),
+
+  expiry_date: z
+    .string()
+    .regex(dateRegex, "Expiry date must be in YYYY-MM-DD format.")
+    .optional()
+    .nullable(),
+
+  // customer details
+  customer_details: z
+    .array(
+      z.object({
+        insurance_title: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance title must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        type: z
+          .string({
+            invalid_type_error: "Customer details - Type must be a string.",
+          })
+          .toLowerCase()
+          .optional()
+          .nullable(),
+
+        insurance_name: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance name must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_dob: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance DOB must be a string.",
+          })
+          .regex(dateRegex, "Insurance DOB must be in YYYY-MM-DD format.")
+          .optional()
+          .nullable(),
+
+        insurance_cnic: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance CNIC must be a string.",
+          })
+          .regex(
+            /^\d{13}$/,
+            "Insurance CNIC must be exactly 13 digits without dashes."
+          )
+          .optional()
+          .nullable(),
+
+        insurance_cnic_issue_date: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance cnic issue date must be a string.",
+          })
+          .regex(
+            dateRegex,
+            "Insurance cnic issue date must be in YYYY-MM-DD format."
+          )
+          .optional()
+          .nullable(),
+
+        insurance_email: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance email must be a string.",
+          })
+          .email("Invalid email format.")
+          .optional()
+          .nullable(),
+
+        insurance_mobile: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance mobile must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_gender: z
+          .enum(["male", "female"], {
+            invalid_type_error:
+              "Customer details - Insurance gender must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_passport_no: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance passport no must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_poc: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance POC no must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_nicop: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance NICOP no must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        insurance_relationship: z
+          .string({
+            invalid_type_error:
+              "Customer details - Insurance relation no must be a string.",
+          })
+          .optional()
+          .nullable(),
+      })
+    )
+    .optional()
+    .nullable(),
+
+  // travel details
+  travel_details: z
+    .object({
+      travel_from: z
+        .string({
+          invalid_type_error: "Travel details - Travel from is required.",
+        })
+        .optional()
+        .nullable(),
+
+      no_of_days: z
+        .string({
+          invalid_type_error: "Travel details - No of days is required.",
+        })
+        .optional()
+        .nullable(),
+
+      destination: z
+        .string({
+          invalid_type_error: "Travel details - Destination is required.",
+        })
+        .optional()
+        .nullable(),
+
+      travel_end_date: z
+        .string({
+          invalid_type_error: "Travel details - Travel end date is required.",
+        })
+        .regex(dateRegex, "Travel end date must be in YYYY-MM-DD format.")
+        .optional()
+        .nullable(),
+
+      travel_start_date: z
+        .string({
+          invalid_type_error: "Travel details - Travel start date is required.",
+        })
+        .regex(dateRegex, "Travel start date must be in YYYY-MM-DD format.")
+        .optional()
+        .nullable(),
+
+      sponsor: z
+        .string({
+          invalid_type_error: "Travel details - Sponsor must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      sponsor_address: z
+        .string({
+          invalid_type_error:
+            "Travel details - Sponsor address must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      sponsor_contact: z
+        .string({
+          invalid_type_error:
+            "Travel details - Sponsor contact must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      institute: z
+        .string({
+          invalid_type_error: "Travel details - Institute must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      program: z
+        .string({
+          invalid_type_error: "Travel details - Program must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      offer_letter_ref_no: z
+        .string({
+          invalid_type_error:
+            "Travel details - Offer letter ref no must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      travel_purpose: z
+        .string({
+          invalid_type_error:
+            "Travel details - Travel purpose must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      type: z
+        .string({
+          invalid_type_error: "Travel details - Type must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      program_duration: z
+        .string({
+          invalid_type_error:
+            "Travel details - Program duration must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      travel_type: z
+        .string({
+          invalid_type_error: "Travel details - Travel type must be a string.",
+        })
+        .optional()
+        .nullable(),
+    })
+    .optional()
+    .nullable(),
+
+  // homecare details
+  homecare_details: z
+    .array(
+      z.object({
+        id: z
+          .number({ required_error: "Homecare details - ID is required." })
+          .min(1, "Homecare details - ID must be atleast 01 characters."),
+        ownership_status: z
+          .string({
+            invalid_type_error:
+              "Homecare details - Ownership status must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        structure_type: z
+          .string({
+            invalid_type_error:
+              "Homecare details - Structure type must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        plot_area: z
+          .string({
+            invalid_type_error:
+              "Homecare details - Plot area must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        address: z
+          .string({
+            invalid_type_error: "Homecare details - Address must be a string.",
+          })
+          .optional()
+          .nullable(),
+
+        city: z
+          .string({
+            invalid_type_error: "Homecare details - City must be a string.",
+          })
+          .optional()
+          .nullable(),
+      })
+    )
+    .optional()
+    .nullable(),
+
+  // purchase protection details
+  purchase_protection: z
+    .object({
+      duration: z
+        .number({
+          invalid_type_error:
+            "Purchase protection details - Duration must be a number.",
+        })
+        .optional()
+        .nullable(),
+
+      duration_type: z
+        .enum(["days", "months", "years"], {
+          message:
+            "Duration is required - can only be one from 'days', 'months', 'years'",
+        })
+        .optional()
+        .nullable(),
+
+      name: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Name must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      total_price: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Total price must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      imei: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - IMEI must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      serial_number: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Serial number must be a string.",
+        })
+        .optional()
+        .nullable(),
+
+      retailer_sku: z
+        .string({
+          invalid_type_error:
+            "Purchase protection details - Retailer SKU must be a string.",
+        })
+        .optional()
+        .nullable(),
+    })
+    .nullable()
+    .optional(),
+});
+
 export const validateCCTransactionSchema = z.object({
   order_code: z
     .string({
@@ -1003,3 +1461,4 @@ export type GenerateHISSchema = z.infer<typeof validateGenerateHIS>;
 export type OrderPolicyStatusSchema = z.infer<
   typeof validateOrderPolicyStatusSchema
 >;
+export type OrderUpdateSchema = z.infer<typeof validateOrderUpdateSchema>;

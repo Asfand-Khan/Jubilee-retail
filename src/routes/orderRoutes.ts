@@ -10,13 +10,22 @@ import { generateOrderPDF } from "../utils/pdf";
 const router = Router();
 
 router.post("/", authenticateApiUser, controller.createOrderHandler); // Create Order --> Protected
-router.post("/cc-transaction", authenticateApiUser, controller.ccTransactionHandler); // Verify CC Transaction --> Protected
+router.put("/", authenticate, controller.updateOrderHandler); // Update Order --> Protected
+router.post(
+  "/cc-transaction",
+  authenticateApiUser,
+  controller.ccTransactionHandler
+); // Verify CC Transaction --> Protected
 router.post("/repush", authenticate, controller.repushOrderHandler); // Repush the order to blueEx --> Protected
-router.post("/verify-manually", authenticate, controller.manuallyVerifyCCHandler); // Manually Verify CC Order --> Protected
+router.post(
+  "/verify-manually",
+  authenticate,
+  controller.manuallyVerifyCCHandler
+); // Manually Verify CC Order --> Protected
 router.post("/list", authenticate, controller.fetchOrderListHandler); // Fetch List --> Protected
 router.post("/single", authenticate, controller.singleOrderHandler); // Fetch Single Order --> Protected
-router.post("/generate-his",authenticate , controller.generateHISHandler); // Generate HIS CBO File --> Protected
-router.post("/bulk", authenticate , controller.bulkOrderHandler); // Create Bulk Order --> Protected
+router.post("/generate-his", authenticate, controller.generateHISHandler); // Generate HIS CBO File --> Protected
+router.post("/bulk", authenticate, controller.bulkOrderHandler); // Create Bulk Order --> Protected
 router.post("/status", authenticate, controller.orderPolicyStatusHandler); // Manually Verify CC Order --> Protected
 
 router.get("/:order_code/pdf", async (req, res): Promise<any> => {
@@ -36,12 +45,12 @@ router.get("/:order_code/pdf", async (req, res): Promise<any> => {
           FblPolicyRider: true,
           apiUser: true,
           productOption: {
-            include: { webappMappers: true }
+            include: { webappMappers: true },
           },
         },
       },
-      payemntMethod: true
-    }
+      payemntMethod: true,
+    },
   });
 
   if (!order) {
