@@ -12,19 +12,18 @@ export const getAllCallUsData = async (data: CallUsDataListingType) => {
       is_deleted: false,
     } as any;
 
-    console.log(data);
-   if (data.date) {
-  const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+    if (data.date) {
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
 
-  const startDate = dayjs(startStr).startOf("day").toDate();
-  const endDate = dayjs(endStr).endOf("day").toDate();
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
 
-  whereClause.created_at = {
-    gte: startDate,
-    lte: endDate,
-  };
-}
-    console.log("Query where clause:", whereClause);
+      whereClause.created_at = {
+        gte: startDate,
+        lte: endDate,
+      };
+    }
+
     const allCallUsData = await prisma.callUsData.findMany({
       where: whereClause,
       orderBy: {

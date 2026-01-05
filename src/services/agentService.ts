@@ -4,6 +4,7 @@ import {
   AgentType,
   AgentUpdateType,
 } from "../validations/agentValidations";
+import dayjs from "dayjs";
 
 export const getAllAgents = async (data: AgentListingType) => {
   try {
@@ -11,14 +12,18 @@ export const getAllAgents = async (data: AgentListingType) => {
       is_deleted: false,
     } as any;
 
-    if(data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+    if (data.date) {
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
-    
+
     const allAgents = await prisma.agent.findMany({
       where: whereClause,
     });

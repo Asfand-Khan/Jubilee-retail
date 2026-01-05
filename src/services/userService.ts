@@ -13,8 +13,12 @@ import {
   extractImageAndExtension,
   saveBase64Image,
 } from "../utils/base64ToImage";
+import dayjs from "dayjs";
 
-export const createUser = async (input: UserRegister, created_by: number): Promise<User> => {
+export const createUser = async (
+  input: UserRegister,
+  created_by: number
+): Promise<User> => {
   const {
     username,
     fullname,
@@ -211,7 +215,10 @@ export const updateUserPasswordEntry = async (
   }
 };
 
-export const createApiUser = async (input: User, created_by: number): Promise<ApiUser> => {
+export const createApiUser = async (
+  input: User,
+  created_by: number
+): Promise<ApiUser> => {
   const { username, email, phone, id } = input;
   try {
     const apiPassword = generateRandomString(16);
@@ -264,10 +271,14 @@ export const getProfiles = async (data: UserList) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 
@@ -287,10 +298,14 @@ export const getApiProfiles = async (data: UserList) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 

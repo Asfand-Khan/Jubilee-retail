@@ -68,7 +68,6 @@ router.use("/communication-logs", communicationLogRoutes);
 router.use("/reportings", reportingRoutes);
 router.use("/dashboard", dashboardRoutes);
 
-
 // // Handle 404 errors
 // router.use((req, res, next) => {
 //     const err = new Error("Not Found");

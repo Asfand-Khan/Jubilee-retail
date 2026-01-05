@@ -15,23 +15,12 @@ export const listCommunicationLogs = async (
 ): Promise<any> => {
   try {
     const parsed = validateCommunication.parse(req.body);
-    const { type, status, recipient, page, limit } = parsed;
-    const filters: any = { type, status, recipient };
-
-    const pageNum = Math.max(1, Number(page));
-    const limitNum = Math.max(1, Number(limit));
-
-    const { payload, total } = await listLogs(filters, pageNum, limitNum);
+    const logs = await listLogs(parsed);
 
     return res.status(200).json({
       status: 1,
       message: "Communication logs fetched successfully",
-      payload: [
-        {
-          meta: { total, page: pageNum, limit: limitNum },
-          data: payload,
-        },
-      ],
+      payload: logs,
     });
   } catch (error: any) {
     return res.status(500).json({

@@ -4,6 +4,7 @@ import {
   BranchType,
   BranchUpdateType,
 } from "../validations/branchValidations";
+import dayjs from "dayjs";
 
 export const getAllBranches = async (data: BranchListingType) => {
   try {
@@ -12,10 +13,14 @@ export const getAllBranches = async (data: BranchListingType) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 

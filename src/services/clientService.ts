@@ -4,6 +4,7 @@ import {
   ClientType,
   ClientUpdateType,
 } from "../validations/clientValidations";
+import dayjs from "dayjs";
 
 export const getAllClients = async (data: ClientListingType) => {
   try {
@@ -11,11 +12,15 @@ export const getAllClients = async (data: ClientListingType) => {
       is_deleted: false,
     } as any;
 
-    if (data.date && (!data.branch || data.branch.length === 0)) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+    if (data.date) {
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 

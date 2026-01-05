@@ -5,6 +5,7 @@ import {
   MotorQuoteStatusUpdateType,
   MotorQuoteUpdateType,
 } from "../validations/motorQuoteValidations";
+import dayjs from "dayjs";
 
 export const getAllMotorQuotes = async (data: MotorQuoteListingType) => {
   try {
@@ -12,11 +13,15 @@ export const getAllMotorQuotes = async (data: MotorQuoteListingType) => {
       is_deleted: false,
     } as any;
 
-    if (data.date && (!data.status || data.status.length === 0)) {
-      const [start, end] = data.date.split(" to ");
+    if (data.date) {
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 

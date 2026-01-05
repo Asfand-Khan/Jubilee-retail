@@ -12,12 +12,17 @@ export const getAllProducts = async (data: ProductListingType) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
+
     const allProducts = await prisma.product.findMany({
       where: whereClause,
     });

@@ -1,4 +1,6 @@
+import dayjs from "dayjs";
 import prisma from "../config/db";
+import { ICommunication } from "../validations/communicationValidations";
 
 export type CommunicationType = "email" | "sms" | "whatsapp";
 
@@ -65,22 +67,24 @@ export const getLogById = async (id: number) => {
   return prisma.communicationLog.findUnique({ where: { id } });
 };
 
-export const listLogs = async (filters: any, page = 1, limit = 20) => {
+export const listLogs = async (data: ICommunication) => {
   const where: any = {};
-  if (filters.type) where.type = filters.type;
-  if (filters.status) where.status = filters.status;
-  if (filters.recipient)
-    where.recipient = { contains: String(filters.recipient) };
+  if (data.date) {
+    const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
 
-  const [payload, total] = await Promise.all([
-    prisma.communicationLog.findMany({
-      where,
-      orderBy: { id: "desc" },
-      skip: (page - 1) * limit,
-      take: limit,
-    }),
-    prisma.communicationLog.count({ where }),
-  ]);
+    const startDate = dayjs(startStr).startOf("day").toDate();
+    const endDate = dayjs(endStr).endOf("day").toDate();
 
-  return { payload, total };
+    where.created_at = {
+      gte: startDate,
+      lte: endDate,
+    };
+  }
+
+  const payload = await prisma.communicationLog.findMany({
+    where,
+    orderBy: { id: "desc" },
+  });
+
+  return payload;
 };

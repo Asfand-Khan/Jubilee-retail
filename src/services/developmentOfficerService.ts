@@ -4,6 +4,7 @@ import {
   DevelopmentOfficerType,
   DevelopmentOfficerUpdateType,
 } from "../validations/developmentOfficerValidations";
+import dayjs from "dayjs";
 
 export const getAllDOs = async (data: DevelopmentOfficerListingType) => {
   try {
@@ -12,10 +13,14 @@ export const getAllDOs = async (data: DevelopmentOfficerListingType) => {
     } as any;
 
     if (data.date) {
-      const [start, end] = data.date.split("to").map((d) => d.trim());
+      const [startStr, endStr] = data.date.split("to").map((d) => d.trim());
+
+      const startDate = dayjs(startStr).startOf("day").toDate();
+      const endDate = dayjs(endStr).endOf("day").toDate();
+
       whereClause.created_at = {
-        gte: new Date(start),
-        lte: new Date(end),
+        gte: startDate,
+        lte: endDate,
       };
     }
 
