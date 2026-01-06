@@ -175,7 +175,7 @@ export const getReport = async (data: ReportValidations) => {
       query += ` WHERE ` + whereClauses.join(" AND ");
     }
 
-    query += `GROUP BY pol.id ORDER BY pol.id DESC`;
+    query += ` GROUP BY pol.id ORDER BY pol.id DESC`;
 
     const result = (await prisma.$queryRawUnsafe(query, ...params)) as any[];
     return result;
