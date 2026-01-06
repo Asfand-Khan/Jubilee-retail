@@ -24,11 +24,14 @@ export const getReportHandler = async (
     // Sheet 1: Policy Report
     const policySheet = workbook.addWorksheet("Policy Report");
 
+    // 'POLICY DETAIL COUNT',
+    // 'POLICY DETAIL'
+
     // Define columns from your SELECT (exact header names)
     policySheet.columns = [
-      { header: "POLICY_ID", key: "POLICY_ID" },
-      { header: "PARTNER NAME", key: "PARTNER NAME" },
       { header: "POLICY NUMBER", key: "POLICY NUMBER" },
+      { header: "PARTNER NAME", key: "PARTNER NAME" },
+      { header: "ORDER CODE", key: "ORDER CODE" },
       { header: "POLICY STATUS", key: "POLICY STATUS" },
       { header: "POLICY ISSUE DATE", key: "POLICY ISSUE DATE" },
       { header: "POLICY START DATE", key: "POLICY START DATE" },
@@ -58,6 +61,8 @@ export const getReportHandler = async (
       { header: "PAYMENT MODE NAME", key: "PAYMENT MODE NAME" },
       { header: "TRANSACTION ID", key: "TRANSACTION ID" },
       { header: "APPROVAL CODE", key: "APPROVAL CODE" },
+      { header: "POLICY DETAIL COUNT", key: "POLICY DETAIL COUNT" },
+      { header: "POLICY DETAIL", key: "POLICY DETAIL" },
     ];
 
     // Add rows

@@ -125,14 +125,15 @@ export const getReport = async (data: ReportValidations) => {
       SELECT
         pol.id AS 'POLICY_ID',
         au.name AS 'PARTNER NAME',
+        ord.order_code AS 'ORDER CODE',
         pol.policy_code AS 'POLICY NUMBER',
         pol.status AS 'POLICY STATUS',
-        pol.issue_date AS 'POLICY ISSUE DATE',
-        pol.start_date AS 'POLICY START DATE',
-        pol.expiry_date AS 'POLICY EXPIRY DATE',
+        DATE_FORMAT(pol.issue_date, '%d-%b-%Y') AS 'POLICY ISSUE DATE',
+        DATE_FORMAT(pol.start_date, '%d-%b-%Y') AS 'POLICY START DATE',
+        DATE_FORMAT(pol.expiry_date, '%d-%b-%Y') AS 'POLICY EXPIRY DATE',
         pol.received_premium AS 'TOTAL PRICE',
         ord.discount_amount AS 'DISCOUNT',
-        c.campaign_name AS 'COUPON NAME',
+        c.code AS 'COUPON NAME',
         ord.customer_name AS 'CUSTOMER NAME',
         ord.customer_email AS 'CUSTOMER EMAIL',
         ord.customer_contact AS 'CUSTOMER CONTACT',
@@ -141,9 +142,9 @@ export const getReport = async (data: ReportValidations) => {
         pol.qr_doc_url AS 'DOCUMENT URL',
         p.name AS 'PLAN NAME',
         prod.product_name AS 'PRODUCT NAME',
-        ag.name AS 'AGENT NAME',
+        ord.agent_name AS 'AGENT NAME',
         ag.igis_agent_code AS 'AGENT CODE',
-        b.name AS 'BRANCH NAME',
+        ord.branch_name AS 'BRANCH NAME',
         b.igis_branch_code AS 'BRANCH CODE',
         b.igis_branch_takaful_code AS 'BRANCH TAKAFUL CODE',
         cl.name AS 'CLIENT NAME',
@@ -151,10 +152,11 @@ export const getReport = async (data: ReportValidations) => {
         devo.name AS 'DEVELOPMENT OFFICER NAME',
         devo.igis_do_code AS 'DEVELOPMENT OFFICE CODE',
         ord.tracking_number AS 'TRACKING NUMBER',
-        ord.id AS 'ORDER ID',
         pm.name AS 'PAYMENT MODE NAME',
         ord.cc_transaction_id AS 'TRANSACTION ID',
-        ord.cc_approval_code AS 'APPROVAL CODE'
+        ord.cc_approval_code AS 'APPROVAL CODE',
+        CAST( COUNT( pd.id ) AS CHAR ) AS 'POLICY DETAIL COUNT',
+	      GROUP_CONCAT(pd.type ORDER BY pd.id SEPARATOR ', ') AS 'POLICY DETAIL'
       FROM \`Order\` ord
       LEFT JOIN Policy pol ON pol.order_id = ord.id
       LEFT JOIN ApiUser au ON ord.api_user_id = au.id
@@ -166,13 +168,14 @@ export const getReport = async (data: ReportValidations) => {
       LEFT JOIN Client cl ON cl.id = ord.client_id
       LEFT JOIN DevelopmentOfficer devo ON devo.id = ord.development_office_id
       LEFT JOIN PaymentMode pm ON pm.id = ord.payment_method_id
+      LEFT JOIN PolicyDetail pd ON pd.policy_id = pol.id AND UPPER(pd.type) NOT IN ('CUSTOMER')
     `;
 
     if (whereClauses.length > 0) {
       query += ` WHERE ` + whereClauses.join(" AND ");
     }
 
-    query += ` ORDER BY pol.id DESC`;
+    query += `GROUP BY pol.id ORDER BY pol.id DESC`;
 
     const result = (await prisma.$queryRawUnsafe(query, ...params)) as any[];
     return result;
