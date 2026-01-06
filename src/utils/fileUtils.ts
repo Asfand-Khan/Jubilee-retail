@@ -52,3 +52,19 @@ export const createZipFile = async (
     archive.finalize();
   });
 };
+
+export const createZipBuffer = async (
+  files: { content: string; name: string }[]
+): Promise<Buffer> => {
+  return new Promise((resolve, reject) => {
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    const chunks: Buffer[] = [];
+
+    archive.on("data", (chunk) => chunks.push(chunk));
+    archive.on("end", () => resolve(Buffer.concat(chunks)));
+    archive.on("error", (err) => reject(err));
+
+    files.forEach((file) => archive.append(file.content, { name: file.name }));
+    archive.finalize();
+  });
+};

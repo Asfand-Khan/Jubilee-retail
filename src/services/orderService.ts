@@ -28,21 +28,17 @@ import { sendEmail } from "../utils/sendEmail";
 import { getOrderB2BTemplate } from "../utils/getOrderB2BTemplate";
 import { sendSms } from "../utils/sendSms";
 import { sendWhatsAppMessage } from "../utils/sendWhatsappSms";
-import {
-  createZipFile,
-  pad,
-  sanitize,
-  writeHISTextFile,
-} from "../utils/fileUtils";
+import { createZipBuffer, pad, sanitize } from "../utils/fileUtils";
 import { BulkOrder } from "../validations/bulkOrderValidations";
 import { skuDetails } from "./orderService2";
 import { AuthRequest } from "../types/types";
 import { sendVerificationNotifications } from "../utils/utils";
-import path from "path";
-import fs from "fs";
+
 import { encodeOrderCode } from "../utils/base64Url";
 import { pepScan } from "../utils/pepScanUtil";
 import { igisInsert } from "../utils/igisInsertUtil";
+import path from "path";
+import fs from "fs";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -2541,23 +2537,32 @@ export const generateHIS = async (data: GenerateHISSchema) => {
     }
   }
 
-  const retailPathDependent = await writeHISTextFile(
-    "his_retail_dependent.txt",
-    hisDependantLines
-  );
-  const retailPath = await writeHISTextFile("his_retail.txt", hisRetailLines);
+  // const retailPathDependent = await writeHISTextFile(
+  //   "his_retail_dependent.txt",
+  //   hisDependantLines
+  // );
+  // const retailPath = await writeHISTextFile("his_retail.txt", hisRetailLines);
+  const hisRetailContent = hisRetailLines.join("\n");
+  const hisDependantContent = hisDependantLines.join("\n");
 
   // ✅ Create a ZIP file containing both
-  const zipFileName = `his_files_${Date.now()}.zip`;
-  const zipPath = await createZipFile(
-    [
-      { path: retailPath, name: "his_retail.txt" },
-      { path: retailPathDependent, name: "his_retail_dependent.txt" },
-    ],
-    zipFileName
-  );
-  const splittedPath = zipPath.split("uploads");
-  return splittedPath[1];
+  // const zipFileName = `his_files_${Date.now()}.zip`;
+  // const zipPath = await createZipFile(
+  //   [
+  //     { path: retailPath, name: "his_retail.txt" },
+  //     { path: retailPathDependent, name: "his_retail_dependent.txt" },
+  //   ],
+  //   zipFileName
+  // );
+  // const splittedPath = zipPath.split("uploads");
+  // return splittedPath[1];
+
+  const zipBuffer = await createZipBuffer([
+    { content: hisRetailContent, name: "his_retail.txt" },
+    { content: hisDependantContent, name: "his_retail_dependent.txt" },
+  ]);
+
+  return zipBuffer;
 };
 
 export const generatePolicyCode = (policy: any, branch: any): string => {

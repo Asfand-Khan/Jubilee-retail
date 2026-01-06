@@ -270,17 +270,14 @@ export const generateHISHandler = async (
 ): Promise<any> => {
   try {
     const parsed = validations.validateGenerateHIS.parse(req.body);
-    const result = await service.generateHIS(parsed);
+    const zipBuffer = await service.generateHIS(parsed);
 
-    return res.status(200).json({
-      status: 1,
-      message: "HIS generated successfully",
-      payload: [
-        {
-          his_retail_zip: result,
-        },
-      ],
-    });
+    const fileName = `his_files_${Date.now()}.zip`;
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+
+    return res.send(zipBuffer);
   } catch (error) {
     const err = handleAppError(error);
     return res.status(err.status).json({
