@@ -5,8 +5,8 @@ import { createCourierHandler, getAllCouriersHandler, getSingleCourierHandler, u
 const router = Router();
 
 router.get("/", authenticate, getAllCouriersHandler); // Get All Couriers --> Protected
-router.post("/", authenticate, createCourierHandler); // Create Couriers --> Protected
+router.post("/", authenticate, checkUserRights(16,'can_create'),createCourierHandler); // Create Couriers --> Protected
 router.get("/:id", authenticate, getSingleCourierHandler); // Single Couriers --> Protected
-router.put("/", authenticate, updateCourierHandler); // Update Couriers --> Protected
+router.put("/", authenticate,checkUserRights(16,'can_edit'), updateCourierHandler); // Update Couriers --> Protected
 
 export default router;

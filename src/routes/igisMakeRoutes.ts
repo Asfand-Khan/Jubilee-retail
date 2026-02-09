@@ -5,8 +5,8 @@ import { createIgisMakeHandler, getAllIgisMakesHandler, getSingleIgisMakeHandler
 const router = Router();
 
 router.get("/", authenticate, getAllIgisMakesHandler); // Get All Igis Makes --> Protected
-router.post("/", authenticate, createIgisMakeHandler); // Create Igis Make --> Protected
+router.post("/", authenticate, checkUserRights(12,'can_create'),createIgisMakeHandler); // Create Igis Make --> Protected
 router.get("/:id", authenticate, getSingleIgisMakeHandler); // Single Igis Make --> Protected
-router.put("/", authenticate, updateIgisMakeHandler); // Update Igis Make --> Protected
+router.put("/", authenticate, checkUserRights(12,'can_edit'),updateIgisMakeHandler); // Update Igis Make --> Protected
 
 export default router;

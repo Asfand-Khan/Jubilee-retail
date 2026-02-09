@@ -7,6 +7,6 @@ const router = Router();
 router.post("/all", authenticate, getAllCallUsDataHandler); // Get All CallUsData --> Protected
 router.post("/", authenticateApiUser, createCallUsDataHandler); // Create CallUsData --> Protected
 router.get("/:id", authenticate, getSingleCallUsDataHandler); // Single CallUsData --> Protected
-router.put("/", authenticate, updateCallUsDataHandler); // Update CallUsData --> Protected
+router.put("/", authenticate,checkUserRights(19,'can_edit'), updateCallUsDataHandler); // Update CallUsData --> Protected
 
 export default router;

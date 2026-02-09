@@ -10,8 +10,8 @@ import {
 const router = Router();
 
 router.post("/all", authenticate, getAllClientsHandler); // Get All Clients --> Protected
-router.post("/", authenticate, createClientHandler); // Create Clients --> Protected
+router.post("/", authenticate,checkUserRights(9,'can_create'), createClientHandler); // Create Clients --> Protected
 router.get("/:id", authenticate, getSingleClientHandler); // Single Clients --> Protected
-router.put("/", authenticate, updateClientHandler); // Update Clients --> Protected
+router.put("/", authenticate, checkUserRights(9,'can_edit'),updateClientHandler); // Update Clients --> Protected
 
 export default router;

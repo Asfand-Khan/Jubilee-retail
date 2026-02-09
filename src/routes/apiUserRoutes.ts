@@ -8,6 +8,6 @@ import { authenticate, checkUserRights } from "../middleware/authMiddleware";
 const router = Router();
 
 router.post("/", authenticate, getApiUserProfiles); // Get All API Users --> Protected
-router.get("/:id", authenticate, updateApiUserCreds); // Update API User Credentials --> Protected
+router.get("/:id", checkUserRights(4,'can_edit'),authenticate, updateApiUserCreds); // Update API User Credentials --> Protected
 
 export default router;

@@ -5,8 +5,8 @@ import { createIgisSubMakeHandler, getAllIgisSubMakesHandler, getSingleIgisSubMa
 const router = Router();
 
 router.get("/", authenticate, getAllIgisSubMakesHandler); // Get All Igis Sub Makes --> Protected
-router.post("/", authenticate, createIgisSubMakeHandler); // Create Igis Sub Make --> Protected
+router.post("/", authenticate,checkUserRights(13,'can_create'), createIgisSubMakeHandler); // Create Igis Sub Make --> Protected
 router.get("/:id", authenticate, getSingleIgisSubMakeHandler); // Single Sub Igis Make --> Protected
-router.put("/", authenticate, updateIgisSubMakeHandler); // Update Igis Sub Make --> Protected
+router.put("/", authenticate,checkUserRights(13,'can_edit'), updateIgisSubMakeHandler); // Update Igis Sub Make --> Protected
 
 export default router;

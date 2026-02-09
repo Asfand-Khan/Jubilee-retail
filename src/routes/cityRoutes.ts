@@ -6,8 +6,8 @@ const router = Router();
 
 router.get("/list", authenticateApiUser, getAllCitiesThirdPartyHandler); // Get All Cities --> Protected
 router.get("/", authenticate, getAllCitiesHandler); // Get All Cities --> Protected
-router.post("/", authenticate, createCityHandler); // Create City --> Protected
+router.post("/", authenticate, checkUserRights(15,'can_create'),createCityHandler); // Create City --> Protected
 router.get("/:id", authenticate, getSingleCityHandler); // Single City --> Protected
-router.put("/", authenticate, updateCityHandler); // Update City --> Protected
+router.put("/", authenticate,checkUserRights(15,'can_edit'), updateCityHandler); // Update City --> Protected
 
 export default router;

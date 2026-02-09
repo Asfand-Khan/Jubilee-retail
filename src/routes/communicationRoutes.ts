@@ -8,6 +8,6 @@ import {
 const router = Router();
 
 router.post("/", authenticate, listCommunicationLogs); // Communication List Logs --> Protected
-router.post("/repush", authenticate, repushCommunicationLog); // Comminication Log Repush --> Protected
+router.post("/repush", authenticate,checkUserRights(57,'can_edit'), repushCommunicationLog); // Comminication Log Repush --> Protected
 
 export default router;
