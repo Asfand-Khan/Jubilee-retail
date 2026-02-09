@@ -63,7 +63,67 @@ export const validateCouponSchema = z.object({
     .array(z.number(), { required_error: "Products are required." })
     .optional(),
 });
+export const validateUpdateCouponSchema = z.object({
+  campaign_name: z
+    .string()
+    .min(2, "Campaign name must be at least 2 characters.")
+    .max(150, "Campaign name must be at most 150 characters.")
+    .optional(),
 
+  expiry_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Expiry date must be YYYY-MM-DD.")
+    .refine(
+      (val) => {
+        const input = dayjs.tz(val, "Asia/Karachi").startOf("day");
+        const today = dayjs().tz("Asia/Karachi").startOf("day");
+        return input.isSame(today) || input.isAfter(today);
+      },
+      { message: "Expiry date must be today or in the future (Karachi TZ)" }
+    )
+    .optional(),
+
+  application_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Application date must be YYYY-MM-DD.")
+    .refine(
+      (val) => {
+        const input = dayjs.tz(val, "Asia/Karachi").startOf("day");
+        const today = dayjs().tz("Asia/Karachi").startOf("day");
+        return input.isSame(today) || input.isAfter(today);
+      },
+      { message: "Application date must be today or in the future (Karachi TZ)" }
+    )
+    .optional(),
+
+  quantity: z
+    .number()
+    .int("Quantity must be integer")
+    .positive("Quantity must be positive")
+    .optional(),
+
+  discount_value: z
+    .string()
+    .min(1)
+    .max(50)
+    .optional(),
+
+  use_per_customer: z
+    .number()
+    .int()
+    .positive()
+    .optional(),
+
+  coupon_type: z
+    .enum(["percentage", "flat", "other"])
+    .optional(),
+
+  is_active: z.boolean().optional(),
+
+  products: z
+    .array(z.number())
+    .optional(), // if you want to allow changing associated products
+});
 export const validateGetCouponSchema = z.object({
   code: z
     .string({ required_error: "Coupon code is required." }),
@@ -81,5 +141,6 @@ export const validateCouponListingSchema = z.object({
 });
 
 export type CouponSchema = z.infer<typeof validateCouponSchema>;
+export type UpdateCouponSchema = z.infer<typeof validateUpdateCouponSchema>;
 export type GetCouponSchema = z.infer<typeof validateGetCouponSchema>;
 export type CouponListingSchema = z.infer<typeof validateCouponListingSchema>;

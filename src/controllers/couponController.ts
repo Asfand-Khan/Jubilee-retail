@@ -8,7 +8,7 @@ import { handleAppError } from "../utils/appErrorHandler";
 // GET all
 export const getAllCouponsHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const parsed = validations.validateCouponListingSchema.parse(req.body);
@@ -31,7 +31,7 @@ export const getAllCouponsHandler = async (
 // GET one
 export const getCouponHandler = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const parsedData = validations.validateGetCouponSchema.parse(req.body);
@@ -56,7 +56,7 @@ export const getCouponHandler = async (
 // CREATE
 export const createCouponHandler = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<any> => {
   try {
     const user = req.userRecord as User;
@@ -87,7 +87,48 @@ export const createCouponHandler = async (
     });
   }
 };
+export const updateCouponHandler = async (req: AuthRequest, res: Response) => {
+  try {
+    const user = req.userRecord as User;
+    const couponId = Number(req.params.id);
 
+    if (!couponId || isNaN(couponId)) {
+      return res.status(400).json({
+        status: 0,
+        message: "Invalid coupon ID",
+        payload: [],
+      });
+    }
+
+    const parsed = validations.validateUpdateCouponSchema.parse(req.body);
+    const existingCoupon = await service.couponById(couponId);
+    if (!existingCoupon) {
+      return res.status(404).json({
+        status: 0,
+        message: "Coupon not found",
+        payload: [],
+      });
+    }
+    if (existingCoupon.remaining < existingCoupon.quantity) {
+      return res
+        .status(400)
+        .json({ message: "Cannot update coupon that has been used" });
+    }
+    const updatedCoupon = await service.updateCoupon(couponId, parsed, user.id);
+    return res.status(200).json({
+      status: 1,
+      message: "Coupon updated successfully",
+      payload: [updatedCoupon],
+    });
+  } catch (error) {
+    const err = handleAppError(error);
+    return res.status(err.status || 500).json({
+      status: 0,
+      message: err.message,
+      payload: [],
+    });
+  }
+};
 // UPDATE
 // export const updatePremiumRangeProtectionHandler = async (
 //   req: Request,
@@ -113,3 +154,47 @@ export const createCouponHandler = async (
 //     });
 //   }
 // };
+
+export const getSingleCouponHandler = async (
+  req: Request,
+  res: Response,
+): Promise<any> => {
+  try {
+    const couponId = parseInt(req.params.id);
+
+    if (isNaN(couponId) || couponId <= 0) {
+      return res.status(400).json({
+        status: 0,
+        message: "Invalid coupon ID",
+        payload: [],
+      });
+    }
+
+    const singleCoupon = await service.getCouponById(couponId);
+
+    if (!singleCoupon) {
+      return res.status(404).json({
+        status: 0,
+        message: "Coupon not found",
+        payload: [],
+      });
+    }
+
+    return res.status(200).json({
+      status: 1,
+      message: "Fetched single coupon successfully",
+      payload: [singleCoupon],
+    });
+  } catch (error: any) {
+    // If you have a global error handler utility
+    const err = handleAppError
+      ? handleAppError(error)
+      : { message: error.message, status: 500 };
+
+    return res.status(err.status || 500).json({
+      status: 0,
+      message: err.message || "Internal server error",
+      payload: [],
+    });
+  }
+};

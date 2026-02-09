@@ -4,6 +4,7 @@ import {
   CouponListingSchema,
   CouponSchema,
   GetCouponSchema,
+  UpdateCouponSchema,
 } from "../validations/couponValidations";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -215,5 +216,77 @@ export const isBeforeDate = (date: string) => {
 export const couponByCode = async (code: string) => {
   return await prisma.coupon.findUnique({
     where: { code },
+  });
+};
+
+export const couponById = async (id: number) => {
+  return prisma.coupon.findUnique({
+    where: { id, is_deleted: false },
+    include: { couponProducts: { select: { product_id: true } } },
+  });
+};
+
+export const updateCoupon = async (
+  couponId: number,
+  data: UpdateCouponSchema,
+  updatedBy: number
+) => {
+  return prisma.$transaction(async (tx) => {
+    // 1. Update main coupon fields
+    const updatedCoupon = await tx.coupon.update({
+      where: { id: couponId },
+      data: {
+        campaign_name: data.campaign_name,
+        expiry_date: data.expiry_date,
+        application_date: data.application_date,
+        quantity: data.quantity,
+        remaining: data.quantity !== undefined ? data.quantity : undefined, // reset remaining?
+        discount_value: data.discount_value,
+        use_per_customer: data.use_per_customer,
+        coupon_type: data.coupon_type as CouponTypeEnum | undefined,
+        is_active: data.is_active,
+      },
+    });
+    if (data.products !== undefined) {
+      await tx.couponProduct.deleteMany({
+        where: { coupon_id: couponId },
+      });
+
+      let newRelations: { coupon_id: number; product_id: number }[] = [];
+      if (data.products.length > 0) {
+        newRelations = data.products.map((product_id) => ({
+          coupon_id: couponId,
+          product_id,
+        }));
+      } else {
+        const allProducts = await tx.product.findMany({
+          where: { is_deleted: false, is_active: true },
+          select: { id: true },
+        });
+        newRelations = allProducts.map((p) => ({
+          coupon_id: couponId,
+          product_id: p.id,
+        }));
+      }
+
+      if (newRelations.length > 0) {
+        await tx.couponProduct.createMany({
+          data: newRelations,
+        });
+      }
+    }
+    return tx.coupon.findUnique({
+      where: { id: couponId },
+      include: {
+        couponProducts: {
+          select: { product_id: true },
+        },
+      },
+    });
+  });
+};
+export const getCouponById = async (id: number) => {
+  return prisma.coupon.findUnique({
+    where: { id },
   });
 };
