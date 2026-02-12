@@ -6,9 +6,10 @@ import { AuthRequest } from "../types/types";
 export const authenticate = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const authHeader = req.headers.authorization;
+// console.log("Authorization header:", req.headers.authorization);
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
@@ -25,12 +26,19 @@ export const authenticate = async (
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
-      user_id: number;
-    };
+    // const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+    //   user_id: number;
+    // };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string, {
+      algorithms: ["HS256"], // enforce algorithm
+      issuer: process.env.JWT_ISSUER, // expected issuer
+      audience: process.env.JWT_AUDIENCE, // expected audience
+    }) as { user_id: number };
     const user = await prisma.user.findUnique({
       where: { id: decoded.user_id },
     });
+    // console.log("✅ JWT decoded:", decoded);
+    // console.log("✅ Authenticated user from DB:", user);
     req.userRecord = user; // Attach user to the request object for later use
     next();
   } catch (error) {
@@ -45,7 +53,7 @@ export const authenticate = async (
 export const authenticateApiUser = async (
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<any> => {
   const apiKey = req.headers["x-api-key"] as string;
   const apiPassword = req.headers["x-api-password"] as string;
@@ -85,7 +93,7 @@ export const authenticateApiUser = async (
 export const checkUserRights =
   (
     menuId: number,
-    requiredPermission: "can_view" | "can_create" | "can_edit" | "can_delete"
+    requiredPermission: "can_view" | "can_create" | "can_edit" | "can_delete",
   ): RequestHandler =>
   async (req: AuthRequest, res: Response, next: NextFunction): Promise<any> => {
     try {
