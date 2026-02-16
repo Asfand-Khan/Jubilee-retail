@@ -487,30 +487,30 @@ export const sendOtp = async (req: Request, res: Response): Promise<any> => {
     }
 
     let result = null;
-    // if (parsedData.type === "email") {
-    //   result = await sendEmail({
-    //     to: user.email,
-    //     subject: "OTP Verification",
-    //     html: getOTPEmailTemplate(user.otp_token, user.fullname),
-    //   });
-    // } else {
-    //   // result = await sendSms(
-    //   //   user.phone,
-    //   //   `Dear ${user.fullname}, to ensure the security of your account, We require verification through a one-time password (OTP).\n \nPlease find your OTP below:\n \nOTP: ${user.otp_token} \n \nKindly enter this OTP on the verification page to complete the process. If you did not initiate this verification, please contact our support. \n \nThank you for your cooperation`
-    //   // );
-    //   result = await sendSms(
-    //     user.phone,
-    //     `Dear ${user.fullname},
-    //       For your account's protection, we're confirming a recent action.
+    if (parsedData.type === "email") {
+      result = await sendEmail({
+        to: user.email,
+        subject: "OTP Verification",
+        html: getOTPEmailTemplate(user.otp_token, user.fullname),
+      });
+    } else {
+      // result = await sendSms(
+      //   user.phone,
+      //   `Dear ${user.fullname}, to ensure the security of your account, We require verification through a one-time password (OTP).\n \nPlease find your OTP below:\n \nOTP: ${user.otp_token} \n \nKindly enter this OTP on the verification page to complete the process. If you did not initiate this verification, please contact our support. \n \nThank you for your cooperation`
+      // );
+      result = await sendSms(
+        user.phone,
+        `Dear ${user.fullname},
+          For your account's protection, we're confirming a recent action.
 
-    //       Your access key is provided below:
-    //       Access Key: ${user.otp_token}
+          Your access key is provided below:
+          Access Key: ${user.otp_token}
 
-    //       Please enter this key on the verification page to proceed. If you didn't request this, kindly contact our support team.
+          Please enter this key on the verification page to proceed. If you didn't request this, kindly contact our support team.
 
-    //     We appreciate your prompt attention.`
-    //   );
-    // }
+        We appreciate your prompt attention.`
+      );
+    }
 
     return res.status(200).json({
       status: 1,
